@@ -2,7 +2,7 @@
 
 ## Version Control Rule
 
-- **Run `git add` and `git commit` after completing any big task**
+- **Run `git add` and `git commit` after completing any big task or fixing a issue**
 - Provide a clear, descriptive commit message summarizing the work accomplished.
 
 ## Stack & Architecture Guidelines
