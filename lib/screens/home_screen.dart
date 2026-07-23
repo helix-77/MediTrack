@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
 
                         // All Prescriptions Section
-                        Text('My Prescriptions (${allMedicines.length})', style: AppTypography.headingMedium),
+                        Text('My Inventory (${allMedicines.length})', style: AppTypography.headingMedium),
                         const SizedBox(height: 12),
                         _buildAllPrescriptionsSection(allMedicines),
                         const SizedBox(height: 32),
@@ -394,189 +394,227 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDoseGrid(List<_DoseItem> doseItems) {
+    final morningDoses = <_DoseItem>[];
+    final noonDoses = <_DoseItem>[];
+    final eveningDoses = <_DoseItem>[];
+    final nightDoses = <_DoseItem>[];
+
+    for (var item in doseItems) {
+      final parts = item.timeString.split(':');
+      final hour = int.tryParse(parts[0]) ?? 8;
+      if (hour >= 5 && hour < 12) {
+        morningDoses.add(item);
+      } else if (hour >= 12 && hour < 17) {
+        noonDoses.add(item);
+      } else if (hour >= 17 && hour < 21) {
+        eveningDoses.add(item);
+      } else {
+        nightDoses.add(item);
+      }
+    }
+
+    final slots = [
+      _TimeSlotData(
+        title: 'Morning',
+        timeRange: '5:00 AM - 11:59 AM',
+        icon: Icons.wb_sunny_rounded,
+        accentColor: const Color(0xFFD35400),
+        bgColor: const Color(0xFFFFF5E6),
+        doses: morningDoses,
+      ),
+      _TimeSlotData(
+        title: 'Noon',
+        timeRange: '12:00 PM - 4:59 PM',
+        icon: Icons.wb_sunny_outlined,
+        accentColor: const Color(0xFF2980B9),
+        bgColor: const Color(0xFFEBF5FB),
+        doses: noonDoses,
+      ),
+      _TimeSlotData(
+        title: 'Evening',
+        timeRange: '5:00 PM - 8:59 PM',
+        icon: Icons.wb_twilight_rounded,
+        accentColor: const Color(0xFF8E44AD),
+        bgColor: const Color(0xFFF5EEF8),
+        doses: eveningDoses,
+      ),
+      _TimeSlotData(
+        title: 'Night',
+        timeRange: '9:00 PM - 4:59 AM',
+        icon: Icons.bedtime_rounded,
+        accentColor: AppColors.primaryGreen,
+        bgColor: const Color(0xFFEAECEE),
+        doses: nightDoses,
+      ),
+    ];
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: doseItems.length,
+      itemCount: 4,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.92,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
+        childAspectRatio: 1.45,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
       ),
       itemBuilder: (context, index) {
-        final item = doseItems[index];
-        final isFeatured = index == 0; // First card gets dark accent styling like reference layout!
-        return _buildGridDoseCard(item, isFeatured);
+        return _buildTimeSlotGridCard(slots[index]);
       },
     );
   }
 
-  Widget _buildGridDoseCard(_DoseItem item, bool isFeatured) {
-    final isTaken = item.log.status == DoseStatus.taken;
-    final isSkipped = item.log.status == DoseStatus.skipped;
-    final formattedTime = TimeFormatter.format24To12Hour(item.timeString);
-    final dateStr = DateFormat('MMM d, yyyy').format(item.log.scheduledAt);
+  Widget _buildTimeSlotGridCard(_TimeSlotData slot) {
+    final total = slot.doses.length;
+    final taken = slot.doses.where((d) => d.log.status == DoseStatus.taken).length;
+    final progress = total == 0 ? 0.0 : taken / total;
 
-    final cardBgColor = isFeatured ? AppColors.primaryGreen : AppColors.surface;
-    final primaryTextColor = isFeatured ? Colors.white : AppColors.textPrimary;
-    final secondaryTextColor = isFeatured ? Colors.white70 : AppColors.textSecondary;
-    final iconBgColor = isFeatured ? Colors.white.withValues(alpha: 0.2) : AppColors.accentPinkLight;
-    final iconColor = isFeatured ? Colors.white : AppColors.primaryGreen;
+    String subtitleText = 'No doses scheduled';
+    if (total > 0) {
+      final names = slot.doses.map((d) => d.medicine.name).toSet().join(', ');
+      subtitleText = '$total dose(s) • $names';
+    }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBgColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isFeatured ? 0.1 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
+    return InkWell(
+      onTap: () => _openTimeSlotDetailModal(slot),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: slot.bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: slot.accentColor.withValues(alpha: 0.3), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Top Row: Date & 3-Dots Menu
+            // Top Row: Icon Badge & Title
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  dateStr,
-                  style: AppTypography.bodySmall.copyWith(
-                    fontSize: 11,
-                    color: secondaryTextColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(Icons.more_vert, color: secondaryTextColor, size: 18),
-                  onSelected: (val) async {
-                    if (val == 'take') {
-                      await _medicineService.updateDoseStatus(
-                        logId: item.log.id,
-                        medicineId: item.medicine.id,
-                        medicineName: item.medicine.name,
-                        status: DoseStatus.taken,
-                        doseAmount: item.medicine.schedule.doseAmount,
-                        scheduledAt: item.log.scheduledAt,
-                      );
-                    } else if (val == 'skip') {
-                      await _medicineService.updateDoseStatus(
-                        logId: item.log.id,
-                        medicineId: item.medicine.id,
-                        medicineName: item.medicine.name,
-                        status: DoseStatus.skipped,
-                        doseAmount: item.medicine.schedule.doseAmount,
-                        scheduledAt: item.log.scheduledAt,
-                      );
-                    } else if (val == 'delete') {
-                      _showDeleteConfirmationDialog(item.medicine);
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    if (!isTaken)
-                      const PopupMenuItem(value: 'take', child: Text('Mark as Taken')),
-                    if (!isSkipped)
-                      const PopupMenuItem(value: 'skip', child: Text('Skip Dose')),
-                    const PopupMenuItem(value: 'delete', child: Text('Delete Prescription', style: TextStyle(color: AppColors.danger))),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: slot.accentColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(slot.icon, color: slot.accentColor, size: 18),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      slot.title,
+                      style: AppTypography.headingSmall.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ],
+                ),
+                Text(
+                  '$taken/$total',
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: slot.accentColor,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
 
-            // Middle Section: Icon, Medicine Name & Subtitle
+            // Middle Subtitle: Count & Names
+            Text(
+              subtitleText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+
+            // Bottom Progress Bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 5,
+                backgroundColor: slot.accentColor.withValues(alpha: 0.15),
+                valueColor: AlwaysStoppedAnimation<Color>(slot.accentColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openTimeSlotDetailModal(_TimeSlotData slot) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: iconBgColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isTaken ? Icons.check : (isSkipped ? Icons.close : Icons.medication),
-                    color: iconColor,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.medicine.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.headingSmall.copyWith(
-                          color: primaryTextColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          decoration: isTaken ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$formattedTime • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodySmall.copyWith(
-                          color: secondaryTextColor,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Icon(slot.icon, color: slot.accentColor, size: 24),
+                const SizedBox(width: 8),
+                Text('${slot.title} Routine', style: AppTypography.headingMedium),
+                const Spacer(),
+                Text(slot.timeRange, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
               ],
             ),
-
-            // Bottom Section: Progress Bar / Badge Status
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Progress',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: secondaryTextColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      isTaken ? '100%' : (isSkipped ? 'Skipped' : '0%'),
-                      style: AppTypography.bodySmall.copyWith(
-                        color: primaryTextColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+            const Divider(),
+            if (slot.doses.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0),
+                child: Center(
+                  child: Text('No doses scheduled for ${slot.title.toLowerCase()}', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary)),
                 ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: isTaken ? 1.0 : (isSkipped ? 0.0 : 0.2),
-                    minHeight: 6,
-                    backgroundColor: isFeatured ? Colors.white24 : AppColors.divider,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isFeatured ? AppColors.accentPink : AppColors.primaryGreen,
-                    ),
+              )
+            else
+              ...slot.doses.map(
+                (item) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    item.log.status == DoseStatus.taken ? Icons.check_circle : Icons.medication,
+                    color: item.log.status == DoseStatus.taken ? AppColors.success : slot.accentColor,
                   ),
+                  title: Text(item.medicine.name, style: AppTypography.headingSmall),
+                  subtitle: Text('${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}'),
+                  trailing: item.log.status == DoseStatus.taken
+                      ? const Chip(label: Text('Taken'), backgroundColor: AppColors.accentPinkLight)
+                      : ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: slot.accentColor),
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            await _medicineService.updateDoseStatus(
+                              logId: item.log.id,
+                              medicineId: item.medicine.id,
+                              medicineName: item.medicine.name,
+                              status: DoseStatus.taken,
+                              doseAmount: item.medicine.schedule.doseAmount,
+                              scheduledAt: item.log.scheduledAt,
+                            );
+                          },
+                          child: const Text('Take'),
+                        ),
                 ),
-              ],
-            ),
+              ),
           ],
         ),
       ),
@@ -667,9 +705,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   '${m.schedule.doseTimes.length} dose(s)/day (${m.schedule.doseTimes.map(TimeFormatter.format24To12Hour).join(', ')}) • ${TimeFormatter.formatDaysOfWeek(m.schedule.daysOfWeek)}',
                   style: AppTypography.bodySmall,
                 ),
-                trailing: Text(
-                  '${m.quantityCurrent} left',
-                  style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${m.quantityCurrent} left',
+                      style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
+                      onPressed: () => _showDeleteConfirmationDialog(m),
+                    ),
+                  ],
                 ),
                 onTap: () {
                   Navigator.push(
@@ -734,5 +781,23 @@ class _DoseItem {
     required this.medicine,
     required this.log,
     required this.timeString,
+  });
+}
+
+class _TimeSlotData {
+  final String title;
+  final String timeRange;
+  final IconData icon;
+  final Color accentColor;
+  final Color bgColor;
+  final List<_DoseItem> doses;
+
+  _TimeSlotData({
+    required this.title,
+    required this.timeRange,
+    required this.icon,
+    required this.accentColor,
+    required this.bgColor,
+    required this.doses,
   });
 }
