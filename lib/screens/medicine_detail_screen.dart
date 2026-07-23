@@ -7,6 +7,7 @@ import '../services/medicine_service.dart';
 import '../logic/refill_calculator.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../utils/time_formatter.dart';
 import 'add_edit_medicine_screen.dart';
 
 class MedicineDetailScreen extends StatefulWidget {
@@ -208,7 +209,7 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
                                     ? AppColors.success
                                     : (log.status == DoseStatus.skipped ? AppColors.textSecondary : AppColors.danger),
                               ),
-                              title: Text(DateFormat('EEE, MMM d • HH:mm').format(log.scheduledAt)),
+                              title: Text(TimeFormatter.formatDateTime12Hour(log.scheduledAt)),
                               subtitle: Text('Status: ${log.status.name.toUpperCase()}'),
                             ),
                           ),

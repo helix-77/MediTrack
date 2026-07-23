@@ -8,6 +8,7 @@ import '../services/medicine_service.dart';
 import '../services/notification_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../utils/time_formatter.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicine;
@@ -316,7 +317,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 children: [
                   ..._doseTimes.map(
                     (t) => Chip(
-                      label: Text(t),
+                      label: Text(TimeFormatter.format24To12Hour(t)),
                       onDeleted: () {
                         if (_doseTimes.length > 1) {
                           setState(() => _doseTimes.remove(t));

@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../logic/refill_calculator.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../utils/time_formatter.dart';
 import 'add_edit_medicine_screen.dart';
 import 'medicine_detail_screen.dart';
 
@@ -365,7 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           subtitle: Text(
-            '${item.timeString} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit(s)"} (${item.medicine.strength ?? ""})',
+            '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit(s)"} (${item.medicine.strength ?? ""})',
             style: AppTypography.bodySmall,
           ),
           trailing: isTaken

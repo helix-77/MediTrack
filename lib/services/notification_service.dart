@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:intl/intl.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/medicine.dart';
@@ -10,9 +13,20 @@ class NotificationService {
   NotificationService._internal();
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  bool _initialized = false;
 
   Future<void> init() async {
+    if (_initialized) return;
+
     tz.initializeTimeZones();
+
+    // Configure device local timezone
+    try {
+      final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    } catch (e) {
+      debugPrint('Could not set local location timezone: $e');
+    }
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
@@ -29,20 +43,50 @@ class NotificationService {
     await _notificationsPlugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle notification tap if needed
+        // Handle notification response/tap if needed
       },
     );
 
-    // Request notification & exact alarm permissions on Android 13+ / 14+
+    // Create high-priority Android Notification Channels
     final androidImplementation =
         _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     if (androidImplementation != null) {
+      const AndroidNotificationChannel doseChannel = AndroidNotificationChannel(
+        'dose_reminders',
+        'Dose Reminders',
+        description: 'Notifications for taking scheduled medicine doses',
+        importance: Importance.max,
+        playSound: true,
+      );
+
+      const AndroidNotificationChannel expiryChannel = AndroidNotificationChannel(
+        'expiry_alerts',
+        'Expiry Alerts',
+        description: 'Notifications when medicine is nearing expiration',
+        importance: Importance.high,
+      );
+
+      const AndroidNotificationChannel refillChannel = AndroidNotificationChannel(
+        'refill_alerts',
+        'Refill Alerts',
+        description: 'Notifications when medicine stock is running low',
+        importance: Importance.high,
+      );
+
+      await androidImplementation.createNotificationChannel(doseChannel);
+      await androidImplementation.createNotificationChannel(expiryChannel);
+      await androidImplementation.createNotificationChannel(refillChannel);
+
       await androidImplementation.requestNotificationsPermission();
       await androidImplementation.requestExactAlarmsPermission();
     }
+
+    _initialized = true;
   }
 
   Future<void> scheduleMedicineNotifications(Medicine medicine) async {
+    await init();
+
     final baseId = medicine.id.hashCode.abs() % 100000;
     await cancelMedicineNotifications(medicine.id);
 
@@ -58,11 +102,12 @@ class NotificationService {
       final minute = int.tryParse(parts[1]) ?? 0;
 
       final notificationId = baseId + i;
+      final time12Hr = _format12Hour(hour, minute);
 
       await _safeZonedSchedule(
         id: notificationId,
         title: 'Dose Reminder: ${medicine.name}',
-        body: 'Time to take ${medicine.schedule.doseAmount} ${medicine.dosageForm ?? "unit(s)"} (${medicine.strength ?? ""})',
+        body: 'Time for $time12Hr dose: Take ${medicine.schedule.doseAmount} ${medicine.dosageForm ?? "unit(s)"} (${medicine.strength ?? ""})',
         scheduledDate: _nextInstanceOfTime(hour, minute),
         notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
@@ -71,8 +116,13 @@ class NotificationService {
             channelDescription: 'Notifications for taking scheduled doses',
             importance: Importance.max,
             priority: Priority.high,
+            playSound: true,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
         matchDateTimeComponents: DateTimeComponents.time,
       );
@@ -98,7 +148,11 @@ class NotificationService {
               importance: Importance.high,
               priority: Priority.high,
             ),
-            iOS: DarwinNotificationDetails(),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
           ),
         );
       }
@@ -120,7 +174,11 @@ class NotificationService {
               importance: Importance.high,
               priority: Priority.high,
             ),
-            iOS: DarwinNotificationDetails(),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
           ),
         );
       } catch (_) {}
@@ -178,5 +236,11 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
     return scheduledDate;
+  }
+
+  String _format12Hour(int hour, int minute) {
+    final now = DateTime.now();
+    final dt = DateTime(now.year, now.month, now.day, hour, minute);
+    return DateFormat('h:mm a').format(dt);
   }
 }
