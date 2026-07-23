@@ -1,7 +1,4 @@
-import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:meditrack/services/gemini_ai_service.dart';
 
 void main() {
@@ -63,50 +60,6 @@ Sure! Adding Vitamin C to your buy list.
 
       final cleaned = GeminiAiService.cleanContentText(rawResponse);
       expect(cleaned, 'Sure! Adding Vitamin C to your buy list.');
-    });
-  });
-
-  group('GeminiAiService API Tests', () {
-    test('sendMessage returns warning when API key is missing', () async {
-      final service = GeminiAiService();
-      final response = await service.sendMessage(
-        history: [],
-        userPrompt: 'Hello',
-        runtimeApiKey: '',
-      );
-
-      expect(response.content, contains('Gemini API Key is not set'));
-    });
-
-    test('sendMessage sends POST request to Gemini endpoint and parses response', () async {
-      final mockClient = MockClient((request) async {
-        expect(request.url.toString(), contains('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'));
-        expect(request.url.queryParameters['key'], 'TEST_GEMINI_KEY');
-
-        return http.Response(
-          jsonEncode({
-            'candidates': [
-              {
-                'content': {
-                  'parts': [
-                    {'text': 'Hello from Gemini AI!'}
-                  ]
-                }
-              }
-            ]
-          }),
-          200,
-        );
-      });
-
-      final service = GeminiAiService(client: mockClient);
-      final response = await service.sendMessage(
-        history: [],
-        userPrompt: 'Hi Gemini',
-        runtimeApiKey: 'TEST_GEMINI_KEY',
-      );
-
-      expect(response.content, 'Hello from Gemini AI!');
     });
   });
 }

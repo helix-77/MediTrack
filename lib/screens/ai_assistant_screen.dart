@@ -28,7 +28,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
   File? _selectedImage;
   bool _isLoading = false;
-  String _runtimeApiKey = '';
 
   @override
   void initState() {
@@ -103,7 +102,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       history: _messages,
       userPrompt: text,
       imageFile: imageToSend,
-      runtimeApiKey: _runtimeApiKey,
     );
 
     setState(() {
@@ -176,50 +174,37 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     );
   }
 
-  void _showApiKeyDialog() {
-    final controller = TextEditingController(text: _runtimeApiKey);
+  void _showInfoDialog() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Gemini API Key Settings'),
-        content: Column(
+        title: const Text('Firebase AI Security'),
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Paste your Gemini API Key below or edit `.env` (as `GEMINI_API_KEY=your_key`).',
-              style: TextStyle(fontSize: 13),
+            Row(
+              children: [
+                Icon(Icons.shield_outlined, color: AppColors.primaryGreen),
+                SizedBox(width: 8),
+                Text('Client SDK Security', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Gemini API Key',
-                hintText: 'AIzaSy...',
-                border: OutlineInputBorder(),
-              ),
+            SizedBox(height: 12),
+            Text(
+              'MediTrack uses Firebase AI Logic (firebase_ai) to communicate natively with Gemini models.\n\nYour requests are authenticated via Firebase Auth & App Check, keeping your app secure without exposing API keys.',
+              style: TextStyle(fontSize: 13),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryGreen,
               foregroundColor: Colors.white,
             ),
-            onPressed: () {
-              setState(() {
-                _runtimeApiKey = controller.text.trim();
-              });
-              Navigator.pop(ctx);
-              _showSnackbar('Gemini API Key updated for this session.');
-            },
-            child: const Text('Save'),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Got it'),
           ),
         ],
       ),
@@ -246,7 +231,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                       .copyWith(color: Colors.white),
                 ),
                 Text(
-                  'Powered by Google Gemini',
+                  'Powered by Firebase AI',
                   style: AppTypography.bodySmall
                       .copyWith(color: AppColors.accentPinkLight, fontSize: 11),
                 ),
@@ -256,9 +241,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Gemini API Key Settings',
-            onPressed: _showApiKeyDialog,
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'Firebase AI Info',
+            onPressed: _showInfoDialog,
           ),
         ],
       ),

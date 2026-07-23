@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 enum GeminiActionType { addMedicine, addBuyItem, unknown }
 
@@ -24,7 +25,7 @@ class GeminiAction {
 }
 
 class GeminiChatMessage {
-  final String role; // 'system', 'user', 'model' / 'assistant'
+  final String role; // 'system', 'user', 'model'
   final String content;
   final String? imagePath;
   final DateTime timestamp;
@@ -42,24 +43,12 @@ class GeminiChatMessage {
 }
 
 class GeminiAiService {
-  final String? apiKeyOverride;
-  final http.Client _client;
+  final GenerativeModel? _customModel;
 
-  GeminiAiService({this.apiKeyOverride, http.Client? client})
-      : _client = client ?? http.Client();
+  GeminiAiService({GenerativeModel? model}) : _customModel = model;
 
-  String _getApiKey(String? runtimeKey) {
-    if (runtimeKey != null && runtimeKey.trim().isNotEmpty) {
-      return runtimeKey.trim();
-    }
-    if (apiKeyOverride != null && apiKeyOverride!.trim().isNotEmpty) {
-      return apiKeyOverride!.trim();
-    }
-    return ApiConfig.geminiApiKey;
-  }
-
-  static const String _systemInstruction = '''
-You are MediTrack AI, a helpful, friendly, and expert health and medicine assistant powered by Google Gemini.
+  static const String _systemInstructionText = '''
+You are MediTrack AI, a helpful, friendly, and expert health and medicine assistant powered by Firebase AI (Gemini).
 Your goal is to help users manage their medication routines, grocery/buy lists, analyze prescription photos, and provide accurate health and wellness advice.
 
 IMPORTANT INSTRUCTION FOR ACTIONS:
@@ -87,115 +76,57 @@ IMPORTANT INSTRUCTION FOR ACTIONS:
 Be clear, encouraging, and informative. Remind users to consult qualified healthcare professionals for medical emergencies.
 ''';
 
-  /// Send a message to Google Gemini API
+  GenerativeModel _getModel() {
+    if (_customModel != null) return _customModel;
+
+    final googleAI = FirebaseAI.googleAI(auth: FirebaseAuth.instance);
+    return googleAI.generativeModel(
+      model: 'gemini-flash-latest',
+      systemInstruction: Content.system(_systemInstructionText),
+    );
+  }
+
+  /// Send message to Firebase AI Gemini model
   Future<GeminiChatMessage> sendMessage({
     required List<GeminiChatMessage> history,
     required String userPrompt,
     File? imageFile,
-    String? runtimeApiKey,
   }) async {
-    final apiKey = _getApiKey(runtimeApiKey);
-    if (apiKey == 'YOUR_GEMINI_API_KEY_HERE' || apiKey.isEmpty) {
-      return GeminiChatMessage(
-        role: 'model',
-        content:
-            '⚠️ Gemini API Key is not set!\n\nPlease paste your Gemini API Key in `.env` (as `GEMINI_API_KEY=your_key`) or tap the settings icon in the top right to configure it.',
-      );
-    }
-
-    final contents = <Map<String, dynamic>>[];
-
-    for (final msg in history) {
-      if (msg.role != 'system') {
-        final geminiRole = msg.isUser ? 'user' : 'model';
-        contents.add({
-          'role': geminiRole,
-          'parts': [
-            {'text': msg.content}
-          ]
-        });
-      }
-    }
-
-    final userParts = <Map<String, dynamic>>[];
-
-    if (imageFile != null && imageFile.existsSync()) {
-      final bytes = await imageFile.readAsBytes();
-      final base64Image = base64Encode(bytes);
-      userParts.add({
-        'inline_data': {
-          'mime_type': 'image/jpeg',
-          'data': base64Image,
-        }
-      });
-    }
-
-    userParts.add({
-      'text': userPrompt.isEmpty && imageFile != null
-          ? 'Please analyze this prescription image and summarize the medicines.'
-          : userPrompt
-    });
-
-    contents.add({'role': 'user', 'parts': userParts});
-
-    final url = Uri.parse(
-      '${ApiConfig.geminiBaseUrl}/models/${ApiConfig.geminiModel}:generateContent?key=$apiKey',
-    );
-
-    final payload = {
-      'contents': contents,
-      'systemInstruction': {
-        'parts': [
-          {'text': _systemInstruction}
-        ]
-      },
-      'generationConfig': {
-        'temperature': 0.7,
-      }
-    };
-
     try {
-      final response = await _client.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
-      );
+      final model = _getModel();
+      final hasImage = imageFile != null && imageFile.existsSync();
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final candidates = data['candidates'] as List<dynamic>?;
-        if (candidates != null && candidates.isNotEmpty) {
-          final firstCandidate = candidates[0] as Map<String, dynamic>;
-          final contentObj = firstCandidate['content'] as Map<String, dynamic>?;
-          final parts = contentObj?['parts'] as List<dynamic>?;
-          if (parts != null && parts.isNotEmpty) {
-            final rawContent = parts[0]['text'] as String? ?? '';
+      final promptText = userPrompt.trim().isEmpty && hasImage
+          ? 'Please analyze this prescription photo and list the detected medicines, dosages, and schedules.'
+          : userPrompt;
 
-            final parsedAction = parseActionFromContent(rawContent);
-            final cleanContent = cleanContentText(rawContent);
-
-            return GeminiChatMessage(
-              role: 'model',
-              content: cleanContent,
-              action: parsedAction,
-            );
-          }
-        }
-        return GeminiChatMessage(
-          role: 'model',
-          content: 'Received an empty response from Gemini AI.',
-        );
+      late final Content content;
+      if (hasImage) {
+        final bytes = await imageFile.readAsBytes();
+        content = Content.multi([
+          TextPart(promptText),
+          InlineDataPart('image/jpeg', bytes),
+        ]);
       } else {
-        return GeminiChatMessage(
-          role: 'model',
-          content:
-              '⚠️ Gemini API Error (${response.statusCode}): ${response.body}',
-        );
+        content = Content.text(promptText);
       }
-    } catch (e) {
+
+      final response = await model.generateContent([content]);
+      final rawText = response.text ?? 'No response returned from Gemini AI.';
+
+      final parsedAction = parseActionFromContent(rawText);
+      final cleanContent = cleanContentText(rawText);
+
       return GeminiChatMessage(
         role: 'model',
-        content: '⚠️ Failed to connect to Gemini API: $e',
+        content: cleanContent,
+        action: parsedAction,
+      );
+    } catch (e) {
+      debugPrint('Firebase AI Gemini Error: $e');
+      return GeminiChatMessage(
+        role: 'model',
+        content: '⚠️ Firebase AI Error: $e\n\nEnsure Firebase is initialized and Firebase AI service is active.',
       );
     }
   }
