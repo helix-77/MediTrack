@@ -7,6 +7,7 @@ import '../theme/colors.dart';
 import '../theme/typography.dart';
 import 'login_screen.dart';
 import 'prescription_vault_screen.dart';
+import 'bdapps_subscription_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -233,6 +234,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const PrescriptionVaultScreen()),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.phonelink_ring_outlined, color: AppColors.primaryGreen),
+              title: const Text('BDApps Subscription & OTP', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('Manage telco subscription, OTP verification & status'),
+              trailing: const Icon(Icons.chevron_right, color: AppColors.primaryGreen),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BdAppsSubscriptionScreen()),
                 );
               },
             ),
