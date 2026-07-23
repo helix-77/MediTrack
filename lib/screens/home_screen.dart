@@ -267,68 +267,135 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _wrapWithDismissible({
+    required Key key,
+    required String medicineId,
+    required String medicineName,
+    required Widget child,
+  }) {
+    return Dismissible(
+      key: key,
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: AppColors.danger,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Delete',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(width: 8),
+            Icon(Icons.delete_outline, color: Colors.white, size: 28),
+          ],
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Delete Medicine'),
+            content: Text('Are you sure you want to delete "$medicineName"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Delete', style: TextStyle(color: AppColors.danger)),
+              ),
+            ],
+          ),
+        ) ?? false;
+      },
+      onDismissed: (direction) async {
+        await _medicineService.deleteMedicine(medicineId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('"$medicineName" deleted'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
   Widget _buildDoseCard(_DoseItem item) {
     final isTaken = item.log.status == DoseStatus.taken;
     final isSkipped = item.log.status == DoseStatus.skipped;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: isTaken
-                ? AppColors.success.withValues(alpha: 0.15)
-                : (isSkipped ? AppColors.textSecondary.withValues(alpha: 0.15) : AppColors.accentPinkLight),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            isTaken
-                ? Icons.check
-                : (isSkipped ? Icons.close : Icons.medication),
-            color: isTaken
-                ? AppColors.success
-                : (isSkipped ? AppColors.textSecondary : AppColors.primaryGreen),
-          ),
-        ),
-        title: Text(
-          item.medicine.name,
-          style: AppTypography.headingSmall.copyWith(
-            decoration: isTaken ? TextDecoration.lineThrough : null,
-          ),
-        ),
-        subtitle: Text(
-          '${item.timeString} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit(s)"} (${item.medicine.strength ?? ""})',
-          style: AppTypography.bodySmall,
-        ),
-        trailing: isTaken
-            ? Chip(
-                label: const Text('Taken'),
-                backgroundColor: AppColors.success.withValues(alpha: 0.15),
-                labelStyle: AppTypography.bodySmall.copyWith(color: AppColors.success, fontWeight: FontWeight.bold),
-              )
-            : IconButton(
-                icon: const Icon(Icons.check_circle_outline, color: AppColors.primaryGreen, size: 28),
-                onPressed: () {
-                  _medicineService.updateDoseStatus(
-                    logId: item.log.id,
-                    medicineId: item.medicine.id,
-                    medicineName: item.medicine.name,
-                    status: DoseStatus.taken,
-                    doseAmount: item.medicine.schedule.doseAmount,
-                    scheduledAt: item.log.scheduledAt,
-                  );
-                },
-              ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => MedicineDetailScreen(medicineId: item.medicine.id),
+    return _wrapWithDismissible(
+      key: Key('dose_${item.medicine.id}_${item.timeString}'),
+      medicineId: item.medicine.id,
+      medicineName: item.medicine.name,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isTaken
+                  ? AppColors.success.withValues(alpha: 0.15)
+                  : (isSkipped ? AppColors.textSecondary.withValues(alpha: 0.15) : AppColors.accentPinkLight),
+              shape: BoxShape.circle,
             ),
-          );
-        },
+            child: Icon(
+              isTaken
+                  ? Icons.check
+                  : (isSkipped ? Icons.close : Icons.medication),
+              color: isTaken
+                  ? AppColors.success
+                  : (isSkipped ? AppColors.textSecondary : AppColors.primaryGreen),
+            ),
+          ),
+          title: Text(
+            item.medicine.name,
+            style: AppTypography.headingSmall.copyWith(
+              decoration: isTaken ? TextDecoration.lineThrough : null,
+            ),
+          ),
+          subtitle: Text(
+            '${item.timeString} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit(s)"} (${item.medicine.strength ?? ""})',
+            style: AppTypography.bodySmall,
+          ),
+          trailing: isTaken
+              ? Chip(
+                  label: const Text('Taken'),
+                  backgroundColor: AppColors.success.withValues(alpha: 0.15),
+                  labelStyle: AppTypography.bodySmall.copyWith(color: AppColors.success, fontWeight: FontWeight.bold),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.check_circle_outline, color: AppColors.primaryGreen, size: 28),
+                  onPressed: () {
+                    _medicineService.updateDoseStatus(
+                      logId: item.log.id,
+                      medicineId: item.medicine.id,
+                      medicineName: item.medicine.name,
+                      status: DoseStatus.taken,
+                      doseAmount: item.medicine.schedule.doseAmount,
+                      scheduledAt: item.log.scheduledAt,
+                    );
+                  },
+                ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MedicineDetailScreen(medicineId: item.medicine.id),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -337,23 +404,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: medicines
           .map(
-            (m) => Card(
-              color: AppColors.warning.withValues(alpha: 0.1),
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-                title: Text(m.name, style: AppTypography.headingSmall),
-                subtitle: Text('Current Stock: ${m.quantityCurrent} (Threshold: ${m.lowStockThreshold})'),
-                trailing: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AddEditMedicineScreen(medicine: m),
-                      ),
-                    );
-                  },
-                  child: const Text('Refill'),
+            (m) => _wrapWithDismissible(
+              key: Key('low_${m.id}'),
+              medicineId: m.id,
+              medicineName: m.name,
+              child: Card(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+                  title: Text(m.name, style: AppTypography.headingSmall),
+                  subtitle: Text('Current Stock: ${m.quantityCurrent} (Threshold: ${m.lowStockThreshold})'),
+                  trailing: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AddEditMedicineScreen(medicine: m),
+                        ),
+                      );
+                    },
+                    child: const Text('Refill'),
+                  ),
                 ),
               ),
             ),
@@ -366,13 +438,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: medicines
           .map(
-            (m) => Card(
-              color: AppColors.danger.withValues(alpha: 0.1),
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: const Icon(Icons.error_outline_rounded, color: AppColors.danger),
-                title: Text(m.name, style: AppTypography.headingSmall),
-                subtitle: Text('Expires: ${m.expiryDate != null ? DateFormat('yyyy-MM-dd').format(m.expiryDate!) : "N/A"}'),
+            (m) => _wrapWithDismissible(
+              key: Key('exp_${m.id}'),
+              medicineId: m.id,
+              medicineName: m.name,
+              child: Card(
+                color: AppColors.danger.withValues(alpha: 0.1),
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.error_outline_rounded, color: AppColors.danger),
+                  title: Text(m.name, style: AppTypography.headingSmall),
+                  subtitle: Text('Expires: ${m.expiryDate != null ? DateFormat('yyyy-MM-dd').format(m.expiryDate!) : "N/A"}'),
+                ),
               ),
             ),
           )
