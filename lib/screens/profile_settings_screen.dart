@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import 'login_screen.dart';
+import 'prescription_vault_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -221,6 +222,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             _buildInfoRow(Icons.healing, 'Allergies', profile.allergies ?? 'None listed'),
             _buildInfoRow(Icons.medical_services, 'Primary Doctor', profile.doctorName != null ? '${profile.doctorName} (${profile.doctorPhone ?? "No phone"})' : 'Not specified'),
             _buildInfoRow(Icons.contact_phone, 'Emergency Contact', profile.emergencyContactName != null ? '${profile.emergencyContactName} (${profile.emergencyContactPhone ?? "No phone"})' : 'Not specified'),
+            const Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.folder_shared_outlined, color: AppColors.primaryGreen),
+              title: const Text('Digital Prescription Vault', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('View & scan stored written prescriptions'),
+              trailing: const Icon(Icons.chevron_right, color: AppColors.primaryGreen),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PrescriptionVaultScreen()),
+                );
+              },
+            ),
           ],
         ),
       ),
