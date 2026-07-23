@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
 import '../services/medicine_service.dart';
+import '../services/auth_service.dart';
 import '../logic/refill_calculator.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -18,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final MedicineService _medicineService = MedicineService();
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -35,6 +38,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isGuest = user == null || user.isAnonymous;
+    final displayName = isGuest ? 'Guest User' : (user.displayName ?? user.email ?? 'User');
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -47,6 +54,50 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle, size: 28, color: AppColors.primaryGreen),
+            onSelected: (value) async {
+              if (value == 'logout') {
+                await _authService.signOut();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                enabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(displayName, style: AppTypography.headingSmall),
+                    if (!isGuest && user.email != null)
+                      Text(user.email!, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                    const Divider(),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(
+                      isGuest ? Icons.login : Icons.logout,
+                      color: isGuest ? AppColors.primaryGreen : AppColors.danger,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isGuest ? 'Log In / Sign Up' : 'Log Out',
+                      style: TextStyle(
+                        color: isGuest ? AppColors.primaryGreen : AppColors.danger,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
