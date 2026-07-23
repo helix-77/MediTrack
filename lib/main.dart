@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'theme/app_theme.dart';
 import 'theme/colors.dart';
 import 'services/notification_service.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_navigation_shell.dart';
 import 'screens/welcome_screen.dart';
 
 void main() async {
@@ -48,7 +48,7 @@ class MediTrackApp extends StatelessWidget {
           }
 
           if (snapshot.hasData && snapshot.data != null) {
-            return const HomeScreen();
+            return const MainNavigationShell();
           }
 
           return const WelcomeScreen();
