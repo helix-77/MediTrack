@@ -7,6 +7,7 @@ import 'theme/colors.dart';
 import 'services/notification_service.dart';
 import 'screens/main_navigation_shell.dart';
 import 'screens/welcome_screen.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,8 +20,11 @@ void main() async {
   }
 
   // Initialize Firebase
+  
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+      );
   } catch (e) {
     debugPrint('Firebase init notice: $e');
   }
