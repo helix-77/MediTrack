@@ -1,7 +1,17 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// Centralized Configuration for API Keys and External Services.
 class ApiConfig {
-  /// Paste your Grok (xAI) API Key below:
-  static const String grokApiKey = 'PASTE_YOUR_GROK_API_KEY_HERE';
+  /// Safely retrieves Grok (xAI) API Key from environment (.env file)
+  static String get grokApiKey {
+    try {
+      final key = dotenv.env['GROK_API_KEY'];
+      if (key != null && key.isNotEmpty && key != 'YOUR_GROK_API_KEY_HERE') {
+        return key;
+      }
+    } catch (_) {}
+    return '';
+  }
 
   /// xAI Grok API Endpoints & Models
   static const String grokBaseUrl = 'https://api.x.ai/v1';
