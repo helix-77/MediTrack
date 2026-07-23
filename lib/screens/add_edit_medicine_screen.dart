@@ -176,7 +176,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       );
 
       await _medicineService.saveMedicine(medicine);
-      await _notificationService.scheduleMedicineNotifications(medicine);
+      try {
+        await _notificationService.scheduleMedicineNotifications(medicine);
+      } catch (notifErr) {
+        debugPrint('Notification scheduling notice: $notifErr');
+      }
 
       if (mounted) {
         Navigator.pop(context);

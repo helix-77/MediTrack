@@ -32,10 +32,17 @@ class NotificationService {
         // Handle notification tap if needed
       },
     );
+
+    // Request notification & exact alarm permissions on Android 13+ / 14+
+    final androidImplementation =
+        _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImplementation != null) {
+      await androidImplementation.requestNotificationsPermission();
+      await androidImplementation.requestExactAlarmsPermission();
+    }
   }
 
   Future<void> scheduleMedicineNotifications(Medicine medicine) async {
-    // Cancel existing notifications for this medicine using deterministic IDs based on medicine hash
     final baseId = medicine.id.hashCode.abs() % 100000;
     await cancelMedicineNotifications(medicine.id);
 
@@ -52,12 +59,12 @@ class NotificationService {
 
       final notificationId = baseId + i;
 
-      await _notificationsPlugin.zonedSchedule(
-        notificationId,
-        'Dose Reminder: ${medicine.name}',
-        'Time to take ${medicine.schedule.doseAmount} ${medicine.dosageForm ?? "unit(s)"} (${medicine.strength ?? ""})',
-        _nextInstanceOfTime(hour, minute),
-        const NotificationDetails(
+      await _safeZonedSchedule(
+        id: notificationId,
+        title: 'Dose Reminder: ${medicine.name}',
+        body: 'Time to take ${medicine.schedule.doseAmount} ${medicine.dosageForm ?? "unit(s)"} (${medicine.strength ?? ""})',
+        scheduledDate: _nextInstanceOfTime(hour, minute),
+        notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'dose_reminders',
             'Dose Reminders',
@@ -67,8 +74,6 @@ class NotificationService {
           ),
           iOS: DarwinNotificationDetails(),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
       );
     }
@@ -80,12 +85,12 @@ class NotificationService {
         final expiryId = baseId + 50;
         final scheduledTz = tz.TZDateTime.from(expiryNoticeDate, tz.local);
 
-        await _notificationsPlugin.zonedSchedule(
-          expiryId,
-          'Expiry Alert: ${medicine.name}',
-          'Your medicine ${medicine.name} will expire in 30 days.',
-          scheduledTz,
-          const NotificationDetails(
+        await _safeZonedSchedule(
+          id: expiryId,
+          title: 'Expiry Alert: ${medicine.name}',
+          body: 'Your medicine ${medicine.name} will expire in 30 days.',
+          scheduledDate: scheduledTz,
+          notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               'expiry_alerts',
               'Expiry Alerts',
@@ -95,8 +100,6 @@ class NotificationService {
             ),
             iOS: DarwinNotificationDetails(),
           ),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         );
       }
     }
@@ -104,28 +107,67 @@ class NotificationService {
     // 3. Schedule Refill Warning
     if (RefillCalculator.isRefillDue(medicine.quantityCurrent, medicine.schedule)) {
       final refillId = baseId + 80;
-      await _notificationsPlugin.show(
-        refillId,
-        'Refill Alert: ${medicine.name}',
-        'Low stock! You have ${medicine.quantityCurrent} remaining.',
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'refill_alerts',
-            'Refill Alerts',
-            channelDescription: 'Notifications when medicine stock is running low',
-            importance: Importance.high,
-            priority: Priority.high,
+      try {
+        await _notificationsPlugin.show(
+          refillId,
+          'Refill Alert: ${medicine.name}',
+          'Low stock! You have ${medicine.quantityCurrent} remaining.',
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'refill_alerts',
+              'Refill Alerts',
+              channelDescription: 'Notifications when medicine stock is running low',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+            iOS: DarwinNotificationDetails(),
           ),
-          iOS: DarwinNotificationDetails(),
-        ),
+        );
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _safeZonedSchedule({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails notificationDetails,
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: matchDateTimeComponents,
       );
+    } catch (_) {
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          scheduledDate,
+          notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: matchDateTimeComponents,
+        );
+      } catch (_) {}
     }
   }
 
   Future<void> cancelMedicineNotifications(String medicineId) async {
     final baseId = medicineId.hashCode.abs() % 100000;
     for (int i = 0; i < 100; i++) {
-      await _notificationsPlugin.cancel(baseId + i);
+      try {
+        await _notificationsPlugin.cancel(baseId + i);
+      } catch (_) {}
     }
   }
 
