@@ -2,19 +2,18 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Centralized Configuration for API Keys and External Services.
 class ApiConfig {
-  /// Safely retrieves Grok (xAI) API Key from environment (.env file)
-  static String get grokApiKey {
+  /// Safely retrieves Google Gemini API Key from environment (.env file)
+  static String get geminiApiKey {
     try {
-      final key = dotenv.env['GROK_API_KEY'];
-      if (key != null && key.isNotEmpty && key != 'YOUR_GROK_API_KEY_HERE') {
+      final key = dotenv.env['GEMINI_API_KEY'];
+      if (key != null && key.isNotEmpty && key != 'YOUR_GEMINI_API_KEY_HERE') {
         return key;
       }
     } catch (_) {}
     return '';
   }
 
-  /// xAI Grok API Endpoints & Models
-  static const String grokBaseUrl = 'https://api.x.ai/v1';
-  static const String grokTextModel = 'grok-2-latest';
-  static const String grokVisionModel = 'grok-2-vision-1212';
+  /// Gemini API Endpoints & Models
+  static const String geminiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+  static const String geminiModel = 'gemini-2.5-flash';
 }

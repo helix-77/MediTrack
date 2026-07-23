@@ -5,7 +5,7 @@ import '../models/buy_list_item.dart';
 import '../models/medicine.dart';
 import '../models/medicine_schedule.dart';
 import '../services/buy_list_service.dart';
-import '../services/grok_ai_service.dart';
+import '../services/gemini_ai_service.dart';
 import '../services/medicine_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -18,7 +18,7 @@ class AiAssistantScreen extends StatefulWidget {
 }
 
 class _AiAssistantScreenState extends State<AiAssistantScreen> {
-  final List<GrokChatMessage> _messages = [];
+  final List<GeminiChatMessage> _messages = [];
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
@@ -35,10 +35,10 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     super.initState();
     // Welcome message
     _messages.add(
-      GrokChatMessage(
-        role: 'assistant',
+      GeminiChatMessage(
+        role: 'model',
         content:
-            'Hello! I am your MediTrack AI Assistant powered by Grok. 🤖✨\n\nHow can I help you today?\n• Create a new medicine routine\n• Add items to your buy list\n• Analyze prescription photos\n• Answer health & medication questions',
+            'Hello! I am your MediTrack AI Assistant powered by Google Gemini. 🤖✨\n\nHow can I help you today?\n• Create a new medicine routine\n• Add items to your buy list\n• Analyze prescription photos\n• Answer health & medication questions',
       ),
     );
   }
@@ -79,7 +79,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final text = (customText ?? _textController.text).trim();
     if (text.isEmpty && _selectedImage == null) return;
 
-    final userMsg = GrokChatMessage(
+    final userMsg = GeminiChatMessage(
       role: 'user',
       content: text.isEmpty && _selectedImage != null
           ? 'Analyze prescription image'
@@ -98,8 +98,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
     _scrollToBottom();
 
-    final grokService = GrokAiService();
-    final aiResponse = await grokService.sendMessage(
+    final geminiService = GeminiAiService();
+    final aiResponse = await geminiService.sendMessage(
       history: _messages,
       userPrompt: text,
       imageFile: imageToSend,
@@ -114,7 +114,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     _scrollToBottom();
   }
 
-  Future<void> _executeAddMedicine(GrokAction action) async {
+  Future<void> _executeAddMedicine(GeminiAction action) async {
     final name = (action.data['name'] as String?) ?? 'New Medicine';
     final dosage = (action.data['dosage'] as String?) ?? '1 tablet';
     final stock = (action.data['stock'] as int?) ?? 30;
@@ -147,7 +147,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     }
   }
 
-  Future<void> _executeAddBuyItem(GrokAction action) async {
+  Future<void> _executeAddBuyItem(GeminiAction action) async {
     final name = (action.data['name'] as String?) ?? 'Grocery Item';
     final qty = (action.data['quantity'] as int?) ?? 1;
 
@@ -181,13 +181,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Grok API Key Settings'),
+        title: const Text('Gemini API Key Settings'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Paste your Grok API Key below or edit `lib/config/api_config.dart`.',
+              'Paste your Gemini API Key below or edit `.env` (as `GEMINI_API_KEY=your_key`).',
               style: TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 12),
@@ -195,8 +195,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               controller: controller,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'Grok API Key',
-                hintText: 'xai-...',
+                labelText: 'Gemini API Key',
+                hintText: 'AIzaSy...',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -217,7 +217,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 _runtimeApiKey = controller.text.trim();
               });
               Navigator.pop(ctx);
-              _showSnackbar('Grok API Key updated for this session.');
+              _showSnackbar('Gemini API Key updated for this session.');
             },
             child: const Text('Save'),
           ),
@@ -246,7 +246,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                       .copyWith(color: Colors.white),
                 ),
                 Text(
-                  'Powered by Grok API',
+                  'Powered by Google Gemini',
                   style: AppTypography.bodySmall
                       .copyWith(color: AppColors.accentPinkLight, fontSize: 11),
                 ),
@@ -257,7 +257,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: 'Grok API Key Settings',
+            tooltip: 'Gemini API Key Settings',
             onPressed: _showApiKeyDialog,
           ),
         ],
@@ -294,7 +294,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Grok is thinking...',
+                    'Gemini is thinking...',
                     style: AppTypography.bodySmall
                         .copyWith(color: AppColors.textSecondary),
                   ),
@@ -409,7 +409,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                       controller: _textController,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
-                        hintText: 'Ask Grok or command actions...',
+                        hintText: 'Ask Gemini or command actions...',
                         hintStyle: AppTypography.bodySmall,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -452,7 +452,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     );
   }
 
-  Widget _buildMessageBubble(GrokChatMessage msg) {
+  Widget _buildMessageBubble(GeminiChatMessage msg) {
     final isUser = msg.isUser;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -522,7 +522,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             ],
           ),
 
-          // Render Action Card if Grok returned an action
+          // Render Action Card if Gemini returned an action
           if (!isUser && msg.action != null) ...[
             const SizedBox(height: 8),
             _buildActionCard(msg.action!),
@@ -532,8 +532,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     );
   }
 
-  Widget _buildActionCard(GrokAction action) {
-    if (action.type == GrokActionType.addMedicine) {
+  Widget _buildActionCard(GeminiAction action) {
+    if (action.type == GeminiActionType.addMedicine) {
       final name = (action.data['name'] as String?) ?? 'Medicine';
       final dosage = (action.data['dosage'] as String?) ?? '500mg';
       final frequency = (action.data['frequency'] as String?) ?? 'Daily';
@@ -582,7 +582,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           ],
         ),
       );
-    } else if (action.type == GrokActionType.addBuyItem) {
+    } else if (action.type == GeminiActionType.addBuyItem) {
       final name = (action.data['name'] as String?) ?? 'Grocery Item';
       final qty = (action.data['quantity'] as int?) ?? 1;
 

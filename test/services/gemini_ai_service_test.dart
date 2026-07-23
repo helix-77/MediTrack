@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:meditrack/services/grok_ai_service.dart';
+import 'package:meditrack/services/gemini_ai_service.dart';
 
 void main() {
-  group('GrokAiService Parsing Tests', () {
+  group('GeminiAiService Parsing Tests', () {
     test('parseActionFromContent extracts ADD_MEDICINE action', () {
       const rawResponse = '''
 I have added Paracetamol for you. Here is the confirmation details.
@@ -21,9 +21,9 @@ I have added Paracetamol for you. Here is the confirmation details.
 ```
 ''';
 
-      final action = GrokAiService.parseActionFromContent(rawResponse);
+      final action = GeminiAiService.parseActionFromContent(rawResponse);
       expect(action, isNotNull);
-      expect(action!.type, GrokActionType.addMedicine);
+      expect(action!.type, GeminiActionType.addMedicine);
       expect(action.data['name'], 'Paracetamol');
       expect(action.data['dosage'], '500mg');
     });
@@ -41,9 +41,9 @@ Sure! Adding Vitamin C to your buy list.
 ```
 ''';
 
-      final action = GrokAiService.parseActionFromContent(rawResponse);
+      final action = GeminiAiService.parseActionFromContent(rawResponse);
       expect(action, isNotNull);
-      expect(action!.type, GrokActionType.addBuyItem);
+      expect(action!.type, GeminiActionType.addBuyItem);
       expect(action.data['name'], 'Vitamin C 1000mg');
       expect(action.data['quantity'], 2);
     });
@@ -61,35 +61,36 @@ Sure! Adding Vitamin C to your buy list.
 ```
 ''';
 
-      final cleaned = GrokAiService.cleanContentText(rawResponse);
+      final cleaned = GeminiAiService.cleanContentText(rawResponse);
       expect(cleaned, 'Sure! Adding Vitamin C to your buy list.');
     });
   });
 
-  group('GrokAiService API Tests', () {
+  group('GeminiAiService API Tests', () {
     test('sendMessage returns warning when API key is missing', () async {
-      final service = GrokAiService();
+      final service = GeminiAiService();
       final response = await service.sendMessage(
         history: [],
         userPrompt: 'Hello',
         runtimeApiKey: '',
       );
 
-      expect(response.content, contains('Grok API Key is not set'));
+      expect(response.content, contains('Gemini API Key is not set'));
     });
 
-    test('sendMessage sends POST request with Bearer authorization and parses response', () async {
+    test('sendMessage sends POST request to Gemini endpoint and parses response', () async {
       final mockClient = MockClient((request) async {
-        expect(request.url.toString(), 'https://api.x.ai/v1/chat/completions');
-        expect(request.headers['Authorization'], 'Bearer TEST_KEY_123');
+        expect(request.url.toString(), contains('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'));
+        expect(request.url.queryParameters['key'], 'TEST_GEMINI_KEY');
 
         return http.Response(
           jsonEncode({
-            'choices': [
+            'candidates': [
               {
-                'message': {
-                  'role': 'assistant',
-                  'content': 'Hello from Grok AI!'
+                'content': {
+                  'parts': [
+                    {'text': 'Hello from Gemini AI!'}
+                  ]
                 }
               }
             ]
@@ -98,14 +99,14 @@ Sure! Adding Vitamin C to your buy list.
         );
       });
 
-      final service = GrokAiService(client: mockClient);
+      final service = GeminiAiService(client: mockClient);
       final response = await service.sendMessage(
         history: [],
-        userPrompt: 'Hi Grok',
-        runtimeApiKey: 'TEST_KEY_123',
+        userPrompt: 'Hi Gemini',
+        runtimeApiKey: 'TEST_GEMINI_KEY',
       );
 
-      expect(response.content, 'Hello from Grok AI!');
+      expect(response.content, 'Hello from Gemini AI!');
     });
   });
 }
