@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import 'home_screen.dart';
-import 'calendar_routine_screen.dart';
 import 'buy_list_screen.dart';
 import 'profile_settings_screen.dart';
 import 'add_edit_medicine_screen.dart';
+import 'ai_assistant_screen.dart';
 
 class MainNavigationShell extends StatefulWidget {
   final int initialTab;
@@ -34,7 +34,7 @@ class MainNavigationShellState extends State<MainNavigationShell> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    CalendarRoutineScreen(),
+    AiAssistantScreen(),
     BuyListScreen(),
     ProfileSettingsScreen(),
   ];
@@ -87,9 +87,9 @@ class MainNavigationShellState extends State<MainNavigationShell> {
                 const SizedBox(width: 12),
                 _buildNavItem(
                   index: 1,
-                  icon: Icons.calendar_today_outlined,
-                  activeIcon: Icons.calendar_today,
-                  label: 'Routine',
+                  icon: Icons.auto_awesome_outlined,
+                  activeIcon: Icons.auto_awesome,
+                  label: 'AI Assistant',
                 ),
               ],
             ),

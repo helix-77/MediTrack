@@ -12,9 +12,9 @@ import '../theme/typography.dart';
 import '../utils/time_formatter.dart';
 import 'add_edit_medicine_screen.dart';
 import 'medicine_detail_screen.dart';
-import 'main_navigation_shell.dart';
 import 'prescription_vault_screen.dart';
 import 'scan_prescription_screen.dart';
+import 'calendar_routine_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -119,13 +119,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             GestureDetector(
                               onTap: () {
-                                MainNavigationShell.of(context)?.switchTab(1);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const CalendarRoutineScreen()),
+                                );
                               },
                               child: Text(
-                                'view all',
+                                'Calendar View',
                                 style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryGreen,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
