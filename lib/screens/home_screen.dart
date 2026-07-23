@@ -163,6 +163,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildExpiringSoonList(expiringMedicines),
                 const SizedBox(height: 24),
               ],
+
+              // All Prescriptions Section
+              Text('My Prescriptions (${medicines.length})', style: AppTypography.headingMedium),
+              const SizedBox(height: 8),
+              _buildAllPrescriptionsSection(medicines),
+              const SizedBox(height: 24),
             ],
           );
         },
@@ -301,8 +307,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            title: const Text('Delete Medicine'),
-            content: Text('Are you sure you want to delete "$medicineName"?'),
+            title: const Text('Delete Medicine Prescription'),
+            content: Text('Are you sure you want to delete "$medicineName"? This will delete the entire prescription and all its scheduled doses.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
@@ -330,14 +336,92 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _wrapWithDoseDismissible({
+    required _DoseItem item,
+    required Widget child,
+  }) {
+    return Dismissible(
+      key: Key('dose_${item.medicine.id}_${item.timeString}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: AppColors.warning,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Options',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(width: 8),
+            Icon(Icons.tune, color: Colors.white, size: 28),
+          ],
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text('${item.medicine.name} (${TimeFormatter.format24To12Hour(item.timeString)} Dose)'),
+            content: const Text('Select an option for this dose entry:'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
+                onPressed: () async {
+                  Navigator.pop(dialogContext, false);
+                  await _medicineService.updateDoseStatus(
+                    logId: item.log.id,
+                    medicineId: item.medicine.id,
+                    medicineName: item.medicine.name,
+                    status: DoseStatus.skipped,
+                    doseAmount: item.medicine.schedule.doseAmount,
+                    scheduledAt: item.log.scheduledAt,
+                  );
+                },
+                child: const Text('Skip Today\'s Dose'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+                onPressed: () {
+                  Navigator.pop(dialogContext, true);
+                },
+                child: const Text('Delete Prescription'),
+              ),
+            ],
+          ),
+        ) ?? false;
+      },
+      onDismissed: (direction) async {
+        await _medicineService.deleteMedicine(item.medicine.id);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Prescription "${item.medicine.name}" deleted'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
   Widget _buildDoseCard(_DoseItem item) {
     final isTaken = item.log.status == DoseStatus.taken;
     final isSkipped = item.log.status == DoseStatus.skipped;
+    final formattedTime = TimeFormatter.format24To12Hour(item.timeString);
+    final daysText = TimeFormatter.formatDaysOfWeek(item.medicine.schedule.daysOfWeek);
 
-    return _wrapWithDismissible(
-      key: Key('dose_${item.medicine.id}_${item.timeString}'),
-      medicineId: item.medicine.id,
-      medicineName: item.medicine.name,
+    return _wrapWithDoseDismissible(
+      item: item,
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
@@ -360,13 +444,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           title: Text(
-            item.medicine.name,
+            '${item.medicine.name} ($formattedTime Dose)',
             style: AppTypography.headingSmall.copyWith(
               decoration: isTaken ? TextDecoration.lineThrough : null,
             ),
           ),
           subtitle: Text(
-            '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit(s)"} (${item.medicine.strength ?? ""})',
+            '${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit(s)"} • $daysText',
             style: AppTypography.bodySmall,
           ),
           trailing: isTaken
@@ -450,6 +534,43 @@ class _HomeScreenState extends State<HomeScreen> {
                   leading: const Icon(Icons.error_outline_rounded, color: AppColors.danger),
                   title: Text(m.name, style: AppTypography.headingSmall),
                   subtitle: Text('Expires: ${m.expiryDate != null ? DateFormat('yyyy-MM-dd').format(m.expiryDate!) : "N/A"}'),
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildAllPrescriptionsSection(List<Medicine> medicines) {
+    return Column(
+      children: medicines
+          .map(
+            (m) => _wrapWithDismissible(
+              key: Key('all_${m.id}'),
+              medicineId: m.id,
+              medicineName: m.name,
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.medication_liquid_outlined, color: AppColors.primaryGreen),
+                  title: Text(m.name, style: AppTypography.headingSmall),
+                  subtitle: Text(
+                    '${m.schedule.doseTimes.length} dose(s)/day (${m.schedule.doseTimes.map(TimeFormatter.format24To12Hour).join(', ')}) • ${TimeFormatter.formatDaysOfWeek(m.schedule.daysOfWeek)}',
+                    style: AppTypography.bodySmall,
+                  ),
+                  trailing: Text(
+                    '${m.quantityCurrent} left',
+                    style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MedicineDetailScreen(medicineId: m.id),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

@@ -159,7 +159,9 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
                     children: [
                       _buildDetailRow('Dose Amount', '${medicine.schedule.doseAmount} ${medicine.dosageForm ?? "unit(s)"}'),
                       const Divider(),
-                      _buildDetailRow('Times per Day', '${medicine.schedule.timesPerDay} times (${medicine.schedule.doseTimes.join(", ")})'),
+                      _buildDetailRow('Dose Times', medicine.schedule.doseTimes.map(TimeFormatter.format24To12Hour).join(", ")),
+                      const Divider(),
+                      _buildDetailRow('Scheduled Days', TimeFormatter.formatDaysOfWeek(medicine.schedule.daysOfWeek)),
                       const Divider(),
                       _buildDetailRow('Expiry Date', medicine.expiryDate != null ? DateFormat('yyyy-MM-dd').format(medicine.expiryDate!) : 'Not set'),
                       if (medicine.batchNumber != null) ...[

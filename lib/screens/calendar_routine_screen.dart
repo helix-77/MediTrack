@@ -251,13 +251,13 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
           ),
         ),
         title: Text(
-          item.medicine.name,
+          '${item.medicine.name} (${TimeFormatter.format24To12Hour(item.timeString)})',
           style: AppTypography.headingSmall.copyWith(
             decoration: isTaken ? TextDecoration.lineThrough : null,
           ),
         ),
         subtitle: Text(
-          '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit(s)"}',
+          '${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit(s)"} • ${TimeFormatter.formatDaysOfWeek(item.medicine.schedule.daysOfWeek)}',
           style: AppTypography.bodySmall,
         ),
         trailing: isTaken

@@ -346,6 +346,64 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   ),
                 ],
               ),
+
+              // Days of the Week Selection
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Days of the Week', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    TimeFormatter.formatDaysOfWeek(_daysOfWeek),
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [1, 2, 3, 4, 5, 6, 7].map((day) {
+                  final isSelected = _daysOfWeek.contains(day);
+                  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                  return ChoiceChip(
+                    label: Text(dayLabels[day - 1]),
+                    selected: isSelected,
+                    selectedColor: AppColors.primaryGreen,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          if (!_daysOfWeek.contains(day)) _daysOfWeek.add(day);
+                        } else {
+                          if (_daysOfWeek.length > 1) _daysOfWeek.remove(day);
+                        }
+                        _daysOfWeek.sort();
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ActionChip(
+                    label: const Text('Everyday'),
+                    onPressed: () => setState(() => _daysOfWeek = [1, 2, 3, 4, 5, 6, 7]),
+                  ),
+                  ActionChip(
+                    label: const Text('Weekdays'),
+                    onPressed: () => setState(() => _daysOfWeek = [1, 2, 3, 4, 5]),
+                  ),
+                  ActionChip(
+                    label: const Text('Mon, Wed, Fri'),
+                    onPressed: () => setState(() => _daysOfWeek = [1, 3, 5]),
+                  ),
+                ],
+              ),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,

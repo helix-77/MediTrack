@@ -26,4 +26,28 @@ class TimeFormatter {
     final minuteStr = time.minute.toString().padLeft(2, '0');
     return '$hourStr:$minuteStr';
   }
+
+  /// Formats a list of weekday numbers (1 = Mon, 7 = Sun) into readable string ("Everyday", "Weekdays", "Mon, Wed, Fri").
+  static String formatDaysOfWeek(List<int> days) {
+    if (days.isEmpty) return 'No days selected';
+    if (days.length == 7) return 'Everyday';
+    if (days.length == 5 &&
+        days.contains(1) &&
+        days.contains(2) &&
+        days.contains(3) &&
+        days.contains(4) &&
+        days.contains(5)) {
+      return 'Weekdays (Mon-Fri)';
+    }
+    if (days.length == 2 && days.contains(6) && days.contains(7)) {
+      return 'Weekends (Sat-Sun)';
+    }
+
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final sorted = List<int>.from(days)..sort();
+    return sorted
+        .map((d) => (d >= 1 && d <= 7) ? dayNames[d - 1] : '')
+        .where((s) => s.isNotEmpty)
+        .join(', ');
+  }
 }
