@@ -46,6 +46,3 @@ app.*.map.json
 
 # Environment secrets
 .env
-
-
-All Backend code
