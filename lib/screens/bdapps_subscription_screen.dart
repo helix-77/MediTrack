@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/api_config.dart';
 import '../models/bdapps_models.dart';
 import '../services/bdapps_service.dart';
 import '../theme/colors.dart';
@@ -17,10 +18,10 @@ class _BdAppsSubscriptionScreenState extends State<BdAppsSubscriptionScreen> {
   final _otpController = TextEditingController();
   final _refNoController = TextEditingController();
 
-  // Config controllers
-  final _appIdController = TextEditingController(text: 'APP_000000');
-  final _passwordController = TextEditingController(text: 'password');
-  final _baseUrlController = TextEditingController(text: 'https://api.bdapps.com');
+  final _serverUrlController = TextEditingController(text: ApiConfig.bdAppsServerUrl);
+  final _appIdController = TextEditingController(text: ApiConfig.bdAppsAppId);
+  final _passwordController = TextEditingController(text: ApiConfig.bdAppsPassword);
+  final _baseUrlController = TextEditingController(text: 'https://developer.bdapps.com');
 
   late BdAppsService _service;
   bool _isLoading = false;
@@ -40,7 +41,10 @@ class _BdAppsSubscriptionScreenState extends State<BdAppsSubscriptionScreen> {
       password: _passwordController.text.trim(),
       baseUrl: _baseUrlController.text.trim(),
     );
-    _service = BdAppsService(config: config);
+    _service = BdAppsService(
+      config: config,
+      serverUrl: _serverUrlController.text.trim(),
+    );
   }
 
   @override
@@ -48,6 +52,7 @@ class _BdAppsSubscriptionScreenState extends State<BdAppsSubscriptionScreen> {
     _phoneController.dispose();
     _otpController.dispose();
     _refNoController.dispose();
+    _serverUrlController.dispose();
     _appIdController.dispose();
     _passwordController.dispose();
     _baseUrlController.dispose();
@@ -203,32 +208,55 @@ class _BdAppsSubscriptionScreenState extends State<BdAppsSubscriptionScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('BDApps API Credentials'),
+        title: const Text('BDApps Connection Settings'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Text(
+                'PHP Proxy Server Mode (Recommended)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              TextField(
+                controller: _serverUrlController,
+                decoration: const InputDecoration(
+                  labelText: 'PHP Backend Server URL',
+                  hintText: 'e.g. https://your-server.com/api',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Direct BDApps TAP API Mode (Fallback)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
               TextField(
                 controller: _appIdController,
                 decoration: const InputDecoration(
                   labelText: 'Application ID',
                   hintText: 'APP_000000',
+                  border: OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: 'Password / API Key',
+                  border: OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               TextField(
                 controller: _baseUrlController,
                 decoration: const InputDecoration(
-                  labelText: 'Base URL',
-                  hintText: 'https://api.bdapps.com',
+                  labelText: 'Direct BDApps Base URL',
+                  hintText: 'https://developer.bdapps.com',
+                  border: OutlineInputBorder(),
                 ),
               ),
             ],
@@ -245,9 +273,11 @@ class _BdAppsSubscriptionScreenState extends State<BdAppsSubscriptionScreen> {
               foregroundColor: Colors.white,
             ),
             onPressed: () {
-              _initService();
+              setState(() {
+                _initService();
+              });
               Navigator.pop(ctx);
-              _showSnackbar('BDApps Credentials updated.');
+              _showSnackbar('BDApps Settings updated.');
             },
             child: const Text('Save'),
           ),
@@ -283,6 +313,46 @@ class _BdAppsSubscriptionScreenState extends State<BdAppsSubscriptionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Mode Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: _service.isServerProxyMode
+                    ? AppColors.primaryGreen.withValues(alpha: 0.1)
+                    : Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _service.isServerProxyMode
+                      ? AppColors.primaryGreen
+                      : Colors.orange,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _service.isServerProxyMode ? Icons.dns : Icons.cloud_outlined,
+                    color: _service.isServerProxyMode
+                        ? AppColors.primaryGreen
+                        : Colors.orange,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _service.isServerProxyMode
+                          ? 'PHP Proxy Server Mode: ${_service.effectiveServerUrl}'
+                          : 'Direct BDApps TAP API Mode (https://developer.bdapps.com)',
+                      style: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
             // Header card
             Card(
               elevation: 0,
