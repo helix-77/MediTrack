@@ -1299,17 +1299,28 @@ img, svg {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   margin-bottom: 0.75rem;
   font-weight: 600;
 }
 
+.slider-label-text {
+  color: var(--primary-green-dark);
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
 .slider-value-badge {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--primary-green);
   background-color: var(--accent-pink-light);
-  padding: 0.25rem 0.85rem;
+  padding: 0.3rem 0.9rem;
   border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid var(--accent-pink);
 }
 
 .range-slider {
@@ -1350,6 +1361,8 @@ img, svg {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
   padding-bottom: 1rem;
   border-bottom: 1px dashed var(--border-color);
 }
