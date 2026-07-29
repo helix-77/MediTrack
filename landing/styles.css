@@ -534,6 +534,39 @@ img, svg {
   opacity: 0.95;
 }
 
+/* CTA Banner Store Button Overrides */
+.cta-banner-card .store-badge-btn.store-unreleased {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: var(--surface-white);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+}
+
+.cta-banner-card .store-badge-btn.store-unreleased:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--accent-pink);
+  transform: translateY(-2px);
+}
+
+.cta-banner-card .apk-highlight-btn {
+  background: var(--accent-pink);
+  color: var(--primary-green-dark);
+  border: 2px solid var(--accent-pink-light);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.cta-banner-card .apk-highlight-btn:hover {
+  background: var(--surface-white);
+  color: var(--primary-green-dark);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.cta-banner-card .apk-badge-tag {
+  background-color: var(--primary-green-dark);
+  color: var(--surface-white);
+}
+
 .hero-trust-bar {
   display: flex;
   align-items: center;
