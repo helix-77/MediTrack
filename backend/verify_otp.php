@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/config.php';
+
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
@@ -10,86 +12,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-$date_ = date("Y-m-d h:i:sa");
+$otp = trim($_POST['Otp'] ?? $_POST['otp'] ?? '');
+$referenceNo = trim($_POST['referenceNo'] ?? '');
 
-$user_otp = isset($_POST['Otp']) ? trim($_POST['Otp']) : '';
-$referenceNo = isset($_POST['referenceNo']) ? trim($_POST['referenceNo']) : '';
-
-if (empty($user_otp) || empty($referenceNo)) {
-    echo json_encode(array(
-        'statusCode' => 'FAILED',
-        'message' => 'Missing OTP or referenceNo',
-        'statusDetail' => 'OTP and reference number are required'
-    ));
+if ($otp === '' || $referenceNo === '') {
+    echo json_encode(['statusCode' => 'FAILED', 'message' => 'Missing OTP or referenceNo', 'statusDetail' => 'Missing OTP or referenceNo']);
     exit;
 }
 
-// Log OTP verification attempt
-try {
-    $myfile = fopen("OTP+RefNo.txt", "a+") or die("Unable to open file!");
-    fwrite($myfile, "OTP:" . $user_otp . " RefNo:" . $referenceNo . " Date:" . $date_ . "\n");
-    fclose($myfile);
-} catch (Exception $e) {
-    // Continue even if logging fails
-}
+$requestData = [
+    'applicationId' => BDAPPS_APP_ID,
+    'password' => BDAPPS_APP_PASSWORD,
+    'referenceNo' => $referenceNo,
+    'otp' => $otp
+];
 
-require_once __DIR__ . '/config.php';
-
-$requestData = array(
-    "applicationId" => BDAPPS_APP_ID,
-    "password" => BDAPPS_PASSWORD,
-    "referenceNo" => $referenceNo,
-    "otp" => $user_otp
-);
-
-$requestJson = json_encode($requestData);
-
-$url = "https://developer.bdapps.com/subscription/otp/verify";
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $url);
+$ch = curl_init('https://developer.bdapps.com/subscription/otp/verify');
 curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $requestJson);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    "Content-Type: application/json",
-    "Content-Length: " . strlen($requestJson)
-));
 curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 
 $responseJson = curl_exec($ch);
 
 if ($responseJson === false) {
     $error = curl_error($ch);
     curl_close($ch);
-    echo json_encode(array(
-        'statusCode' => 'FAILED',
-        'message' => 'Connection error: ' . $error,
-        'statusDetail' => 'Unable to connect to BDApps server'
-    ));
+    echo json_encode(['statusCode' => 'FAILED', 'message' => 'Connection error: ' . $error, 'statusDetail' => 'Unable to connect to BDApps server']);
     exit;
 }
-
 curl_close($ch);
 
 $response = json_decode($responseJson, true);
 
-if ($response === null) {
-    echo json_encode(array(
-        'statusCode' => 'FAILED',
-        'message' => 'Invalid API response',
-        'statusDetail' => 'Failed to parse BDApps response',
-        'rawResponse' => $responseJson
-    ));
+if (!is_array($response)) {
+    echo json_encode(['statusCode' => 'FAILED', 'message' => 'Invalid server response', 'statusDetail' => 'Failed to parse BDApps response']);
     exit;
 }
 
-// Return the response from BDApps
-echo json_encode(array(
-    'statusCode' => isset($response['statusCode']) ? $response['statusCode'] : 'FAILED',
-    'statusDetail' => isset($response['statusDetail']) ? $response['statusDetail'] : '',
-    'subscriptionStatus' => isset($response['subscriptionStatus']) ? $response['subscriptionStatus'] : '',
-    'subscriberId' => isset($response['subscriberId']) ? $response['subscriberId'] : '',
-    'version' => isset($response['version']) ? $response['version'] : ''
-));
-
-?>
+echo json_encode([
+    'statusCode' => $response['statusCode'] ?? 'FAILED',
+    'statusDetail' => $response['statusDetail'] ?? '',
+    'subscriptionStatus' => $response['subscriptionStatus'] ?? '',
+    'subscriberId' => $response['subscriberId'] ?? '',
+    'version' => $response['version'] ?? ''
+]);
