@@ -39,6 +39,16 @@ class BdAppsService {
   /// Whether the service is currently running in PHP Proxy Server Mode.
   bool get isServerProxyMode => effectiveServerUrl.isNotEmpty;
 
+  /// Gets the effective direct BDApps TAP API base URL.
+  String get effectiveDirectBaseUrl {
+    if (config.baseUrl.startsWith('http') &&
+        (config.baseUrl.contains('bdapps.com') ||
+            config.baseUrl.contains('developer.bdapps.com'))) {
+      return config.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    }
+    return 'https://developer.bdapps.com';
+  }
+
   /// Formats raw phone number input into BDApps `tel:8801XXXXXXXXX` format.
   static String formatSubscriberId(String rawPhone) {
     final digits = formatLocalMobile(rawPhone);
@@ -110,7 +120,7 @@ class BdAppsService {
     }
 
     // Direct BDApps TAP API Mode
-    final url = Uri.parse('${config.baseUrl}/otp/request');
+    final url = Uri.parse('$effectiveDirectBaseUrl/otp/request');
     final formattedPhone = formatSubscriberId(phoneNumber);
 
     final payload = <String, dynamic>{
@@ -197,7 +207,7 @@ class BdAppsService {
     }
 
     // Direct BDApps TAP API Mode
-    final url = Uri.parse('${config.baseUrl}/otp/verify');
+    final url = Uri.parse('$effectiveDirectBaseUrl/otp/verify');
 
     final payload = <String, dynamic>{
       'applicationId': config.applicationId,
@@ -273,7 +283,7 @@ class BdAppsService {
     }
 
     // Direct BDApps TAP API Mode
-    final url = Uri.parse('${config.baseUrl}/subscription/subscriberStatus');
+    final url = Uri.parse('$effectiveDirectBaseUrl/subscription/subscriberStatus');
     final formattedPhone = formatSubscriberId(phoneNumber);
 
     final payload = <String, dynamic>{
@@ -363,7 +373,7 @@ class BdAppsService {
     required String phoneNumber,
     required String action,
   }) async {
-    final url = Uri.parse('${config.baseUrl}/subscription/userSubscription');
+    final url = Uri.parse('$effectiveDirectBaseUrl/subscription/userSubscription');
     final formattedPhone = formatSubscriberId(phoneNumber);
 
     final payload = <String, dynamic>{

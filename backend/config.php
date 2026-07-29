@@ -6,6 +6,6 @@
  * Alternatively, these will automatically read environment variables if set on your hosting server.
  */
 
-define('BDAPPS_APP_ID', getenv('BDAPPS_APP_ID') ?: 'APP_000000');
-define('BDAPPS_PASSWORD', getenv('BDAPPS_PASSWORD') ?: 'your_password_here');
-define('BDAPPS_APP_NAME', getenv('BDAPPS_APP_NAME') ?: 'MediTrack');
+define('BDAPPS_APP_ID', trim(getenv('BDAPPS_APP_ID') ?: 'APP_139363'));
+define('BDAPPS_PASSWORD', trim(getenv('BDAPPS_PASSWORD') ?: 'y0e74fafba35bd80a3e484ca07ab43715'));
+define('BDAPPS_APP_NAME', trim(getenv('BDAPPS_APP_NAME') ?: 'MediTrack'));
