@@ -373,7 +373,7 @@ class BdAppsService {
     required String phoneNumber,
     required String action,
   }) async {
-    final url = Uri.parse('$effectiveDirectBaseUrl/subscription/userSubscription');
+    final url = Uri.parse('$effectiveDirectBaseUrl/subscription/send');
     final formattedPhone = formatSubscriberId(phoneNumber);
 
     final payload = <String, dynamic>{
