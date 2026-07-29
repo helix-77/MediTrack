@@ -36,7 +36,7 @@ class ApiConfig {
         return appId.trim();
       }
     } catch (_) {}
-    return 'APP_000000';
+    return 'APP_139363';
   }
 
   /// BDApps App Password
@@ -47,6 +47,6 @@ class ApiConfig {
         return pass.trim();
       }
     } catch (_) {}
-    return 'password';
+    return 'y0e74fafba35bd80a3e484ca07ab43715';
   }
 }
