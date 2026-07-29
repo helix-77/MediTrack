@@ -8,4 +8,4 @@
 
 define('BDAPPS_APP_ID', getenv('BDAPPS_APP_ID') ?: 'APP_000000');
 define('BDAPPS_PASSWORD', getenv('BDAPPS_PASSWORD') ?: 'your_password_here');
-define('BDAPPS_APP_NAME', getenv('BDAPPS_APP_NAME') ?: 'MediTrack Health');
+define('BDAPPS_APP_NAME', getenv('BDAPPS_APP_NAME') ?: 'MediTrack');
