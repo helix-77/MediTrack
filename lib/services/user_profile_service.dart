@@ -55,4 +55,13 @@ class UserProfileService {
       await user.updateDisplayName(profile.displayName);
     }
   }
+
+  // Update only bdMobile field
+  Future<void> updateBdMobile(String bdMobile) async {
+    final user = await _ensureAuthenticated();
+    if (user == null) throw Exception("User not authenticated");
+
+    final docRef = _firestore.collection('users').doc(user.uid).collection('profile').doc('main');
+    await docRef.set({'bdMobile': bdMobile}, SetOptions(merge: true));
+  }
 }

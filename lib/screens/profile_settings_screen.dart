@@ -24,6 +24,15 @@ class ProfileSettingsScreen extends StatefulWidget {
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final UserProfileService _profileService = UserProfileService();
   final AuthService _authService = AuthService();
+  final TextEditingController _subMobileController = TextEditingController();
+  final TextEditingController _subOtpController = TextEditingController();
+
+  @override
+  void dispose() {
+    _subMobileController.dispose();
+    _subOtpController.dispose();
+    super.dispose();
+  }
 
   /// Pattern used by the PHP backend (`backend/send_otp.php`,
   /// `backend/check_subscription.php`, etc.) for BD mobile normalisation.
@@ -499,9 +508,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         final enabled = service.hasBdMobile;
         final isChecking = service.isCheckingSubscription;
         final isUnsubscribing = service.isUnsubscribing;
+        final isSendingOtp = service.isSendingOtp;
+        final isVerifyingOtp = service.isVerifyingOtp;
         final status = service.subscriptionStatus;
+        final isRegistered = status?.toUpperCase() == 'REGISTERED';
+        final hasPendingOtp = service.pendingReferenceNo != null;
         final lastResponse = service.lastCheckSubscriptionResponse;
         final lastUnsubscribe = service.lastUnsubscribeResponse;
+
+        if (_subMobileController.text.isEmpty && mobile != null) {
+          _subMobileController.text = mobile;
+        }
 
         return Card(
           child: Padding(
@@ -520,9 +537,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  enabled
-                      ? 'Manage your BD Apps subscription lifecycle for SMS-based features.'
-                      : 'Link a BD mobile below to manage your subscription.',
+                  isRegistered
+                      ? 'You are subscribed to BD Apps daily SMS service.'
+                      : 'Subscribe via OTP to receive daily SMS medication updates.',
                   style: AppTypography.bodySmall
                       .copyWith(color: AppColors.textSecondary),
                 ),
@@ -534,77 +551,204 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 _buildInfoRow(
                     Icons.toggle_on_outlined,
                     'Subscription State',
-                    status ?? 'Unknown'),
-                if (!enabled) ...[
+                    status ?? 'UNKNOWN'),
+                const SizedBox(height: 12),
+
+                if (!isRegistered) ...[
+                  Text(
+                    'Subscribe via OTP (Robi / Airtel)',
+                    style: AppTypography.bodyMedium
+                        .copyWith(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentPinkLight.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(8),
+                  TextField(
+                    controller: _subMobileController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'BD Mobile Number',
+                      hintText: '018XXXXXXXX',
+                      prefixIcon: Icon(Icons.phone),
+                      border: OutlineInputBorder(),
+                      helperText: '11-digit Robi (018) or Airtel (016) number',
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.link, color: AppColors.primaryGreen),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'Tap the edit icon on Health & Emergency Profile to link a BD mobile.',
-                            style: TextStyle(fontSize: 12),
-                          ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isSendingOtp
+                          ? null
+                          : () async {
+                              final raw = _subMobileController.text.trim();
+                              if (raw.length != 11 || !raw.startsWith('01')) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Enter a valid 11-digit mobile number starting with 01'),
+                                    backgroundColor: AppColors.warning,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final messenger = ScaffoldMessenger.of(context);
+                              final success = await service.sendOtp(mobileNumber: raw);
+                              if (!mounted) return;
+
+                              if (success) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('OTP sent to $raw via SMS. Enter code below.'),
+                                    backgroundColor: AppColors.success,
+                                  ),
+                                );
+                              } else {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(service.errorMessage ?? 'Failed to send OTP.'),
+                                    backgroundColor: AppColors.danger,
+                                  ),
+                                );
+                              }
+                            },
+                      icon: isSendingOtp
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.sms),
+                      label: Text(isSendingOtp ? 'Sending OTP...' : 'Send OTP to Subscribe'),
+                    ),
+                  ),
+
+                  if (hasPendingOtp) ...[
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    Text(
+                      'Enter Received OTP',
+                      style: AppTypography.bodyMedium
+                          .copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _subOtpController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      decoration: const InputDecoration(
+                        labelText: 'OTP Code',
+                        hintText: '123456',
+                        prefixIcon: Icon(Icons.pin),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGreen,
                         ),
-                      ],
+                        onPressed: isVerifyingOtp
+                            ? null
+                            : () async {
+                                final code = _subOtpController.text.trim();
+                                if (code.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please enter the OTP code received via SMS'),
+                                      backgroundColor: AppColors.warning,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final messenger = ScaffoldMessenger.of(context);
+                                final bdAppsService = context.read<BdAppsService>();
+                                final ok = await service.verifyOtp(otp: code);
+                                if (!mounted) return;
+
+                                if (ok) {
+                                  final newMobile = _subMobileController.text.trim();
+                                  await _profileService.updateBdMobile(newMobile);
+
+                                  bdAppsService.updateBdMobile(newMobile);
+                                  _subOtpController.clear();
+
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Successfully subscribed to BD Apps daily service!'),
+                                      backgroundColor: AppColors.success,
+                                    ),
+                                  );
+                                } else {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(service.errorMessage ?? 'OTP verification failed.'),
+                                      backgroundColor: AppColors.danger,
+                                    ),
+                                  );
+                                }
+                              },
+                        icon: isVerifyingOtp
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.check_circle),
+                        label: Text(isVerifyingOtp ? 'Verifying...' : 'Verify OTP & Subscribe'),
+                      ),
                     ),
-                  ),
+                  ],
                 ],
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  enabled: enabled && !isChecking,
-                  leading: const Icon(Icons.refresh,
-                      color: AppColors.primaryGreen),
-                  title: const Text('Refresh Status'),
-                  subtitle: const Text(
-                      'Re-query check_subscription.php for the current lifecycle state'),
-                  trailing: isChecking
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.chevron_right,
-                          color: AppColors.primaryGreen),
-                  onTap: (enabled && !isChecking)
-                      ? service.refreshSubscriptionStatus
-                      : null,
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  enabled: enabled &&
-                      !isUnsubscribing &&
-                      (status?.toUpperCase() == 'REGISTERED'),
-                  leading: const Icon(Icons.unsubscribe,
-                      color: AppColors.danger),
-                  title: const Text('Unsubscribe from SMS Service'),
-                  subtitle: Text(
-                    status?.toUpperCase() == 'REGISTERED'
-                        ? 'Send unsubscribe.php — your number will stop receiving SMS'
-                        : 'Already unsubscribed',
-                    style: AppTypography.bodySmall,
+
+                if (enabled) ...[
+                  const Divider(),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    enabled: !isChecking,
+                    leading: const Icon(Icons.refresh,
+                        color: AppColors.primaryGreen),
+                    title: const Text('Refresh Status'),
+                    subtitle: const Text(
+                        'Re-query check_subscription.php for current lifecycle state'),
+                    trailing: isChecking
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.chevron_right,
+                            color: AppColors.primaryGreen),
+                    onTap: !isChecking
+                        ? service.refreshSubscriptionStatus
+                        : null,
                   ),
-                  trailing: isUnsubscribing
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.chevron_right,
+                  if (isRegistered)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      enabled: !isUnsubscribing,
+                      leading: const Icon(Icons.unsubscribe,
                           color: AppColors.danger),
-                  onTap: (enabled &&
-                          !isUnsubscribing &&
-                          status?.toUpperCase() == 'REGISTERED')
-                      ? () => _confirmUnsubscribe(service)
-                      : null,
-                ),
+                      title: const Text('Unsubscribe from SMS Service'),
+                      subtitle: Text(
+                        'Send unsubscribe.php — your number will stop receiving SMS',
+                        style: AppTypography.bodySmall,
+                      ),
+                      trailing: isUnsubscribing
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.chevron_right,
+                              color: AppColors.danger),
+                      onTap: !isUnsubscribing
+                          ? () => _confirmUnsubscribe(service)
+                          : null,
+                    ),
+                ],
+
                 if (lastResponse != null) ...[
                   const SizedBox(height: 8),
                   _SubscriptionResponseSummary(lastResponse),
