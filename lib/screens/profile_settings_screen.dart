@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+
+import '../features/bdapps/bd_apps_service.dart';
+import '../features/bdapps/data/models/check_subscription_response.dart';
+import '../features/bdapps/data/models/send_sms_response.dart';
+import '../features/bdapps/data/models/unsubscribe_response.dart';
 import '../models/user_profile.dart';
 import '../services/user_profile_service.dart';
 import '../services/auth_service.dart';
@@ -19,6 +25,35 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final UserProfileService _profileService = UserProfileService();
   final AuthService _authService = AuthService();
 
+  /// Pattern used by the PHP backend (`backend/send_otp.php`,
+  /// `backend/check_subscription.php`, etc.) for BD mobile normalisation.
+  static final _bdMobileRegex = RegExp(r'^01[3-9][0-9]{8}$');
+
+  /// Returns the digits-only 11-digit form on success or `null` if the
+  /// input is empty / malformed. Used both before saving to Firestore
+  /// and before mirroring into [BdAppsService] so the provider never
+  /// holds an invalid number.
+  String? _normalisedBdMobile(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+    if (!_bdMobileRegex.hasMatch(trimmed)) {
+      // Show the user a soft warning but still accept (don't block save)
+      // so they can correct later — keeps the same flow as the other
+      // fields.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('BD mobile must be 11 digits starting with 01[3-9]. Leaving empty.'),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      }
+      return null;
+    }
+    return trimmed;
+  }
+
   void _showEditProfileDialog(UserProfile currentProfile) {
     final nameController = TextEditingController(text: currentProfile.displayName);
     final bloodController = TextEditingController(text: currentProfile.bloodGroup ?? '');
@@ -27,6 +62,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     final doctorPhoneController = TextEditingController(text: currentProfile.doctorPhone ?? '');
     final emergencyNameController = TextEditingController(text: currentProfile.emergencyContactName ?? '');
     final emergencyPhoneController = TextEditingController(text: currentProfile.emergencyContactPhone ?? '');
+    final bdMobileController =
+        TextEditingController(text: currentProfile.bdMobile ?? '');
 
     showDialog(
       context: context,
@@ -72,6 +109,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(labelText: 'Emergency Phone'),
               ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: bdMobileController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'BD Mobile (for SMS service)',
+                  hintText: '01XXXXXXXXX',
+                  helperText: 'Used as the BD Apps subscriber ID for SMS / subscription actions',
+                ),
+              ),
             ],
           ),
         ),
@@ -95,10 +142,19 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 enableDoseReminders: currentProfile.enableDoseReminders,
                 enableExpiryAlerts: currentProfile.enableExpiryAlerts,
                 enableLowStockAlerts: currentProfile.enableLowStockAlerts,
+                bdMobile: _normalisedBdMobile(bdMobileController.text),
               );
 
               Navigator.pop(dialogContext);
               await _profileService.saveProfile(updated);
+              // Mirror the change into the BdAppsService so the SMS /
+              // Subscribe cards re-render immediately, without waiting
+              // for the Firestore stream to round-trip.
+              if (mounted) {
+                context
+                    .read<BdAppsService>()
+                    .updateBdMobile(updated.bdMobile);
+              }
             },
             child: const Text('Save Profile'),
           ),
@@ -126,6 +182,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 email: user?.email ?? '',
               );
 
+          // Keep [BdAppsService.bdMobile] in sync with the profile so the
+          // SMS / Subscribe cards re-render whenever the user links /
+          // unlinks a number. updateBdMobile is a no-op when the value
+          // hasn't changed, but it calls notifyListeners() when it does,
+          // which can't run from inside a build phase — defer to the
+          // post-frame callback.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            context.read<BdAppsService>().updateBdMobile(profile.bdMobile);
+          });
+
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             children: [
@@ -135,6 +202,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
               // Medical & Emergency Info Card
               _buildMedicalInfoCard(profile),
+              const SizedBox(height: 20),
+
+              // SMS Service — fire test SMS through BD Apps gateway
+              _buildSmsServiceCard(),
+              const SizedBox(height: 20),
+
+              // Subscribe Service — manage BD Apps subscription lifecycle
+              _buildSubscribeServiceCard(),
               const SizedBox(height: 20),
 
               // Notification & Preference Settings
@@ -342,6 +417,311 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
+  /// SMS service card — exposes the BD Apps SMS gateway (`sms.php` /
+  /// `send_sms.php`) to the user. Lets the user fire a test SMS at their
+  /// verified BD Apps number and observe the round-trip result.
+  Widget _buildSmsServiceCard() {
+    return Consumer<BdAppsService>(
+      builder: (context, service, _) {
+        final mobile = service.bdMobile;
+        final enabled = service.hasBdMobile;
+        final isSending = service.isSendingSms;
+        final lastResponse = service.lastSendSmsResponse;
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.sms_outlined,
+                        color: AppColors.primaryGreen),
+                    const SizedBox(width: 8),
+                    Text('SMS Service',
+                        style: AppTypography.headingMedium),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  enabled
+                      ? 'Send a test SMS through the BD Apps gateway to verify connectivity.'
+                      : 'Link a BD mobile below to enable SMS service actions.',
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  enabled: enabled && !isSending,
+                  leading: const Icon(Icons.send_outlined,
+                      color: AppColors.primaryGreen),
+                  title: const Text('Send Test SMS'),
+                  subtitle: Text(
+                    enabled
+                        ? 'Fires a test message to $mobile via send_sms.php'
+                        : 'No BD mobile linked yet',
+                    style: AppTypography.bodySmall,
+                  ),
+                  trailing: isSending
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.chevron_right,
+                          color: AppColors.primaryGreen),
+                  onTap: (!enabled || isSending)
+                      ? null
+                      : () => _showSendTestSmsDialog(mobile!),
+                ),
+                if (lastResponse != null) ...[
+                  const SizedBox(height: 8),
+                  _SmsResponseSummary(lastResponse),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Subscribe service card — exposes the BD Apps subscription lifecycle
+  /// (`check_subscription.php`, `unsubscribe.php`). Lets the user see
+  /// their REGISTERED / UNREGISTERED state, refresh it from the server,
+  /// and trigger an unsubscribe without logging out.
+  Widget _buildSubscribeServiceCard() {
+    return Consumer<BdAppsService>(
+      builder: (context, service, _) {
+        final mobile = service.bdMobile;
+        final enabled = service.hasBdMobile;
+        final isChecking = service.isCheckingSubscription;
+        final isUnsubscribing = service.isUnsubscribing;
+        final status = service.subscriptionStatus;
+        final lastResponse = service.lastCheckSubscriptionResponse;
+        final lastUnsubscribe = service.lastUnsubscribeResponse;
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.wifi_tethering,
+                        color: AppColors.primaryGreen),
+                    const SizedBox(width: 8),
+                    Text('Subscribe Service',
+                        style: AppTypography.headingMedium),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  enabled
+                      ? 'Manage your BD Apps subscription lifecycle for SMS-based features.'
+                      : 'Link a BD mobile below to manage your subscription.',
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+                const Divider(),
+                _buildInfoRow(
+                    Icons.phone_android,
+                    'BD Mobile',
+                    enabled ? mobile! : 'Not linked'),
+                _buildInfoRow(
+                    Icons.toggle_on_outlined,
+                    'Subscription State',
+                    status ?? 'Unknown'),
+                if (!enabled) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentPinkLight.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.link, color: AppColors.primaryGreen),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Tap the edit icon on Health & Emergency Profile to link a BD mobile.',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  enabled: enabled && !isChecking,
+                  leading: const Icon(Icons.refresh,
+                      color: AppColors.primaryGreen),
+                  title: const Text('Refresh Status'),
+                  subtitle: const Text(
+                      'Re-query check_subscription.php for the current lifecycle state'),
+                  trailing: isChecking
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.chevron_right,
+                          color: AppColors.primaryGreen),
+                  onTap: (enabled && !isChecking)
+                      ? service.refreshSubscriptionStatus
+                      : null,
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  enabled: enabled &&
+                      !isUnsubscribing &&
+                      (status?.toUpperCase() == 'REGISTERED'),
+                  leading: const Icon(Icons.unsubscribe,
+                      color: AppColors.danger),
+                  title: const Text('Unsubscribe from SMS Service'),
+                  subtitle: Text(
+                    status?.toUpperCase() == 'REGISTERED'
+                        ? 'Send unsubscribe.php — your number will stop receiving SMS'
+                        : 'Already unsubscribed',
+                    style: AppTypography.bodySmall,
+                  ),
+                  trailing: isUnsubscribing
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.chevron_right,
+                          color: AppColors.danger),
+                  onTap: (enabled &&
+                          !isUnsubscribing &&
+                          status?.toUpperCase() == 'REGISTERED')
+                      ? () => _confirmUnsubscribe(service)
+                      : null,
+                ),
+                if (lastResponse != null) ...[
+                  const SizedBox(height: 8),
+                  _SubscriptionResponseSummary(lastResponse),
+                ],
+                if (lastUnsubscribe != null) ...[
+                  const SizedBox(height: 4),
+                  _UnsubscribeResponseSummary(lastUnsubscribe),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showSendTestSmsDialog(String phone) async {
+    final controller = TextEditingController(
+      text: 'MediTrack test SMS — gateway round-trip OK.',
+    );
+    final service = context.read<BdAppsService>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Send Test SMS'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('To: $phone',
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textSecondary)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                maxLength: 160,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Message',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+
+    final success = await service.sendSms(message: controller.text.trim());
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'SMS dispatched via gateway.'
+            : 'SMS failed: ${service.errorMessage ?? "unknown error"}'),
+        backgroundColor:
+            success ? AppColors.success : AppColors.danger,
+      ),
+    );
+  }
+
+  Future<void> _confirmUnsubscribe(BdAppsService service) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Unsubscribe from SMS Service?'),
+        content: const Text(
+          'This sends an unsubscribe request to the BD Apps backend. '
+          'You will stop receiving MediTrack SMS on this number. '
+          'You can re-subscribe by linking the number again later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Unsubscribe'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+
+    await service.unsubscribe();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(service.subscriptionStatus == 'UNREGISTERED'
+            ? 'Unsubscribed successfully.'
+            : 'Unsubscribe attempt complete — see card for status.'),
+        backgroundColor: AppColors.success,
+      ),
+    );
+  }
+
   Widget _buildAccountActionsCard(bool isGuest, User? user) {
     return Card(
       child: Column(
@@ -377,6 +757,180 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               onTap: () async {
                 await _authService.signOut();
               },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Tiny inline summary of the last SMS round-trip. Lives next to the SMS
+/// service card so the user can see the gateway's status code / detail
+/// without opening a separate sheet.
+class _SmsResponseSummary extends StatelessWidget {
+  const _SmsResponseSummary(this.response);
+
+  final SendSmsResponse response;
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = response.isSuccess;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: (ok ? AppColors.success : AppColors.danger).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                ok ? Icons.check_circle_outline : Icons.error_outline,
+                size: 18,
+                color: ok ? AppColors.success : AppColors.danger,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                ok ? 'Gateway acknowledged send' : 'Gateway rejected send',
+                style: AppTypography.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: ok ? AppColors.success : AppColors.danger,
+                ),
+              ),
+            ],
+          ),
+          if (response.statusCode != null || response.statusDetail != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'statusCode: ${response.statusCode ?? '-'}${response.statusDetail != null ? ' · ${response.statusDetail}' : ''}',
+              style: AppTypography.bodySmall,
+            ),
+          ],
+          if (response.error != null) ...[
+            const SizedBox(height: 2),
+            Text('error: ${response.error}',
+                style: AppTypography.bodySmall),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Inline summary for a `check_subscription.php` response.
+class _SubscriptionResponseSummary extends StatelessWidget {
+  const _SubscriptionResponseSummary(this.response);
+
+  final CheckSubscriptionResponse response;
+
+  @override
+  Widget build(BuildContext context) {
+    final subscribed = response.isSubscribed;
+    final color = subscribed ? AppColors.success : AppColors.warning;
+    final status = response.subscriptionStatus;
+    final statusText =
+        (status != null && status.isNotEmpty) ? status : 'NOT REGISTERED';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                subscribed
+                    ? Icons.verified_outlined
+                    : Icons.report_gmailerrorred_outlined,
+                size: 18,
+                color: color,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                subscribed
+                    ? 'Server reports REGISTERED'
+                    : 'Server reports $statusText',
+                style: AppTypography.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          if (response.statusCode != null || response.statusDetail != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'statusCode: ${response.statusCode ?? '-'}${response.statusDetail != null ? ' · ${response.statusDetail}' : ''}',
+              style: AppTypography.bodySmall,
+            ),
+          ],
+          if (response.error != null) ...[
+            const SizedBox(height: 2),
+            Text('error: ${response.error}',
+                style: AppTypography.bodySmall),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Inline summary for an `unsubscribe.php` response.
+class _UnsubscribeResponseSummary extends StatelessWidget {
+  const _UnsubscribeResponseSummary(this.response);
+
+  final UnsubscribeResponse response;
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = response.isSuccess;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: (ok ? AppColors.success : AppColors.warning).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                ok ? Icons.check_circle_outline : Icons.help_outline,
+                size: 18,
+                color: ok ? AppColors.success : AppColors.warning,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                ok
+                    ? 'Unsubscribe acknowledged'
+                    : 'Unsubscribe attempt unclear — see status',
+                style: AppTypography.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: ok ? AppColors.success : AppColors.warning,
+                ),
+              ),
+            ],
+          ),
+          if (response.subscriptionStatus != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'subscriptionStatus: ${response.subscriptionStatus}',
+              style: AppTypography.bodySmall,
+            ),
+          ],
+          if (response.statusCode != null || response.statusDetail != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              'statusCode: ${response.statusCode ?? '-'}${response.statusDetail != null ? ' · ${response.statusDetail}' : ''}',
+              style: AppTypography.bodySmall,
             ),
           ],
         ],

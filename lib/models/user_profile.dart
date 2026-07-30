@@ -14,6 +14,13 @@ class UserProfile {
   final bool enableExpiryAlerts;
   final bool enableLowStockAlerts;
 
+  /// BD-format mobile number used as the `subscriberId` for BD Apps
+  /// SMS / subscription actions. Nullable so Firebase-only users can
+  /// still use the rest of the app without linking one. When set,
+  /// expected to match `^01[3-9][0-9]{8}$` (mirrors the validation in
+  /// the PHP backend).
+  final String? bdMobile;
+
   UserProfile({
     required this.uid,
     required this.displayName,
@@ -27,6 +34,7 @@ class UserProfile {
     this.enableDoseReminders = true,
     this.enableExpiryAlerts = true,
     this.enableLowStockAlerts = true,
+    this.bdMobile,
   });
 
   Map<String, dynamic> toMap() {
@@ -42,6 +50,7 @@ class UserProfile {
       'enableDoseReminders': enableDoseReminders,
       'enableExpiryAlerts': enableExpiryAlerts,
       'enableLowStockAlerts': enableLowStockAlerts,
+      'bdMobile': bdMobile,
     };
   }
 
@@ -60,6 +69,7 @@ class UserProfile {
       enableDoseReminders: data['enableDoseReminders'] as bool? ?? true,
       enableExpiryAlerts: data['enableExpiryAlerts'] as bool? ?? true,
       enableLowStockAlerts: data['enableLowStockAlerts'] as bool? ?? true,
+      bdMobile: data['bdMobile'] as String?,
     );
   }
 }

@@ -50,15 +50,6 @@ class UnsubscribeResponse {
   /// check the field directly. Use the getter, not the raw field.
   bool get isSuccess => statusCode == 'S1000';
 
-  /// Returns the persisted phone number form: [subscriberId] with any
-  /// leading `"tel:"` prefix removed. Returns `null` when no subscriberId
-  /// is present.
-  String? get persistedPhoneNumber {
-    final id = subscriberId;
-    if (id == null) return null;
-    return id.startsWith('tel:') ? id.substring(4) : id;
-  }
-
   factory UnsubscribeResponse.fromJson(Map<String, dynamic> json) {
     return UnsubscribeResponse(
       success: _parseBool(json['success']),

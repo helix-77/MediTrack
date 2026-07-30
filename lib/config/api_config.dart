@@ -19,5 +19,5 @@ class ApiConfig {
 
   /// BD Apps backend base URL — the PHP endpoints under /backend/ are hosted
   /// here. All auth/subscription requests are POSTed to paths under this URL.
-  static const String bdappsBaseUrl = 'https://www.bdappsdigitalapps.com/NADB26067';
+  static const String bdappsBaseUrl = 'https://www.bdappsdigitalapps.com/NADB26067/';
 }
