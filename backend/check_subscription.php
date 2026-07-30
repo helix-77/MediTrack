@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/config.php';
+require_once 'config.php';
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
@@ -12,17 +12,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-function bdapps_normalize_mobile($raw) {
+function meditrack_normalize_mobile($raw) {
     $digits = preg_replace('/\D+/', '', $raw);
-    if (strpos($digits, '880') === 0 && strlen($digits) === 13) {
+    if (strlen($digits) === 13 && substr($digits, 0, 3) === '880') {
         $digits = '0' . substr($digits, 3);
-    } elseif (strpos($digits, '88') === 0 && strlen($digits) === 12) {
+    } elseif (strlen($digits) === 12 && substr($digits, 0, 2) === '88') {
         $digits = '0' . substr($digits, 2);
     }
     return $digits;
 }
 
-$digits = bdapps_normalize_mobile($_POST['user_mobile'] ?? '');
+$digits = meditrack_normalize_mobile($_POST['user_mobile'] ?? '');
 
 if (!preg_match('/^01[3-9][0-9]{8}$/', $digits)) {
     echo json_encode(['error' => 'Invalid mobile number format']);
@@ -32,10 +32,10 @@ if (!preg_match('/^01[3-9][0-9]{8}$/', $digits)) {
 $subscriberId = 'tel:88' . $digits;
 
 $requestData = [
-    'version' => '1.0',
+    'version'       => '1.0',
     'applicationId' => BDAPPS_APP_ID,
-    'password' => BDAPPS_APP_PASSWORD,
-    'subscriberId' => $subscriberId
+    'password'      => BDAPPS_APP_PASSWORD,
+    'subscriberId'  => $subscriberId
 ];
 
 $ch = curl_init('https://developer.bdapps.com/subscription/getStatus');
@@ -65,9 +65,9 @@ $status = strtoupper(trim($response['subscriptionStatus'] ?? ''));
 
 echo json_encode([
     'subscriptionStatus' => $status,
-    'isSubscribed' => $status === 'REGISTERED',
-    'statusCode' => $response['statusCode'] ?? null,
-    'statusDetail' => $response['statusDetail'] ?? null,
-    'version' => $response['version'] ?? null,
-    'subscriberId' => $subscriberId
+    'isSubscribed'       => $status === 'REGISTERED',
+    'statusCode'         => $response['statusCode'] ?? null,
+    'statusDetail'       => $response['statusDetail'] ?? null,
+    'version'            => $response['version'] ?? null,
+    'subscriberId'       => $subscriberId
 ]);

@@ -1,76 +1,45 @@
 <?php
 
-ini_set('error_log', 'sms-app-error.log');
-require_once __DIR__ . '/config.php';
-require 'sdk_file.php';
+/**
+ * MO/MT SMS gateway endpoint for MediTrack.
+ *
+ * Carriers deliver inbound MO SMS here. We log the message and reply with a
+ * generic MT acknowledging receipt. The actual delivery of medicine
+ * reminders is scheduled from the Flutter client (notifications_service)
+ * rather than this gateway, so the MT reply is intentionally minimal.
+ */
 
+require_once 'config.php';
 
-$appid = BDAPPS_APP_ID;
-$apppassword = BDAPPS_PASSWORD;
-$logger = new Logger();
+$logger = fopen('sms_log.txt', 'a');
 
-try{
-    
-    $myfile = fopen("report.txt", "a+") or die("Unable to open file!");
-    $unregFile = fopen("unreg.txt", "a+") or die("Unable to open file!");
-	// Creating a receiver and intialze it with the incomming data
-	$receiver = new SMSReceiver(file_get_contents('php://input'));
-	$sender = new SmsSender("https://developer.bdapps.com/sms/send", $appid,$apppassword);
-	
-	//Creating a sender
-	
-	$message = $receiver->getMessage(); // Get the message sent to the app
-	$address = $receiver->getAddress();	// Get the phone no from which the message was sent 
-	
-	$sender->setencoding('8');
-	$x =$sender->broadcast($message);
+try {
+    $receiver = new SMSReceiver();
+    $sender   = new SMSSender(
+        'https://developer.bdapps.com/sms/send',
+        BDAPPS_APP_ID,
+        BDAPPS_APP_PASSWORD
+    );
+    $sender->setencoding('8');
 
-	
-		file_put_contents("Maskednumber_from_SMS.txt",$address);
-      $a = explode(" ", $message);
-      $b=" ";
-		for($i=1;$i<sizeof($a);$i++)
-		{
-            $b=$b.' '.$a[$i];
-		}
-	$message =$b;
-    $message = trim($message);
-    
-    
-    
+    $address    = $receiver->getAddress();
+    $rawMessage = trim($receiver->getMessage());
 
-	   
-	   
-	   
-    
+    $parts   = explode(' ', $rawMessage);
+    array_shift($parts);
+    $message = trim(implode(' ', $parts));
 
-	
-	
-	
-	//$logger->WriteLog($receiver->getAddress());
-	
-//	$address="tel:NTI5ODc4NDdjODBmNGMxZjI5YzMwMDAzZjE1MTMwZjIyYTMzYzRjOTE3ODU0MDVlMmE4ZTBmMjRiMzYyNzgxMTpyb2Jp";
+    // Reply with an acknowledgement so the carrier stops retrying.
+    $sender->sms(
+        'MT: MediTrack received your message. We will get back to you shortly. [' . $message . '(MO)]',
+        $address
+    );
 
-
-		//---------- 	Send a SMS to a particular user
-			$response=$sender->sms("MT: your msg is [".$newMessage."(MO)]- Reaz", $address);
-			
-				file_put_contents("res.txt",$response);
-		//	$response=$sender->sms("MT free msg", $address);
-			
-
-    fwrite($myfile,date("Y-m-d",time())." , ". $address ." , ".$message."\n");
-    
-   //subscription status checking
-   
-         
-    
+    fwrite($logger, date('Y-m-d') . ' | ' . $address . ' | ' . $message . "\n");
+} catch (SMSServiceException $e) {
+    // Surface the SDK error to the log; never echo a non-S1000 reply so the
+    // carrier treats the delivery as failed.
+    fwrite($logger, date('Y-m-d H:i:s') . ' | ERROR ' . $e->getErrorCode() . ' ' . $e->getErrorMessage() . "\n");
 }
 
-
-catch(SMSServiceException $e){
-	$logger->WriteLog($e->getErrorCode()." ".$e->getErrorMessage()."\n");
-}
-
-
-?>
+fclose($logger);

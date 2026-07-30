@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/config.php';
+require_once 'config.php';
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
@@ -12,10 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-function bdapps_normalize_mobile($raw) {
+function meditrack_normalize_mobile($raw) {
     $digits = preg_replace('/\D+/', '', $raw);
-    if (strlen($digits) === 13 && substr($digits, 0, 2) === '88') {
-        $digits = substr($digits, 2);
+    if (strlen($digits) === 13 && substr($digits, 0, 3) === '880') {
+        $digits = '0' . substr($digits, 3);
+    } elseif (strlen($digits) === 12 && substr($digits, 0, 2) === '88') {
+        $digits = '0' . substr($digits, 2);
     }
     return $digits;
 }
@@ -27,9 +29,9 @@ if ($rawMobile === '') {
     exit;
 }
 
-$digits = bdapps_normalize_mobile($rawMobile);
+$digits = meditrack_normalize_mobile($rawMobile);
 
-if (strlen($digits) !== 11 || $digits[0] !== '0') {
+if (!preg_match('/^01[3-9][0-9]{8}$/', $digits)) {
     echo json_encode(['error' => 'Invalid mobile format']);
     exit;
 }
@@ -38,10 +40,10 @@ $subscriberId = 'tel:88' . $digits;
 
 $requestData = [
     'applicationId' => BDAPPS_APP_ID,
-    'password' => BDAPPS_APP_PASSWORD,
-    'subscriberId' => $subscriberId,
-    'version' => '1.0',
-    'action' => '0'
+    'password'      => BDAPPS_APP_PASSWORD,
+    'subscriberId'  => $subscriberId,
+    'version'       => '1.0',
+    'action'        => '0'
 ];
 
 $ch = curl_init('https://developer.bdapps.com/subscription/send');
@@ -67,13 +69,13 @@ if (!is_array($response)) {
     exit;
 }
 
-$statusCode = strtoupper((string)($response['statusCode'] ?? ''));
+$statusCode         = strtoupper((string)($response['statusCode'] ?? ''));
 $subscriptionStatus = strtoupper((string)($response['subscriptionStatus'] ?? 'UNKNOWN'));
 
 echo json_encode([
-    'success' => $statusCode === 'S1000' || $subscriptionStatus === 'UNREGISTERED',
-    'subscriberId' => $subscriberId,
-    'statusCode' => $response['statusCode'] ?? null,
-    'statusDetail' => $response['statusDetail'] ?? null,
-    'subscriptionStatus' => $response['subscriptionStatus'] ?? null
+    'success'             => $statusCode === 'S1000' || $subscriptionStatus === 'UNREGISTERED',
+    'subscriberId'        => $subscriberId,
+    'statusCode'          => $response['statusCode']         ?? null,
+    'statusDetail'        => $response['statusDetail']       ?? null,
+    'subscriptionStatus'  => $response['subscriptionStatus'] ?? null
 ]);

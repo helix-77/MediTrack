@@ -1,41 +1,26 @@
-<?php 
+<?php
 
-ini_set('error_log', 'ussd-app-error.log');
-require 'sdk_file.php';
+/**
+ * Server-pushed subscription lifecycle callback.
+ *
+ * BD Apps POSTs the JSON body here whenever a user subscribes / unsubscribes
+ * via USSD or carrier billing. We acknowledge with S1000 so BD Apps doesn't
+ * retry, and append the raw event to a log file for later inspection.
+ */
 
-      
-      
 date_default_timezone_set("Asia/Dhaka");
-$date_= date("Y-m-d h:i:sa");
 
-    
-$myfile = fopen("FSubNoti.txt", "a+") or die("Unable to open file!");
- fwrite($myfile,$date_."\n");
-    
-    
+$data = json_decode(file_get_contents('php://input'));
 
+$timeStamp     = $data->timeStamp     ?? '';
+$status        = $data->status        ?? '';
+$applicationId = $data->applicationId ?? '';
+$subscriberId  = $data->subscriberId  ?? '';
 
-function readSMSNotification() {
-    $body = file_get_contents('php://input');
-       
-    $response = json_decode($body);
-       
-    $timeStamp = $response->timeStamp;
-    $status = $response->status;
-    $applicationId = $response->applicationId;
-    $subscriberId = $response->subscriberId;
-    $frequency = $response->frequency;
-    
-    $myfile = fopen("FuncSubNoti.txt", "a+") or die("Unable to open file!");
-    fwrite($myfile,"TimeStamp:".$timeStamp." |Status:".$status." |App Id:".$applicationId." |SubscriberId".$subscriberId. "\n");
-}
+$log = date('Y-m-d H:i:s')
+    . " | TimeStamp:$timeStamp | Status:$status | AppId:$applicationId | SubscriberId:$subscriberId\n";
 
+file_put_contents('subscription_notifications.log', $log, FILE_APPEND);
 
-readSMSNotification();
-
-
-
-
-        
-
-?>
+header('Content-Type: application/json');
+echo json_encode(['statusCode' => 'S1000', 'statusDetail' => 'Notification received']);
