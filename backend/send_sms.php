@@ -44,15 +44,13 @@ if ($message === '') {
 
 $subscriberId = 'tel:88' . $digits;
 
-// Forward to the BD Apps SMS send endpoint via curl, matching the same
-// pattern used by check_subscription.php / unsubscribe.php so we don't
-// need the BD Apps PHP SDK to be deployed alongside this folder.
+// BD Apps SMS Send API requires destinationAddresses array AND subscriberId for single target compatibility
 $requestData = [
-    'applicationId' => BDAPPS_APP_ID,
-    'password'      => BDAPPS_APP_PASSWORD,
-    'subscriberId'  => $subscriberId,
-    'message'       => $message,
-    'encoding'      => '8',
+    'applicationId'        => BDAPPS_APP_ID,
+    'password'             => BDAPPS_APP_PASSWORD,
+    'subscriberId'         => $subscriberId,
+    'destinationAddresses' => [$subscriberId],
+    'message'              => $message,
 ];
 
 $ch = curl_init('https://developer.bdapps.com/sms/send');
@@ -70,10 +68,10 @@ curl_close($ch);
 if ($responseJson === false) {
     http_response_code(502);
     echo json_encode([
-        'success'    => false,
-        'error'      => 'Connection failed: ' . $curlError,
+        'success'      => false,
+        'error'        => 'Connection failed: ' . $curlError,
         'subscriberId' => $subscriberId,
-        'message'    => $message,
+        'message'      => $message,
     ]);
     exit;
 }
