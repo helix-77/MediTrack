@@ -38,10 +38,14 @@ if (!preg_match('/^01[3-9][0-9]{8}$/', $digits)) {
 
 $subscriberId = 'tel:88' . $digits;
 
+// BD Apps requires applicationMetaData in subscription OTP request payload
 $requestData = [
-    'applicationId' => BDAPPS_APP_ID,
-    'password'      => BDAPPS_APP_PASSWORD,
-    'subscriberId'  => $subscriberId,
+    'applicationId'       => BDAPPS_APP_ID,
+    'password'            => BDAPPS_APP_PASSWORD,
+    'subscriberId'        => $subscriberId,
+    'applicationMetaData' => [
+        'client' => 'MOBILE_APP'
+    ]
 ];
 
 $ch = curl_init('https://developer.bdapps.com/subscription/otp/request');

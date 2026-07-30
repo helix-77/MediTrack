@@ -27,10 +27,13 @@ if ($otp === '' || $referenceNo === '') {
 }
 
 $requestData = [
-    'applicationId' => BDAPPS_APP_ID,
-    'password'      => BDAPPS_APP_PASSWORD,
-    'referenceNo'   => $referenceNo,
-    'otp'           => $otp
+    'applicationId'       => BDAPPS_APP_ID,
+    'password'            => BDAPPS_APP_PASSWORD,
+    'referenceNo'         => $referenceNo,
+    'otp'                 => $otp,
+    'applicationMetaData' => [
+        'client' => 'MOBILE_APP'
+    ]
 ];
 
 $ch = curl_init('https://developer.bdapps.com/subscription/otp/verify');
