@@ -871,6 +871,16 @@ class _SubscriptionResponseSummary extends StatelessWidget {
               style: AppTypography.bodySmall,
             ),
           ],
+          if (response.statusCode == 'E1325') ...[
+            const SizedBox(height: 4),
+            Text(
+              'Note: BD Apps requires an active Robi (018) or Airtel (016) mobile number.',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
           if (response.error != null) ...[
             const SizedBox(height: 2),
             Text('error: ${response.error}',
