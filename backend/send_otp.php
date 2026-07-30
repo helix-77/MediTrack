@@ -14,37 +14,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 function bdapps_normalize_mobile($raw) {
     $digits = preg_replace('/\D+/', '', $raw);
-    if (strlen($digits) === 13 && substr($digits, 0, 3) === '880') {
+    if (strpos($digits, '880') === 0 && strlen($digits) === 13) {
         $digits = '0' . substr($digits, 3);
-    } elseif (strlen($digits) === 12 && substr($digits, 0, 2) === '88') {
+    } elseif (strpos($digits, '88') === 0 && strlen($digits) === 12) {
         $digits = '0' . substr($digits, 2);
     }
     return $digits;
 }
 
-$rawMobile = trim($_POST['user_mobile'] ?? $_POST['subscriberId'] ?? '');
-$digits = bdapps_normalize_mobile($rawMobile);
+$digits = bdapps_normalize_mobile($_POST['user_mobile'] ?? $_POST['subscriberId'] ?? '');
 
 if (!preg_match('/^01[3-9][0-9]{8}$/', $digits)) {
-    http_response_code(400);
     echo json_encode([
-        'success'      => false,
-        'error'        => 'Invalid mobile number format. BD Apps requires a valid 11-digit mobile number.',
-        'statusCode'   => 'E1325',
-        'statusDetail' => 'Invalid mobile number format'
+        'success'     => false,
+        'message'     => 'Invalid mobile number format. BD Apps requires a valid 11-digit mobile number.',
+        'referenceNo' => null,
+        'statusCode'  => 'E1325',
     ]);
     exit;
 }
 
 $subscriberId = 'tel:88' . $digits;
 
-// BD Apps requires applicationMetaData in subscription OTP request payload
 $requestData = [
-    'applicationId'       => BDAPPS_APP_ID,
-    'password'            => BDAPPS_APP_PASSWORD,
-    'subscriberId'        => $subscriberId,
+    'applicationId'   => BDAPPS_APP_ID,
+    'password'        => BDAPPS_APP_PASSWORD,
+    'subscriberId'    => $subscriberId,
+    'applicationHash' => 'MediTrack',
     'applicationMetaData' => [
-        'client' => 'MOBILE_APP'
+        'client'  => 'MOBILEAPP',
+        'device'  => 'Samsung S10',
+        'os'      => 'android 8',
+        'appCode' => 'https://play.google.com/store/apps/details?id=com.meditrack.app'
     ]
 ];
 
@@ -56,40 +57,51 @@ curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 
 $responseJson = curl_exec($ch);
-$curlError = curl_error($ch);
-curl_close($ch);
 
 if ($responseJson === false) {
-    http_response_code(502);
+    $error = curl_error($ch);
+    curl_close($ch);
     echo json_encode([
-        'success'      => false,
-        'error'        => 'Connection failed: ' . $curlError,
-        'statusCode'   => 'E1000',
-        'statusDetail' => 'Connection failed: ' . $curlError
+        'success'     => false,
+        'message'     => 'Connection error: ' . $error,
+        'referenceNo' => null,
+        'statusCode'  => 'E1000',
     ]);
     exit;
 }
+curl_close($ch);
 
 $response = json_decode($responseJson, true);
+
 if (!is_array($response)) {
     echo json_encode([
-        'success'      => false,
-        'error'        => 'Invalid response from BD Apps gateway',
-        'statusCode'   => 'E1000',
-        'statusDetail' => 'Invalid JSON from BD Apps'
+        'success'     => false,
+        'message'     => 'Invalid server response',
+        'referenceNo' => null,
+        'statusCode'  => 'E1000',
     ]);
     exit;
 }
 
-$statusCode   = $response['statusCode'] ?? null;
-$statusDetail = $response['statusDetail'] ?? null;
-$referenceNo  = $response['referenceNo'] ?? null;
+$referenceNo = trim((string)($response['referenceNo'] ?? ''));
+
+if ($referenceNo !== '') {
+    echo json_encode([
+        'success'      => true,
+        'referenceNo'  => $referenceNo,
+        'subscriberId' => $subscriberId,
+        'statusCode'   => $response['statusCode'] ?? '',
+        'statusDetail' => $response['statusDetail'] ?? '',
+        'version'      => $response['version'] ?? ''
+    ]);
+    exit;
+}
 
 echo json_encode([
-    'success'      => $statusCode === 'S1000',
-    'referenceNo'  => $referenceNo,
-    'subscriberId' => $subscriberId,
-    'statusCode'   => $statusCode,
-    'statusDetail' => $statusDetail,
-    'version'      => $response['version'] ?? '1.0',
+    'success'      => false,
+    'message'      => $response['statusDetail'] ?? 'OTP reference not returned',
+    'referenceNo'  => null,
+    'statusCode'   => $response['statusCode'] ?? '',
+    'statusDetail' => $response['statusDetail'] ?? '',
+    'subscriberId' => $subscriberId
 ]);

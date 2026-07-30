@@ -26,7 +26,7 @@ class SendOtpResponse {
       statusCode: json['statusCode'] as String?,
       statusDetail: json['statusDetail'] as String?,
       version: json['version'] as String?,
-      error: json['error'] as String?,
+      error: (json['error'] as String?) ?? (json['message'] as String?),
     );
   }
 }
