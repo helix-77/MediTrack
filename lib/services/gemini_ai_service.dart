@@ -93,6 +93,10 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
     File? imageFile,
   }) async {
     try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+      }
+
       final model = _getModel();
       final hasImage = imageFile != null && imageFile.existsSync();
 

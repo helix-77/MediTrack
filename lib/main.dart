@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart';
+
 import 'config/api_config.dart';
 import 'core/network/dio_client.dart';
 import 'features/bdapps/bd_apps_service.dart';
@@ -27,13 +30,26 @@ void main() async {
   }
 
   // Initialize Firebase
-
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-      );
+    );
   } catch (e) {
     debugPrint('Firebase init notice: $e');
+  }
+
+  // Initialize Firebase App Check
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kDebugMode
+          ? AndroidProvider.debug
+          : AndroidProvider.playIntegrity,
+      appleProvider: kDebugMode
+          ? AppleProvider.debug
+          : AppleProvider.deviceCheck,
+    );
+  } catch (e) {
+    debugPrint('App Check init notice: $e');
   }
 
   // Initialize Local Notifications
