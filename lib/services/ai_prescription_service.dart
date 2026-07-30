@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import '../firebase_options.dart';
 
 /// Service for analyzing prescriptions and medicine labels using Firebase AI Logic.
@@ -16,7 +18,10 @@ class AIPrescriptionService {
     }
 
     // Initialize Gemini Developer API backend service using Google AI backend and gemini-2.5-flash model.
-    _model = FirebaseAI.googleAI().generativeModel(model: 'gemini-2.5-flash');
+    _model = FirebaseAI.googleAI(
+      auth: FirebaseAuth.instance,
+      appCheck: FirebaseAppCheck.instance,
+    ).generativeModel(model: 'gemini-2.5-flash');
   }
 
   /// Analyzes a prescription image or medicine label provided as raw bytes.

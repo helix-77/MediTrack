@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -79,9 +80,12 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
   GenerativeModel _getModel() {
     if (_customModel != null) return _customModel;
 
-    final googleAI = FirebaseAI.googleAI(auth: FirebaseAuth.instance);
+    final googleAI = FirebaseAI.googleAI(
+      auth: FirebaseAuth.instance,
+      appCheck: FirebaseAppCheck.instance,
+    );
     return googleAI.generativeModel(
-      model: 'gemini-flash-latest',
+      model: 'gemini-2.5-flash',
       systemInstruction: Content.system(_systemInstructionText),
     );
   }
