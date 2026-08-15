@@ -9,6 +9,7 @@ import '../services/notification_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../utils/time_formatter.dart';
+import '../logic/ocr_parser.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicine;
@@ -41,21 +42,42 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   bool _isSaving = false;
   bool _isOcrScanning = false;
 
-  final List<String> _dosageForms = ['tablet', 'syrup', 'injection', 'drops', 'inhaler', 'other'];
+  final List<String> _dosageForms = [
+    'tablet',
+    'syrup',
+    'injection',
+    'drops',
+    'inhaler',
+    'other',
+  ];
 
   @override
   void initState() {
     super.initState();
     final med = widget.medicine;
     _nameController = TextEditingController(text: med?.name ?? '');
-    _genericNameController = TextEditingController(text: med?.genericName ?? '');
+    _genericNameController = TextEditingController(
+      text: med?.genericName ?? '',
+    );
     _strengthController = TextEditingController(text: med?.strength ?? '');
-    _quantityCurrentController = TextEditingController(text: med?.quantityCurrent.toString() ?? '30');
-    _quantityTotalController = TextEditingController(text: med?.quantityTotal.toString() ?? '30');
-    _batchNumberController = TextEditingController(text: med?.batchNumber ?? '');
-    _manufacturerController = TextEditingController(text: med?.manufacturer ?? '');
-    _lowStockThresholdController = TextEditingController(text: med?.lowStockThreshold.toString() ?? '5');
-    _doseAmountController = TextEditingController(text: med?.schedule.doseAmount.toString() ?? '1');
+    _quantityCurrentController = TextEditingController(
+      text: med?.quantityCurrent.toString() ?? '30',
+    );
+    _quantityTotalController = TextEditingController(
+      text: med?.quantityTotal.toString() ?? '30',
+    );
+    _batchNumberController = TextEditingController(
+      text: med?.batchNumber ?? '',
+    );
+    _manufacturerController = TextEditingController(
+      text: med?.manufacturer ?? '',
+    );
+    _lowStockThresholdController = TextEditingController(
+      text: med?.lowStockThreshold.toString() ?? '5',
+    );
+    _doseAmountController = TextEditingController(
+      text: med?.schedule.doseAmount.toString() ?? '1',
+    );
 
     if (med != null) {
       _dosageForm = med.dosageForm ?? 'tablet';
@@ -86,63 +108,52 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
     setState(() => _isOcrScanning = true);
 
+    final textRecognizer = TextRecognizer();
     try {
       final inputImage = InputImage.fromFilePath(image.path);
-      final textRecognizer = TextRecognizer();
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-      await textRecognizer.close();
+      final recognizedText = await textRecognizer.processImage(inputImage);
+      final lines = [
+        for (final block in recognizedText.blocks)
+          for (final line in block.lines)
+            OcrTextLine(
+              text: line.text,
+              boundingBoxHeight: line.boundingBox.height.toDouble(),
+            ),
+      ];
 
-      _applyOcrHeuristics(recognizedText.text);
+      _applyOcrResult(MedicineBoxOcrParser.parse(lines));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OCR scanned successfully! Please review pre-filled data.')),
+          const SnackBar(
+            content: Text(
+              'OCR scanned successfully! Please review pre-filled data.',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('OCR scan error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('OCR scan error: $e')));
       }
     } finally {
+      await textRecognizer.close();
       if (mounted) setState(() => _isOcrScanning = false);
     }
   }
 
-  void _applyOcrHeuristics(String rawText) {
-    final lines = rawText.split('\n');
-
-    // Expiry date pattern
-    final expRegex = RegExp(r'(?:exp|expiry|exp date|use before)?\s*(\d{2}[/-]\d{2}[/-]\d{4}|\d{2}[/-]\d{4})', caseSensitive: false);
-    final batchRegex = RegExp(r'(?:batch|b\.no|lot)\s*[:.]?\s*([A-Za-z0-9-]+)', caseSensitive: false);
-
-    for (var line in lines) {
-      final expMatch = expRegex.firstMatch(line);
-      if (expMatch != null && _expiryDate == null) {
-        final dateStr = expMatch.group(1);
-        if (dateStr != null) {
-          try {
-            if (dateStr.contains('/')) {
-              final parts = dateStr.split('/');
-              if (parts.length == 3) {
-                _expiryDate = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
-              } else if (parts.length == 2) {
-                _expiryDate = DateTime(int.parse(parts[1]), int.parse(parts[0]), 1);
-              }
-            }
-          } catch (_) {}
-        }
-      }
-
-      final batchMatch = batchRegex.firstMatch(line);
-      if (batchMatch != null && _batchNumberController.text.isEmpty) {
-        _batchNumberController.text = batchMatch.group(1) ?? '';
-      }
+  void _applyOcrResult(MedicineBoxOcrResult result) {
+    if (_nameController.text.trim().isEmpty && result.nameCandidate != null) {
+      _nameController.text = result.nameCandidate!;
     }
-
-    if (_nameController.text.isEmpty && lines.isNotEmpty) {
-      _nameController.text = lines.first.trim();
+    if (_batchNumberController.text.trim().isEmpty &&
+        result.batchNumber != null) {
+      _batchNumberController.text = result.batchNumber!;
+    }
+    if (_expiryDate == null && result.expiryDate != null) {
+      setState(() => _expiryDate = result.expiryDate);
     }
   }
 
@@ -156,14 +167,22 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       final medicine = Medicine(
         id: medId,
         name: _nameController.text.trim(),
-        genericName: _genericNameController.text.trim().isEmpty ? null : _genericNameController.text.trim(),
+        genericName: _genericNameController.text.trim().isEmpty
+            ? null
+            : _genericNameController.text.trim(),
         dosageForm: _dosageForm,
-        strength: _strengthController.text.trim().isEmpty ? null : _strengthController.text.trim(),
+        strength: _strengthController.text.trim().isEmpty
+            ? null
+            : _strengthController.text.trim(),
         quantityCurrent: int.tryParse(_quantityCurrentController.text) ?? 30,
         quantityTotal: int.tryParse(_quantityTotalController.text) ?? 30,
         expiryDate: _expiryDate,
-        batchNumber: _batchNumberController.text.trim().isEmpty ? null : _batchNumberController.text.trim(),
-        manufacturer: _manufacturerController.text.trim().isEmpty ? null : _manufacturerController.text.trim(),
+        batchNumber: _batchNumberController.text.trim().isEmpty
+            ? null
+            : _batchNumberController.text.trim(),
+        manufacturer: _manufacturerController.text.trim().isEmpty
+            ? null
+            : _manufacturerController.text.trim(),
         lowStockThreshold: int.tryParse(_lowStockThresholdController.text) ?? 5,
         schedule: MedicineSchedule(
           doseAmount: int.tryParse(_doseAmountController.text) ?? 1,
@@ -188,9 +207,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save medicine: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save medicine: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -207,7 +226,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         actions: [
           IconButton(
             icon: _isOcrScanning
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.center_focus_strong),
             tooltip: 'Scan Medicine Box',
             onPressed: _isOcrScanning ? null : _scanBoxPhoto,
@@ -227,12 +250,16 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Medicine Name *'),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Please enter medicine name' : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? 'Please enter medicine name'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _genericNameController,
-                decoration: const InputDecoration(labelText: 'Generic Name (e.g. Paracetamol)'),
+                decoration: const InputDecoration(
+                  labelText: 'Generic Name (e.g. Paracetamol)',
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -242,16 +269,24 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                       initialValue: _dosageForm,
                       decoration: const InputDecoration(labelText: 'Form'),
                       items: _dosageForms
-                          .map((f) => DropdownMenuItem(value: f, child: Text(f.toUpperCase())))
+                          .map(
+                            (f) => DropdownMenuItem(
+                              value: f,
+                              child: Text(f.toUpperCase()),
+                            ),
+                          )
                           .toList(),
-                      onChanged: (val) => setState(() => _dosageForm = val ?? 'tablet'),
+                      onChanged: (val) =>
+                          setState(() => _dosageForm = val ?? 'tablet'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
                       controller: _strengthController,
-                      decoration: const InputDecoration(labelText: 'Strength (e.g. 500 mg)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Strength (e.g. 500 mg)',
+                      ),
                     ),
                   ),
                 ],
@@ -263,8 +298,13 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     child: TextFormField(
                       controller: _quantityCurrentController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Current Quantity *'),
-                      validator: (val) => val == null || int.tryParse(val) == null ? 'Enter valid number' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Current Quantity *',
+                      ),
+                      validator: (val) =>
+                          val == null || int.tryParse(val) == null
+                          ? 'Enter valid number'
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -272,7 +312,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     child: TextFormField(
                       controller: _lowStockThresholdController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Low Stock Alert'),
+                      decoration: const InputDecoration(
+                        labelText: 'Low Stock Alert',
+                      ),
                     ),
                   ),
                 ],
@@ -287,11 +329,16 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                       : 'No expiry date set',
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.calendar_month, color: AppColors.primaryGreen),
+                  icon: const Icon(
+                    Icons.calendar_month,
+                    color: AppColors.primaryGreen,
+                  ),
                   onPressed: () async {
                     final date = await showDatePicker(
                       context: context,
-                      initialDate: _expiryDate ?? DateTime.now().add(const Duration(days: 180)),
+                      initialDate:
+                          _expiryDate ??
+                          DateTime.now().add(const Duration(days: 180)),
                       firstDate: DateTime.now(),
                       lastDate: DateTime.now().add(const Duration(days: 3650)),
                     );
@@ -307,10 +354,17 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               TextFormField(
                 controller: _doseAmountController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Dose Amount (units per dose)'),
+                decoration: const InputDecoration(
+                  labelText: 'Dose Amount (units per dose)',
+                ),
               ),
               const SizedBox(height: 12),
-              Text('Dose Times', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                'Dose Times',
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -334,7 +388,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                         initialTime: const TimeOfDay(hour: 8, minute: 0),
                       );
                       if (time != null) {
-                        final formatted = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                        final formatted =
+                            '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
                         if (!_doseTimes.contains(formatted)) {
                           setState(() {
                             _doseTimes.add(formatted);
@@ -352,10 +407,18 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Days of the Week', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Days of the Week',
+                    style: AppTypography.bodyMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Text(
                     TimeFormatter.formatDaysOfWeek(_daysOfWeek),
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -374,15 +437,21 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                         selected: isSelected,
                         selectedColor: AppColors.primaryGreen,
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.textPrimary,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                         onSelected: (selected) {
                           setState(() {
                             if (selected) {
-                              if (!_daysOfWeek.contains(day)) _daysOfWeek.add(day);
+                              if (!_daysOfWeek.contains(day)) {
+                                _daysOfWeek.add(day);
+                              }
                             } else {
-                              if (_daysOfWeek.length > 1) _daysOfWeek.remove(day);
+                              if (_daysOfWeek.length > 1) {
+                                _daysOfWeek.remove(day);
+                              }
                             }
                             _daysOfWeek.sort();
                           });
@@ -400,12 +469,14 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   children: [
                     ActionChip(
                       label: const Text('Everyday'),
-                      onPressed: () => setState(() => _daysOfWeek = [1, 2, 3, 4, 5, 6, 7]),
+                      onPressed: () =>
+                          setState(() => _daysOfWeek = [1, 2, 3, 4, 5, 6, 7]),
                     ),
                     const SizedBox(width: 8),
                     ActionChip(
                       label: const Text('Weekdays'),
-                      onPressed: () => setState(() => _daysOfWeek = [1, 2, 3, 4, 5]),
+                      onPressed: () =>
+                          setState(() => _daysOfWeek = [1, 2, 3, 4, 5]),
                     ),
                     const SizedBox(width: 8),
                     ActionChip(
@@ -421,7 +492,14 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveForm,
                   child: _isSaving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
                       : Text(isEdit ? 'Update Medicine' : 'Save Medicine'),
                 ),
               ),

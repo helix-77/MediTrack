@@ -1,14 +1,7 @@
 # Workspace Rules for MediTrack
 
-## Version Control Rule
+The canonical, up-to-date standing context for this repo now lives in the project root:
+**[`/AGENTS.md`](../AGENTS.md)** (kept in sync with `medicine-manager-spec.md`).
 
-- **Run `git add` and `git commit` after completing any big task or fixing a issue**
-- Provide a clear, descriptive commit message summarizing the work accomplished.
-
-## Stack & Architecture Guidelines
-
-- Project: MediTrack (Flutter medicine manager app for Android).
-- Stack: Flutter 3.44 stable, Dart 3.6+, Null safety.
-- Backend: Firebase (firebase_auth anonymous sign-in + cloud_firestore + firebase_storage).
-- Local Notifications: `flutter_local_notifications` + `timezone`.
-- Code conventions: `flutter analyze` must pass with 0 errors and 0 warnings before declaring tasks done.
+This file is kept only so any tool that specifically resolves `.agents/AGENTS.md` still
+finds guidance — treat the root file as the source of truth, and update that one first.
