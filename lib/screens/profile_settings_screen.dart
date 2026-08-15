@@ -9,6 +9,8 @@ import '../features/bdapps/data/models/unsubscribe_response.dart';
 import '../models/user_profile.dart';
 import '../services/user_profile_service.dart';
 import '../services/auth_service.dart';
+import '../services/medicine_service.dart';
+import '../services/notification_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import 'prescription_vault_screen.dart';
@@ -23,6 +25,8 @@ class ProfileSettingsScreen extends StatefulWidget {
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final UserProfileService _profileService = UserProfileService();
   final AuthService _authService = AuthService();
+  final MedicineService _medicineService = MedicineService();
+  final NotificationService _notificationService = NotificationService();
   final TextEditingController _subMobileController = TextEditingController();
   final TextEditingController _subOtpController = TextEditingController();
 
@@ -443,6 +447,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
+  Future<void> _rescheduleMedicines(UserProfile profile) async {
+    await for (final medicines in _medicineService.streamMedicines().take(1)) {
+      for (final medicine in medicines) {
+        await _notificationService.scheduleMedicineNotifications(
+          medicine,
+          profile: profile,
+        );
+      }
+    }
+  }
+
   Widget _buildNotificationSettingsCard(UserProfile profile) {
     return Card(
       child: Padding(
@@ -478,6 +493,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   enableLowStockAlerts: profile.enableLowStockAlerts,
                 );
                 await _profileService.saveProfile(updated);
+                await _rescheduleMedicines(updated);
               },
             ),
             SwitchListTile(
@@ -503,6 +519,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   enableLowStockAlerts: profile.enableLowStockAlerts,
                 );
                 await _profileService.saveProfile(updated);
+                await _rescheduleMedicines(updated);
               },
             ),
             SwitchListTile(
@@ -528,6 +545,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   enableLowStockAlerts: val,
                 );
                 await _profileService.saveProfile(updated);
+                await _rescheduleMedicines(updated);
               },
             ),
           ],

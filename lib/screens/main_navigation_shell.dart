@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/medicine_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import 'home_screen.dart';
@@ -20,12 +21,20 @@ class MainNavigationShell extends StatefulWidget {
 }
 
 class MainNavigationShellState extends State<MainNavigationShell> {
+  final MedicineService _medicineService = MedicineService();
   late int _currentIndex;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialTab;
+    _reconcileMissedDoses();
+  }
+
+  Future<void> _reconcileMissedDoses() async {
+    try {
+      await _medicineService.checkAndMarkMissedDoses();
+    } catch (_) {}
   }
 
   void switchTab(int index) {
@@ -42,10 +51,7 @@ class MainNavigationShellState extends State<MainNavigationShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Container(
         height: 60,
@@ -137,7 +143,9 @@ class MainNavigationShellState extends State<MainNavigationShell> {
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              color: isSelected ? AppColors.primaryGreen : AppColors.textSecondary,
+              color: isSelected
+                  ? AppColors.primaryGreen
+                  : AppColors.textSecondary,
               size: 22,
             ),
             const SizedBox(height: 2),
@@ -146,7 +154,9 @@ class MainNavigationShellState extends State<MainNavigationShell> {
               style: AppTypography.bodySmall.copyWith(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? AppColors.primaryGreen : AppColors.textSecondary,
+                color: isSelected
+                    ? AppColors.primaryGreen
+                    : AppColors.textSecondary,
               ),
             ),
           ],

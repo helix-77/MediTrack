@@ -195,9 +195,9 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         updatedAt: DateTime.now(),
       );
 
-      await _medicineService.saveMedicine(medicine);
+      final savedMedicine = await _medicineService.saveMedicine(medicine);
       try {
-        await _notificationService.scheduleMedicineNotifications(medicine);
+        await _notificationService.scheduleMedicineNotifications(savedMedicine);
       } catch (notifErr) {
         debugPrint('Notification scheduling notice: $notifErr');
       }

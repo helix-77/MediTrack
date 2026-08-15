@@ -108,23 +108,48 @@ Writes and AI calls now require a registered authenticated user through the shar
 - PHP syntax verification was attempted but could not run because `php` is not installed in the environment.
 - Static scans found no `signInAnonymously`, guest-entry text, or exposed BD Apps password literal in the current tree.
 
-## Current uncommitted scope
+## Batch 0 checkpoint
 
-The current working tree contains only the Batch 0 implementation and documentation changes, plus newly added auth guard, upgrade screen, Storage rules, and tests. The design document commit is already complete; Batch 0 is ready to commit.
+Batch 0 was verified and committed as `379014d fix: secure authentication and storage boundaries`.
 
-Before committing Batch 0:
+## Batch 1 implementation and verification
 
-1. Review the diff for unintended formatting churn, especially in existing screens.
-2. Stage only Batch 0 paths and commit with a focused message.
+Batch 1 is implemented and ready to commit after verification.
+
+Completed locally:
+
+- Added deterministic notification and dose-event identity in `lib/logic/notification_identity.dart`.
+- `MedicineService.saveMedicine` now returns the persisted medicine with its Firestore document ID, so new medicines do not schedule using an empty ID.
+- Dose status updates use a deterministic event ID when the UI has no log ID, read the existing status, and decrement stock only when transitioning into `taken`.
+- Marking a dose taken reloads the persisted medicine and reschedules notifications, re-evaluating refill state.
+- Deleting a medicine cancels its notification set.
+- Notification IDs are derived from medicine ID, notification kind, and dose slot instead of Dart `hashCode`.
+- Notification scheduling accepts the persisted user profile toggles for dose, expiry, and low-stock alerts.
+- Profile reminder-toggle changes reschedule the user's medicines.
+- Missed-dose reconciliation runs when the authenticated navigation shell opens.
+- Notification payloads identify `dose`, `expiry`, or `refill` and route through the app navigator to the medicine detail screen.
+- Added `test/logic/notification_identity_test.dart`.
+
+Verification:
+
+- `flutter analyze`: no issues found.
+- `flutter test`: `00:04 +25: All tests passed!`
+- `git diff --check`: passed.
+
+Known external verification still required:
+
+- Android/iOS notification permission behavior.
+- Exact/inexact alarm behavior on real devices.
+- Background, killed-app, OEM battery-management, and notification-tap behavior.
+- Deploying Firebase Storage rules and checking current bucket defaults.
 
 ## Remaining roadmap batches
 
-1. Batch 1: reminder correctness and notification routing.
-2. Batch 2: structured prescription OCR production pipeline.
-3. Batch 3: medicine reference normalization, seed tooling, rules, and search.
-4. Batch 4: BD Apps entitlement, preview quotas, AI validation, safety, and usage caps.
-5. Batch 5: English voice, AI-assisted entry, settings thresholds, localization, and family profiles.
-6. Batch 6: nearby pharmacy contract/client, PDF export, and dark mode.
-7. Batch 7: UI quality audit, accessibility/widget/integration tests, release checklist, and final verification.
+1. Batch 2: structured prescription OCR production pipeline.
+2. Batch 3: medicine reference normalization, seed tooling, rules, and search.
+3. Batch 4: BD Apps entitlement, preview quotas, AI validation, safety, and usage caps.
+4. Batch 5: English voice, AI-assisted entry, settings thresholds, localization, and family profiles.
+5. Batch 6: nearby pharmacy contract/client, PDF export, and dark mode.
+6. Batch 7: UI quality audit, accessibility/widget/integration tests, release checklist, and final verification.
 
 External deployment, credential rotation, Firebase/Google/BD Apps dashboard work, billing, translation review, production signing, store submission, and physical-device notification testing remain explicit handoffs and must not be represented as locally verified.

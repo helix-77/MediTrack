@@ -4,38 +4,40 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import '../models/medicine.dart';
+import '../logic/notification_identity.dart';
 import '../logic/refill_calculator.dart';
+import '../models/medicine.dart';
+import '../models/user_profile.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   bool _initialized = false;
+  void Function(NotificationResponse response)? onNotificationTap;
 
   Future<void> init() async {
     if (_initialized) return;
 
     tz.initializeTimeZones();
-
-    // Configure device local timezone
     try {
       final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
-      final String timeZoneName = timeZoneInfo.identifier;
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
-    } catch (e) {
-      debugPrint('Could not set local location timezone: $e');
+      tz.setLocalLocation(tz.getLocation(timeZoneInfo.identifier));
+    } catch (error) {
+      debugPrint('Could not set local location timezone: $error');
     }
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-
     const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
@@ -43,41 +45,41 @@ class NotificationService {
 
     await _notificationsPlugin.initialize(
       initSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle notification response/tap if needed
+      onDidReceiveNotificationResponse: (response) {
+        onNotificationTap?.call(response);
       },
     );
 
-    // Create high-priority Android Notification Channels
-    final androidImplementation =
-        _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidImplementation = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidImplementation != null) {
-      const AndroidNotificationChannel doseChannel = AndroidNotificationChannel(
-        'dose_reminders',
-        'Dose Reminders',
-        description: 'Notifications for taking scheduled medicine doses',
-        importance: Importance.max,
-        playSound: true,
+      await androidImplementation.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'dose_reminders',
+          'Dose Reminders',
+          description: 'Notifications for taking scheduled medicine doses',
+          importance: Importance.max,
+          playSound: true,
+        ),
       );
-
-      const AndroidNotificationChannel expiryChannel = AndroidNotificationChannel(
-        'expiry_alerts',
-        'Expiry Alerts',
-        description: 'Notifications when medicine is nearing expiration',
-        importance: Importance.high,
+      await androidImplementation.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'expiry_alerts',
+          'Expiry Alerts',
+          description: 'Notifications when medicine is nearing expiration',
+          importance: Importance.high,
+        ),
       );
-
-      const AndroidNotificationChannel refillChannel = AndroidNotificationChannel(
-        'refill_alerts',
-        'Refill Alerts',
-        description: 'Notifications when medicine stock is running low',
-        importance: Importance.high,
+      await androidImplementation.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'refill_alerts',
+          'Refill Alerts',
+          description: 'Notifications when medicine stock is running low',
+          importance: Importance.high,
+        ),
       );
-
-      await androidImplementation.createNotificationChannel(doseChannel);
-      await androidImplementation.createNotificationChannel(expiryChannel);
-      await androidImplementation.createNotificationChannel(refillChannel);
-
       await androidImplementation.requestNotificationsPermission();
       await androidImplementation.requestExactAlarmsPermission();
     }
@@ -85,67 +87,73 @@ class NotificationService {
     _initialized = true;
   }
 
-  Future<void> scheduleMedicineNotifications(Medicine medicine) async {
+  Future<void> scheduleMedicineNotifications(
+    Medicine medicine, {
+    UserProfile? profile,
+  }) async {
     await init();
-
-    final baseId = medicine.id.hashCode.abs() % 100000;
     await cancelMedicineNotifications(medicine.id);
+    if (medicine.id.isEmpty || !medicine.schedule.active) return;
 
-    if (!medicine.schedule.active) return;
+    final doseEnabled = profile?.enableDoseReminders ?? true;
+    final expiryEnabled = profile?.enableExpiryAlerts ?? true;
+    final refillEnabled = profile?.enableLowStockAlerts ?? true;
 
-    // 1. Schedule Dose Reminders
-    for (int i = 0; i < medicine.schedule.doseTimes.length; i++) {
-      final timeStr = medicine.schedule.doseTimes[i];
-      final parts = timeStr.split(':');
-      if (parts.length != 2) continue;
-
-      final hour = int.tryParse(parts[0]) ?? 8;
-      final minute = int.tryParse(parts[1]) ?? 0;
-
-      final notificationId = baseId + i;
-      final time12Hr = _format12Hour(hour, minute);
-
-      await _safeZonedSchedule(
-        id: notificationId,
-        title: 'Dose Reminder: ${medicine.name}',
-        body: 'Time for $time12Hr dose: Take ${medicine.schedule.doseAmount} ${medicine.dosageForm ?? "unit(s)"} (${medicine.strength ?? ""})',
-        scheduledDate: _nextInstanceOfTime(hour, minute),
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'dose_reminders',
-            'Dose Reminders',
-            channelDescription: 'Notifications for taking scheduled doses',
-            importance: Importance.max,
-            priority: Priority.high,
-            playSound: true,
-          ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
-    }
-
-    // 2. Schedule Expiry Warning
-    if (medicine.expiryDate != null) {
-      final expiryNoticeDate = medicine.expiryDate!.subtract(const Duration(days: 30));
-      if (expiryNoticeDate.isAfter(DateTime.now())) {
-        final expiryId = baseId + 50;
-        final scheduledTz = tz.TZDateTime.from(expiryNoticeDate, tz.local);
+    if (doseEnabled) {
+      for (var i = 0; i < medicine.schedule.doseTimes.length; i++) {
+        final parts = medicine.schedule.doseTimes[i].split(':');
+        if (parts.length != 2) continue;
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+        if (hour == null || minute == null || hour > 23 || minute > 59) {
+          continue;
+        }
 
         await _safeZonedSchedule(
-          id: expiryId,
+          id: notificationIdFor(medicine.id, 'dose', i),
+          title: 'Dose Reminder: ${medicine.name}',
+          body:
+              'Time for ${_format12Hour(hour, minute)} dose: Take ${medicine.schedule.doseAmount} ${medicine.dosageForm ?? "unit(s)"} (${medicine.strength ?? ""})',
+          payload: 'dose:${medicine.id}',
+          scheduledDate: _nextInstanceOfTime(hour, minute),
+          notificationDetails: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'dose_reminders',
+              'Dose Reminders',
+              channelDescription:
+                  'Notifications for taking scheduled medicine doses',
+              importance: Importance.max,
+              priority: Priority.high,
+              playSound: true,
+            ),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
+          ),
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      }
+    }
+
+    if (expiryEnabled && medicine.expiryDate != null) {
+      final expiryNoticeDate = medicine.expiryDate!.subtract(
+        const Duration(days: 30),
+      );
+      if (expiryNoticeDate.isAfter(DateTime.now())) {
+        await _safeZonedSchedule(
+          id: notificationIdFor(medicine.id, 'expiry'),
           title: 'Expiry Alert: ${medicine.name}',
           body: 'Your medicine ${medicine.name} will expire in 30 days.',
-          scheduledDate: scheduledTz,
+          payload: 'expiry:${medicine.id}',
+          scheduledDate: tz.TZDateTime.from(expiryNoticeDate, tz.local),
           notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               'expiry_alerts',
               'Expiry Alerts',
-              channelDescription: 'Notifications when medicine is nearing expiry',
+              channelDescription:
+                  'Notifications when medicine is nearing expiry',
               importance: Importance.high,
               priority: Priority.high,
             ),
@@ -159,37 +167,46 @@ class NotificationService {
       }
     }
 
-    // 3. Schedule Refill Warning
-    if (RefillCalculator.isRefillDue(medicine.quantityCurrent, medicine.schedule)) {
-      final refillId = baseId + 80;
-      try {
-        await _notificationsPlugin.show(
-          refillId,
-          'Refill Alert: ${medicine.name}',
-          'Low stock! You have ${medicine.quantityCurrent} remaining.',
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'refill_alerts',
-              'Refill Alerts',
-              channelDescription: 'Notifications when medicine stock is running low',
-              importance: Importance.high,
-              priority: Priority.high,
-            ),
-            iOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-            ),
-          ),
-        );
-      } catch (_) {}
+    if (refillEnabled &&
+        RefillCalculator.isRefillDue(
+          medicine.quantityCurrent,
+          medicine.schedule,
+        )) {
+      await _showRefillNotification(medicine);
     }
+  }
+
+  Future<void> _showRefillNotification(Medicine medicine) async {
+    try {
+      await _notificationsPlugin.show(
+        notificationIdFor(medicine.id, 'refill'),
+        'Refill Alert: ${medicine.name}',
+        'Low stock! You have ${medicine.quantityCurrent} remaining.',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'refill_alerts',
+            'Refill Alerts',
+            channelDescription:
+                'Notifications when medicine stock is running low',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: 'refill:${medicine.id}',
+      );
+    } catch (_) {}
   }
 
   Future<void> _safeZonedSchedule({
     required int id,
     required String title,
     required String body,
+    required String payload,
     required tz.TZDateTime scheduledDate,
     required NotificationDetails notificationDetails,
     DateTimeComponents? matchDateTimeComponents,
@@ -202,8 +219,10 @@ class NotificationService {
         scheduledDate,
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: matchDateTimeComponents,
+        payload: payload,
       );
     } catch (_) {
       try {
@@ -214,25 +233,39 @@ class NotificationService {
           scheduledDate,
           notificationDetails,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: matchDateTimeComponents,
+          payload: payload,
         );
       } catch (_) {}
     }
   }
 
   Future<void> cancelMedicineNotifications(String medicineId) async {
-    final baseId = medicineId.hashCode.abs() % 100000;
-    for (int i = 0; i < 100; i++) {
-      try {
-        await _notificationsPlugin.cancel(baseId + i);
-      } catch (_) {}
+    if (medicineId.isEmpty) return;
+    await init();
+    for (final kind in ['dose', 'expiry', 'refill']) {
+      for (var slot = 0; slot < 100; slot++) {
+        try {
+          await _notificationsPlugin.cancel(
+            notificationIdFor(medicineId, kind, slot),
+          );
+        } catch (_) {}
+      }
     }
   }
 
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }

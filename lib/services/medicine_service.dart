@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../logic/auth_guard.dart';
+import '../logic/notification_identity.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
+import 'notification_service.dart';
 
 class MedicineService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -84,8 +86,7 @@ class MedicineService {
     });
   }
 
-  // Add or update medicine document
-  Future<void> saveMedicine(Medicine medicine) async {
+  Future<Medicine> saveMedicine(Medicine medicine) async {
     final user = _authenticatedUser();
 
     final medicinesRef = _firestore
@@ -96,6 +97,23 @@ class MedicineService {
         ? medicinesRef.doc()
         : medicinesRef.doc(medicine.id);
     await docRef.set(medicine.toMap(), SetOptions(merge: true));
+    return Medicine(
+      id: docRef.id,
+      name: medicine.name,
+      genericName: medicine.genericName,
+      dosageForm: medicine.dosageForm,
+      strength: medicine.strength,
+      quantityCurrent: medicine.quantityCurrent,
+      quantityTotal: medicine.quantityTotal,
+      expiryDate: medicine.expiryDate,
+      batchNumber: medicine.batchNumber,
+      manufacturer: medicine.manufacturer,
+      imageUrl: medicine.imageUrl,
+      lowStockThreshold: medicine.lowStockThreshold,
+      schedule: medicine.schedule,
+      createdAt: medicine.createdAt,
+      updatedAt: medicine.updatedAt,
+    );
   }
 
   // Delete medicine document
@@ -107,6 +125,7 @@ class MedicineService {
         .doc(user.uid)
         .collection('medicines');
     await medicinesRef.doc(medicineId).delete();
+    await NotificationService().cancelMedicineNotifications(medicineId);
   }
 
   // Mark dose status (taken/skipped/missed)
@@ -121,6 +140,7 @@ class MedicineService {
     final user = _authenticatedUser();
 
     final now = DateTime.now();
+    final effectiveScheduledAt = scheduledAt ?? now;
     final batch = _firestore.batch();
 
     final doseLogsRef = _firestore
@@ -132,19 +152,27 @@ class MedicineService {
         .doc(user.uid)
         .collection('medicines');
 
-    final logRef = logId.isEmpty ? doseLogsRef.doc() : doseLogsRef.doc(logId);
+    final effectiveLogId = logId.isEmpty
+        ? doseEventIdFor(
+            medicineId: medicineId,
+            scheduledAt: effectiveScheduledAt,
+          )
+        : logId;
+    final logRef = doseLogsRef.doc(effectiveLogId);
+    final existing = await logRef.get();
+    final existingStatus = existing.exists
+        ? DoseLog.fromSnapshot(existing).status
+        : DoseStatus.pending;
+
     batch.set(logRef, {
       'medicineId': medicineId,
       'medicineName': medicineName,
-      'scheduledAt': scheduledAt != null
-          ? Timestamp.fromDate(scheduledAt)
-          : Timestamp.fromDate(now),
+      'scheduledAt': Timestamp.fromDate(effectiveScheduledAt),
       'status': status.name,
       'respondedAt': Timestamp.fromDate(now),
     }, SetOptions(merge: true));
 
-    // If taken, decrement quantityCurrent
-    if (status == DoseStatus.taken) {
+    if (status == DoseStatus.taken && existingStatus != DoseStatus.taken) {
       final medRef = medicinesRef.doc(medicineId);
       batch.update(medRef, {
         'quantityCurrent': FieldValue.increment(-doseAmount),
@@ -153,6 +181,15 @@ class MedicineService {
     }
 
     await batch.commit();
+
+    if (status == DoseStatus.taken && existingStatus != DoseStatus.taken) {
+      final medicineSnapshot = await medicinesRef.doc(medicineId).get();
+      if (medicineSnapshot.exists) {
+        await NotificationService().scheduleMedicineNotifications(
+          Medicine.fromSnapshot(medicineSnapshot),
+        );
+      }
+    }
   }
 
   // Scan and mark past pending doses as missed if > 2 hours overdue

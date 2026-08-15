@@ -18,8 +18,11 @@ import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'screens/account_upgrade_screen.dart';
 import 'screens/main_navigation_shell.dart';
+import 'screens/medicine_detail_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'firebase_options.dart';
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,9 +57,21 @@ void main() async {
     debugPrint('App Check init notice: $e');
   }
 
-  // Initialize Local Notifications
   try {
-    await NotificationService().init();
+    final notificationService = NotificationService();
+    notificationService.onNotificationTap = (response) {
+      final payload = response.payload;
+      if (payload == null) return;
+      final separator = payload.indexOf(':');
+      if (separator <= 0 || separator == payload.length - 1) return;
+      final medicineId = payload.substring(separator + 1);
+      appNavigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => MedicineDetailScreen(medicineId: medicineId),
+        ),
+      );
+    };
+    await notificationService.init();
   } catch (e) {
     debugPrint('Notification init notice: $e');
   }
@@ -88,6 +103,7 @@ class MediTrackApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
+        navigatorKey: appNavigatorKey,
         title: 'MediTrack',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
