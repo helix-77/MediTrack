@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
@@ -50,9 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: StreamBuilder<UserProfile?>(
           stream: _profileService.streamProfile(),
           builder: (context, profileSnapshot) {
-            final user = FirebaseAuth.instance.currentUser;
             final profile = profileSnapshot.data;
-            final displayName = profile?.displayName ?? user?.displayName ?? (user?.isAnonymous ?? true ? 'Guest' : 'User');
+            final displayName = profile?.displayName ?? 'User';
 
             return StreamBuilder<List<Medicine>>(
               stream: _medicineService.streamMedicines(),
@@ -60,19 +58,40 @@ class _HomeScreenState extends State<HomeScreen> {
                 final allMedicines = medSnapshot.data ?? [];
                 final filteredMedicines = _searchQuery.isEmpty
                     ? allMedicines
-                    : allMedicines.where((m) => m.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+                    : allMedicines
+                          .where(
+                            (m) => m.name.toLowerCase().contains(
+                              _searchQuery.toLowerCase(),
+                            ),
+                          )
+                          .toList();
 
-                final lowStockMedicines = allMedicines.where((m) => RefillCalculator.isLowStock(m.quantityCurrent, m.lowStockThreshold)).toList();
-                final expiringMedicines = allMedicines.where((m) => RefillCalculator.isExpiringSoon(m.expiryDate)).toList();
+                final lowStockMedicines = allMedicines
+                    .where(
+                      (m) => RefillCalculator.isLowStock(
+                        m.quantityCurrent,
+                        m.lowStockThreshold,
+                      ),
+                    )
+                    .toList();
+                final expiringMedicines = allMedicines
+                    .where((m) => RefillCalculator.isExpiringSoon(m.expiryDate))
+                    .toList();
 
                 return StreamBuilder<List<DoseLog>>(
                   stream: _medicineService.streamTodayDoseLogs(),
                   builder: (context, logSnapshot) {
                     final todayLogs = logSnapshot.data ?? [];
-                    final doseItems = _generateTodayDoseItems(filteredMedicines, todayLogs);
+                    final doseItems = _generateTodayDoseItems(
+                      filteredMedicines,
+                      todayLogs,
+                    );
 
                     return ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       children: [
                         // Top Header Bar (Grid Icon, Title "Home", Notification Bell)
                         _buildTopHeaderBar(),
@@ -121,7 +140,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const CalendarRoutineScreen()),
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const CalendarRoutineScreen(),
+                                  ),
                                 );
                               },
                               child: Text(
@@ -146,7 +168,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         // Low Stock Alert Section
                         if (lowStockMedicines.isNotEmpty) ...[
-                          Text('Low Stock Alerts', style: AppTypography.headingMedium),
+                          Text(
+                            'Low Stock Alerts',
+                            style: AppTypography.headingMedium,
+                          ),
                           const SizedBox(height: 12),
                           _buildLowStockList(lowStockMedicines),
                           const SizedBox(height: 24),
@@ -154,14 +179,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         // Expiring Soon Section
                         if (expiringMedicines.isNotEmpty) ...[
-                          Text('Expiring Soon', style: AppTypography.headingMedium),
+                          Text(
+                            'Expiring Soon',
+                            style: AppTypography.headingMedium,
+                          ),
                           const SizedBox(height: 12),
                           _buildExpiringSoonList(expiringMedicines),
                           const SizedBox(height: 24),
                         ],
 
                         // All Prescriptions Section
-                        Text('My Inventory (${allMedicines.length})', style: AppTypography.headingMedium),
+                        Text(
+                          'My Inventory (${allMedicines.length})',
+                          style: AppTypography.headingMedium,
+                        ),
                         const SizedBox(height: 12),
                         _buildAllPrescriptionsSection(allMedicines),
                         const SizedBox(height: 32),
@@ -253,8 +284,14 @@ class _HomeScreenState extends State<HomeScreen> {
         onChanged: (val) => setState(() => _searchQuery = val),
         decoration: InputDecoration(
           hintText: 'Search medicines or prescriptions...',
-          hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
-          prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 22),
+          hintStyle: AppTypography.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: AppColors.textSecondary,
+            size: 22,
+          ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.close, size: 18),
@@ -267,7 +304,10 @@ class _HomeScreenState extends State<HomeScreen> {
           border: InputBorder.none,
           focusedBorder: InputBorder.none,
           enabledBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -279,7 +319,10 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3), width: 1.5),
+        border: Border.all(
+          color: AppColors.primaryGreen.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -336,16 +379,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primaryGreen),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ScanPrescriptionScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ScanPrescriptionScreen(),
+                      ),
                     );
                   },
-                  icon: const Icon(Icons.document_scanner, size: 18, color: AppColors.primaryGreen),
-                  label: const Text('Scan Rx', style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold)),
+                  icon: const Icon(
+                    Icons.document_scanner,
+                    size: 18,
+                    color: AppColors.primaryGreen,
+                  ),
+                  label: const Text(
+                    'Scan Rx',
+                    style: TextStyle(
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -353,16 +410,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const PrescriptionVaultScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const PrescriptionVaultScreen(),
+                      ),
                     );
                   },
-                  icon: const Icon(Icons.folder_shared_outlined, size: 18, color: Colors.white),
-                  label: const Text('Rx Vault', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  icon: const Icon(
+                    Icons.folder_shared_outlined,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'Rx Vault',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -381,14 +452,20 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            const Icon(Icons.check_circle_outline, size: 44, color: AppColors.primaryGreen),
+            const Icon(
+              Icons.check_circle_outline,
+              size: 44,
+              color: AppColors.primaryGreen,
+            ),
             const SizedBox(height: 12),
             Text('No Doses Scheduled Today', style: AppTypography.headingSmall),
             const SizedBox(height: 6),
             Text(
               'Tap the + button below to add a medicine to your daily routine.',
               textAlign: TextAlign.center,
-              style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -469,7 +546,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTimeSlotGridCard(_TimeSlotData slot) {
     final total = slot.doses.length;
-    final taken = slot.doses.where((d) => d.log.status == DoseStatus.taken).length;
+    final taken = slot.doses
+        .where((d) => d.log.status == DoseStatus.taken)
+        .length;
     final progress = total == 0 ? 0.0 : taken / total;
 
     String subtitleText = 'No doses scheduled';
@@ -486,7 +565,10 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: slot.bgColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: slot.accentColor.withValues(alpha: 0.3), width: 1.5),
+          border: Border.all(
+            color: slot.accentColor.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -565,7 +647,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openTimeSlotDetailModal(_TimeSlotData slot) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => Container(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -576,9 +660,17 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(slot.icon, color: slot.accentColor, size: 24),
                 const SizedBox(width: 8),
-                Text('${slot.title} Routine', style: AppTypography.headingMedium),
+                Text(
+                  '${slot.title} Routine',
+                  style: AppTypography.headingMedium,
+                ),
                 const Spacer(),
-                Text(slot.timeRange, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                Text(
+                  slot.timeRange,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
             const Divider(),
@@ -586,7 +678,12 @@ class _HomeScreenState extends State<HomeScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: Center(
-                  child: Text('No doses scheduled for ${slot.title.toLowerCase()}', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                  child: Text(
+                    'No doses scheduled for ${slot.title.toLowerCase()}',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ),
               )
             else
@@ -594,15 +691,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 (item) => ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(
-                    item.log.status == DoseStatus.taken ? Icons.check_circle : Icons.medication,
-                    color: item.log.status == DoseStatus.taken ? AppColors.success : slot.accentColor,
+                    item.log.status == DoseStatus.taken
+                        ? Icons.check_circle
+                        : Icons.medication,
+                    color: item.log.status == DoseStatus.taken
+                        ? AppColors.success
+                        : slot.accentColor,
                   ),
-                  title: Text(item.medicine.name, style: AppTypography.headingSmall),
-                  subtitle: Text('${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}'),
+                  title: Text(
+                    item.medicine.name,
+                    style: AppTypography.headingSmall,
+                  ),
+                  subtitle: Text(
+                    '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
+                  ),
                   trailing: item.log.status == DoseStatus.taken
-                      ? const Chip(label: Text('Taken'), backgroundColor: AppColors.accentPinkLight)
+                      ? const Chip(
+                          label: Text('Taken'),
+                          backgroundColor: AppColors.accentPinkLight,
+                        )
                       : ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: slot.accentColor),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: slot.accentColor,
+                          ),
                           onPressed: () async {
                             Navigator.pop(context);
                             await _medicineService.updateDoseStatus(
@@ -629,7 +740,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Medicine Prescription'),
-        content: Text('Are you sure you want to delete "${medicine.name}"? This will delete the entire prescription and all its scheduled doses.'),
+        content: Text(
+          'Are you sure you want to delete "${medicine.name}"? This will delete the entire prescription and all its scheduled doses.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -656,9 +769,14 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppColors.warning.withValues(alpha: 0.1),
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                leading: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+                leading: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppColors.warning,
+                ),
                 title: Text(m.name, style: AppTypography.headingSmall),
-                subtitle: Text('Current Stock: ${m.quantityCurrent} (Threshold: ${m.lowStockThreshold})'),
+                subtitle: Text(
+                  'Current Stock: ${m.quantityCurrent} (Threshold: ${m.lowStockThreshold})',
+                ),
                 trailing: TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -685,9 +803,14 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppColors.danger.withValues(alpha: 0.1),
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                leading: const Icon(Icons.error_outline_rounded, color: AppColors.danger),
+                leading: const Icon(
+                  Icons.error_outline_rounded,
+                  color: AppColors.danger,
+                ),
                 title: Text(m.name, style: AppTypography.headingSmall),
-                subtitle: Text('Expires: ${m.expiryDate != null ? DateFormat('yyyy-MM-dd').format(m.expiryDate!) : "N/A"}'),
+                subtitle: Text(
+                  'Expires: ${m.expiryDate != null ? DateFormat('yyyy-MM-dd').format(m.expiryDate!) : "N/A"}',
+                ),
               ),
             ),
           )
@@ -702,7 +825,10 @@ class _HomeScreenState extends State<HomeScreen> {
             (m) => Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                leading: const Icon(Icons.medication_liquid_outlined, color: AppColors.primaryGreen),
+                leading: const Icon(
+                  Icons.medication_liquid_outlined,
+                  color: AppColors.primaryGreen,
+                ),
                 title: Text(m.name, style: AppTypography.headingSmall),
                 subtitle: Text(
                   '${m.schedule.doseTimes.length} dose(s)/day (${m.schedule.doseTimes.map(TimeFormatter.format24To12Hour).join(', ')}) • ${TimeFormatter.formatDaysOfWeek(m.schedule.daysOfWeek)}',
@@ -713,10 +839,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       '${m.quantityCurrent} left',
-                      style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
+                      style: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: AppColors.danger,
+                      ),
                       onPressed: () => _showDeleteConfirmationDialog(m),
                     ),
                   ],
@@ -736,7 +868,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<_DoseItem> _generateTodayDoseItems(List<Medicine> medicines, List<DoseLog> todayLogs) {
+  List<_DoseItem> _generateTodayDoseItems(
+    List<Medicine> medicines,
+    List<DoseLog> todayLogs,
+  ) {
     final List<_DoseItem> items = [];
     final today = DateTime.now();
     final weekday = today.weekday;
@@ -749,10 +884,19 @@ class _HomeScreenState extends State<HomeScreen> {
         final parts = time.split(':');
         final hour = int.tryParse(parts[0]) ?? 8;
         final minute = int.tryParse(parts[1]) ?? 0;
-        final scheduledDateTime = DateTime(today.year, today.month, today.day, hour, minute);
+        final scheduledDateTime = DateTime(
+          today.year,
+          today.month,
+          today.day,
+          hour,
+          minute,
+        );
 
         final matchingLog = todayLogs.firstWhere(
-          (l) => l.medicineId == med.id && _isSameDay(l.scheduledAt, today) && DateFormat('HH:mm').format(l.scheduledAt) == time,
+          (l) =>
+              l.medicineId == med.id &&
+              _isSameDay(l.scheduledAt, today) &&
+              DateFormat('HH:mm').format(l.scheduledAt) == time,
           orElse: () => DoseLog(
             id: '',
             medicineId: med.id,

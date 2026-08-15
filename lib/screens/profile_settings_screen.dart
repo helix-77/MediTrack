@@ -11,7 +11,6 @@ import '../services/user_profile_service.dart';
 import '../services/auth_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
-import 'login_screen.dart';
 import 'prescription_vault_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
@@ -52,8 +51,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content:
-                Text('BD mobile must be 11 digits starting with 01[3-9]. Leaving empty.'),
+            content: Text(
+              'BD mobile must be 11 digits starting with 01[3-9]. Leaving empty.',
+            ),
             backgroundColor: AppColors.warning,
           ),
         );
@@ -64,15 +64,30 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   }
 
   void _showEditProfileDialog(UserProfile currentProfile) {
-    final nameController = TextEditingController(text: currentProfile.displayName);
-    final bloodController = TextEditingController(text: currentProfile.bloodGroup ?? '');
-    final allergiesController = TextEditingController(text: currentProfile.allergies ?? '');
-    final doctorNameController = TextEditingController(text: currentProfile.doctorName ?? '');
-    final doctorPhoneController = TextEditingController(text: currentProfile.doctorPhone ?? '');
-    final emergencyNameController = TextEditingController(text: currentProfile.emergencyContactName ?? '');
-    final emergencyPhoneController = TextEditingController(text: currentProfile.emergencyContactPhone ?? '');
-    final bdMobileController =
-        TextEditingController(text: currentProfile.bdMobile ?? '');
+    final nameController = TextEditingController(
+      text: currentProfile.displayName,
+    );
+    final bloodController = TextEditingController(
+      text: currentProfile.bloodGroup ?? '',
+    );
+    final allergiesController = TextEditingController(
+      text: currentProfile.allergies ?? '',
+    );
+    final doctorNameController = TextEditingController(
+      text: currentProfile.doctorName ?? '',
+    );
+    final doctorPhoneController = TextEditingController(
+      text: currentProfile.doctorPhone ?? '',
+    );
+    final emergencyNameController = TextEditingController(
+      text: currentProfile.emergencyContactName ?? '',
+    );
+    final emergencyPhoneController = TextEditingController(
+      text: currentProfile.emergencyContactPhone ?? '',
+    );
+    final bdMobileController = TextEditingController(
+      text: currentProfile.bdMobile ?? '',
+    );
 
     showDialog(
       context: context,
@@ -89,7 +104,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: bloodController,
-                decoration: const InputDecoration(labelText: 'Blood Group (e.g. O+)'),
+                decoration: const InputDecoration(
+                  labelText: 'Blood Group (e.g. O+)',
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -110,7 +127,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: emergencyNameController,
-                decoration: const InputDecoration(labelText: 'Emergency Contact Name'),
+                decoration: const InputDecoration(
+                  labelText: 'Emergency Contact Name',
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -125,7 +144,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 decoration: const InputDecoration(
                   labelText: 'BD Mobile (for SMS service)',
                   hintText: '01XXXXXXXXX',
-                  helperText: 'Used as the BD Apps subscriber ID for SMS / subscription actions',
+                  helperText:
+                      'Used as the BD Apps subscriber ID for SMS / subscription actions',
                 ),
               ),
             ],
@@ -142,12 +162,26 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 uid: currentProfile.uid,
                 displayName: nameController.text.trim(),
                 email: currentProfile.email,
-                bloodGroup: bloodController.text.trim().isEmpty ? null : bloodController.text.trim(),
-                allergies: allergiesController.text.trim().isEmpty ? null : allergiesController.text.trim(),
-                doctorName: doctorNameController.text.trim().isEmpty ? null : doctorNameController.text.trim(),
-                doctorPhone: doctorPhoneController.text.trim().isEmpty ? null : doctorPhoneController.text.trim(),
-                emergencyContactName: emergencyNameController.text.trim().isEmpty ? null : emergencyNameController.text.trim(),
-                emergencyContactPhone: emergencyPhoneController.text.trim().isEmpty ? null : emergencyPhoneController.text.trim(),
+                bloodGroup: bloodController.text.trim().isEmpty
+                    ? null
+                    : bloodController.text.trim(),
+                allergies: allergiesController.text.trim().isEmpty
+                    ? null
+                    : allergiesController.text.trim(),
+                doctorName: doctorNameController.text.trim().isEmpty
+                    ? null
+                    : doctorNameController.text.trim(),
+                doctorPhone: doctorPhoneController.text.trim().isEmpty
+                    ? null
+                    : doctorPhoneController.text.trim(),
+                emergencyContactName:
+                    emergencyNameController.text.trim().isEmpty
+                    ? null
+                    : emergencyNameController.text.trim(),
+                emergencyContactPhone:
+                    emergencyPhoneController.text.trim().isEmpty
+                    ? null
+                    : emergencyPhoneController.text.trim(),
                 enableDoseReminders: currentProfile.enableDoseReminders,
                 enableExpiryAlerts: currentProfile.enableExpiryAlerts,
                 enableLowStockAlerts: currentProfile.enableLowStockAlerts,
@@ -160,9 +194,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               // Subscribe cards re-render immediately, without waiting
               // for the Firestore stream to round-trip.
               if (mounted) {
-                context
-                    .read<BdAppsService>()
-                    .updateBdMobile(updated.bdMobile);
+                context.read<BdAppsService>().updateBdMobile(updated.bdMobile);
               }
             },
             child: const Text('Save Profile'),
@@ -174,20 +206,25 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final isGuest = user == null || user.isAnonymous;
+    final user = _authService.currentUser;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile & Settings', style: AppTypography.headingLarge.copyWith(color: AppColors.primaryGreen)),
+        title: Text(
+          'Profile & Settings',
+          style: AppTypography.headingLarge.copyWith(
+            color: AppColors.primaryGreen,
+          ),
+        ),
       ),
       body: StreamBuilder<UserProfile?>(
         stream: _profileService.streamProfile(),
         builder: (context, snapshot) {
-          final profile = snapshot.data ??
+          final profile =
+              snapshot.data ??
               UserProfile(
                 uid: user?.uid ?? '',
-                displayName: isGuest ? 'Guest User' : (user.displayName ?? 'User'),
+                displayName: user?.displayName ?? 'User',
                 email: user?.email ?? '',
               );
 
@@ -206,7 +243,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             children: [
               // User Profile Header Card
-              _buildProfileHeaderCard(profile, isGuest, user),
+              _buildProfileHeaderCard(profile, user),
               const SizedBox(height: 20),
 
               // Medical & Emergency Info Card
@@ -226,7 +263,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               const SizedBox(height: 20),
 
               // Account Security & Actions
-              _buildAccountActionsCard(isGuest, user),
+              _buildAccountActionsCard(user),
               const SizedBox(height: 24),
             ],
           );
@@ -235,13 +272,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
-  Widget _buildProfileHeaderCard(UserProfile profile, bool isGuest, User? user) {
-    String providerText = 'Email Account';
-    if (isGuest) {
-      providerText = 'Guest Mode';
-    } else if (user != null && user.providerData.any((p) => p.providerId.contains('google'))) {
-      providerText = 'Google Account';
-    }
+  Widget _buildProfileHeaderCard(UserProfile profile, User? user) {
+    final providerText =
+        user != null &&
+            user.providerData.any(
+              (provider) => provider.providerId.contains('google'),
+            )
+        ? 'Google Account'
+        : 'Email Account';
 
     return Card(
       child: Padding(
@@ -252,8 +290,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               radius: 36,
               backgroundColor: AppColors.primaryGreen,
               child: Text(
-                profile.displayName.isNotEmpty ? profile.displayName[0].toUpperCase() : 'U',
-                style: AppTypography.headingLarge.copyWith(color: Colors.white, fontSize: 32),
+                profile.displayName.isNotEmpty
+                    ? profile.displayName[0].toUpperCase()
+                    : 'U',
+                style: AppTypography.headingLarge.copyWith(
+                  color: Colors.white,
+                  fontSize: 32,
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -263,19 +306,30 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 children: [
                   Text(profile.displayName, style: AppTypography.headingMedium),
                   const SizedBox(height: 4),
-                  if (!isGuest && profile.email.isNotEmpty)
-                    Text(profile.email, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                  if (profile.email.isNotEmpty)
+                    Text(
+                      profile.email,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   Chip(
                     label: Text(providerText),
                     backgroundColor: AppColors.accentPinkLight,
-                    labelStyle: AppTypography.bodySmall.copyWith(color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
+                    labelStyle: AppTypography.bodySmall.copyWith(
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.edit_outlined, color: AppColors.primaryGreen),
+              icon: const Icon(
+                Icons.edit_outlined,
+                color: AppColors.primaryGreen,
+              ),
               onPressed: () => _showEditProfileDialog(profile),
             ),
           ],
@@ -294,29 +348,67 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Health & Emergency Profile', style: AppTypography.headingMedium),
+                Text(
+                  'Health & Emergency Profile',
+                  style: AppTypography.headingMedium,
+                ),
                 IconButton(
-                  icon: const Icon(Icons.edit, size: 20, color: AppColors.primaryGreen),
+                  icon: const Icon(
+                    Icons.edit,
+                    size: 20,
+                    color: AppColors.primaryGreen,
+                  ),
                   onPressed: () => _showEditProfileDialog(profile),
                 ),
               ],
             ),
             const Divider(),
-            _buildInfoRow(Icons.bloodtype, 'Blood Group', profile.bloodGroup ?? 'Not specified'),
-            _buildInfoRow(Icons.healing, 'Allergies', profile.allergies ?? 'None listed'),
-            _buildInfoRow(Icons.medical_services, 'Primary Doctor', profile.doctorName != null ? '${profile.doctorName} (${profile.doctorPhone ?? "No phone"})' : 'Not specified'),
-            _buildInfoRow(Icons.contact_phone, 'Emergency Contact', profile.emergencyContactName != null ? '${profile.emergencyContactName} (${profile.emergencyContactPhone ?? "No phone"})' : 'Not specified'),
+            _buildInfoRow(
+              Icons.bloodtype,
+              'Blood Group',
+              profile.bloodGroup ?? 'Not specified',
+            ),
+            _buildInfoRow(
+              Icons.healing,
+              'Allergies',
+              profile.allergies ?? 'None listed',
+            ),
+            _buildInfoRow(
+              Icons.medical_services,
+              'Primary Doctor',
+              profile.doctorName != null
+                  ? '${profile.doctorName} (${profile.doctorPhone ?? "No phone"})'
+                  : 'Not specified',
+            ),
+            _buildInfoRow(
+              Icons.contact_phone,
+              'Emergency Contact',
+              profile.emergencyContactName != null
+                  ? '${profile.emergencyContactName} (${profile.emergencyContactPhone ?? "No phone"})'
+                  : 'Not specified',
+            ),
             const Divider(),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.folder_shared_outlined, color: AppColors.primaryGreen),
-              title: const Text('Digital Prescription Vault', style: TextStyle(fontWeight: FontWeight.bold)),
+              leading: const Icon(
+                Icons.folder_shared_outlined,
+                color: AppColors.primaryGreen,
+              ),
+              title: const Text(
+                'Digital Prescription Vault',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               subtitle: const Text('View & scan stored written prescriptions'),
-              trailing: const Icon(Icons.chevron_right, color: AppColors.primaryGreen),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: AppColors.primaryGreen,
+              ),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const PrescriptionVaultScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const PrescriptionVaultScreen(),
+                  ),
                 );
               },
             ),
@@ -333,9 +425,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         children: [
           Icon(icon, size: 20, color: AppColors.primaryGreen),
           const SizedBox(width: 12),
-          Text('$label: ', style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            '$label: ',
+            style: AppTypography.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           Expanded(
-            child: Text(value, style: AppTypography.bodySmall, overflow: TextOverflow.ellipsis),
+            child: Text(
+              value,
+              style: AppTypography.bodySmall,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -349,11 +450,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('App & Notification Settings', style: AppTypography.headingMedium),
+            Text(
+              'App & Notification Settings',
+              style: AppTypography.headingMedium,
+            ),
             const Divider(),
             SwitchListTile(
               title: const Text('Dose Reminders'),
-              subtitle: const Text('Get notified when it\'s time for scheduled medication'),
+              subtitle: const Text(
+                'Get notified when it\'s time for scheduled medication',
+              ),
               value: profile.enableDoseReminders,
               activeThumbColor: AppColors.primaryGreen,
               onChanged: (val) async {
@@ -376,7 +482,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             ),
             SwitchListTile(
               title: const Text('Expiry Alerts'),
-              subtitle: const Text('30-day early warnings before medicine expires'),
+              subtitle: const Text(
+                '30-day early warnings before medicine expires',
+              ),
               value: profile.enableExpiryAlerts,
               activeThumbColor: AppColors.primaryGreen,
               onChanged: (val) async {
@@ -399,7 +507,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             ),
             SwitchListTile(
               title: const Text('Low Stock Alerts'),
-              subtitle: const Text('Notifications when stock drops below threshold'),
+              subtitle: const Text(
+                'Notifications when stock drops below threshold',
+              ),
               value: profile.enableLowStockAlerts,
               activeThumbColor: AppColors.primaryGreen,
               onChanged: (val) async {
@@ -445,11 +555,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.sms_outlined,
-                        color: AppColors.primaryGreen),
+                    const Icon(
+                      Icons.sms_outlined,
+                      color: AppColors.primaryGreen,
+                    ),
                     const SizedBox(width: 8),
-                    Text('SMS Service',
-                        style: AppTypography.headingMedium),
+                    Text('SMS Service', style: AppTypography.headingMedium),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -457,15 +568,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   enabled
                       ? 'Send a test SMS through the BD Apps gateway to verify connectivity.'
                       : 'Link a BD mobile below to enable SMS service actions.',
-                  style: AppTypography.bodySmall
-                      .copyWith(color: AppColors.textSecondary),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const Divider(),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   enabled: enabled && !isSending,
-                  leading: const Icon(Icons.send_outlined,
-                      color: AppColors.primaryGreen),
+                  leading: const Icon(
+                    Icons.send_outlined,
+                    color: AppColors.primaryGreen,
+                  ),
                   title: const Text('Send Test SMS'),
                   subtitle: Text(
                     enabled
@@ -479,8 +593,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           width: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.chevron_right,
-                          color: AppColors.primaryGreen),
+                      : const Icon(
+                          Icons.chevron_right,
+                          color: AppColors.primaryGreen,
+                        ),
                   onTap: (!enabled || isSending)
                       ? null
                       : () => _showSendTestSmsDialog(mobile!),
@@ -528,11 +644,15 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.wifi_tethering,
-                        color: AppColors.primaryGreen),
+                    const Icon(
+                      Icons.wifi_tethering,
+                      color: AppColors.primaryGreen,
+                    ),
                     const SizedBox(width: 8),
-                    Text('Subscribe Service',
-                        style: AppTypography.headingMedium),
+                    Text(
+                      'Subscribe Service',
+                      style: AppTypography.headingMedium,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -540,25 +660,29 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   isRegistered
                       ? 'You are subscribed to BD Apps daily SMS service.'
                       : 'Subscribe via OTP to receive daily SMS medication updates.',
-                  style: AppTypography.bodySmall
-                      .copyWith(color: AppColors.textSecondary),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const Divider(),
                 _buildInfoRow(
-                    Icons.phone_android,
-                    'BD Mobile',
-                    enabled ? mobile! : 'Not linked'),
+                  Icons.phone_android,
+                  'BD Mobile',
+                  enabled ? mobile! : 'Not linked',
+                ),
                 _buildInfoRow(
-                    Icons.toggle_on_outlined,
-                    'Subscription State',
-                    status ?? 'UNKNOWN'),
+                  Icons.toggle_on_outlined,
+                  'Subscription State',
+                  status ?? 'UNKNOWN',
+                ),
                 const SizedBox(height: 12),
 
                 if (!isRegistered) ...[
                   Text(
                     'Subscribe via OTP (Robi / Airtel)',
-                    style: AppTypography.bodyMedium
-                        .copyWith(fontWeight: FontWeight.bold),
+                    style: AppTypography.bodyMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -583,7 +707,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               if (raw.length != 11 || !raw.startsWith('01')) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Enter a valid 11-digit mobile number starting with 01'),
+                                    content: Text(
+                                      'Enter a valid 11-digit mobile number starting with 01',
+                                    ),
                                     backgroundColor: AppColors.warning,
                                   ),
                                 );
@@ -591,20 +717,27 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               }
 
                               final messenger = ScaffoldMessenger.of(context);
-                              final success = await service.sendOtp(mobileNumber: raw);
+                              final success = await service.sendOtp(
+                                mobileNumber: raw,
+                              );
                               if (!mounted) return;
 
                               if (success) {
                                 messenger.showSnackBar(
                                   SnackBar(
-                                    content: Text('OTP sent to $raw via SMS. Enter code below.'),
+                                    content: Text(
+                                      'OTP sent to $raw via SMS. Enter code below.',
+                                    ),
                                     backgroundColor: AppColors.success,
                                   ),
                                 );
                               } else {
                                 messenger.showSnackBar(
                                   SnackBar(
-                                    content: Text(service.errorMessage ?? 'Failed to send OTP.'),
+                                    content: Text(
+                                      service.errorMessage ??
+                                          'Failed to send OTP.',
+                                    ),
                                     backgroundColor: AppColors.danger,
                                   ),
                                 );
@@ -614,10 +747,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Icon(Icons.sms),
-                      label: Text(isSendingOtp ? 'Sending OTP...' : 'Send OTP to Subscribe'),
+                      label: Text(
+                        isSendingOtp
+                            ? 'Sending OTP...'
+                            : 'Send OTP to Subscribe',
+                      ),
                     ),
                   ),
 
@@ -626,8 +766,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     const Divider(),
                     Text(
                       'Enter Received OTP',
-                      style: AppTypography.bodyMedium
-                          .copyWith(fontWeight: FontWeight.bold),
+                      style: AppTypography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -655,7 +796,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 if (code.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Please enter the OTP code received via SMS'),
+                                      content: Text(
+                                        'Please enter the OTP code received via SMS',
+                                      ),
                                       backgroundColor: AppColors.warning,
                                     ),
                                   );
@@ -663,27 +806,36 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 }
 
                                 final messenger = ScaffoldMessenger.of(context);
-                                final bdAppsService = context.read<BdAppsService>();
+                                final bdAppsService = context
+                                    .read<BdAppsService>();
                                 final ok = await service.verifyOtp(otp: code);
                                 if (!mounted) return;
 
                                 if (ok) {
-                                  final newMobile = _subMobileController.text.trim();
-                                  await _profileService.updateBdMobile(newMobile);
+                                  final newMobile = _subMobileController.text
+                                      .trim();
+                                  await _profileService.updateBdMobile(
+                                    newMobile,
+                                  );
 
                                   bdAppsService.updateBdMobile(newMobile);
                                   _subOtpController.clear();
 
                                   messenger.showSnackBar(
                                     const SnackBar(
-                                      content: Text('Successfully subscribed to BD Apps daily service!'),
+                                      content: Text(
+                                        'Successfully subscribed to BD Apps daily service!',
+                                      ),
                                       backgroundColor: AppColors.success,
                                     ),
                                   );
                                 } else {
                                   messenger.showSnackBar(
                                     SnackBar(
-                                      content: Text(service.errorMessage ?? 'OTP verification failed.'),
+                                      content: Text(
+                                        service.errorMessage ??
+                                            'OTP verification failed.',
+                                      ),
                                       backgroundColor: AppColors.danger,
                                     ),
                                   );
@@ -693,10 +845,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Icon(Icons.check_circle),
-                        label: Text(isVerifyingOtp ? 'Verifying...' : 'Verify OTP & Subscribe'),
+                        label: Text(
+                          isVerifyingOtp
+                              ? 'Verifying...'
+                              : 'Verify OTP & Subscribe',
+                        ),
                       ),
                     ),
                   ],
@@ -707,19 +866,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     enabled: !isChecking,
-                    leading: const Icon(Icons.refresh,
-                        color: AppColors.primaryGreen),
+                    leading: const Icon(
+                      Icons.refresh,
+                      color: AppColors.primaryGreen,
+                    ),
                     title: const Text('Refresh Status'),
                     subtitle: const Text(
-                        'Re-query check_subscription.php for current lifecycle state'),
+                      'Re-query check_subscription.php for current lifecycle state',
+                    ),
                     trailing: isChecking
                         ? const SizedBox(
                             height: 18,
                             width: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.chevron_right,
-                            color: AppColors.primaryGreen),
+                        : const Icon(
+                            Icons.chevron_right,
+                            color: AppColors.primaryGreen,
+                          ),
                     onTap: !isChecking
                         ? service.refreshSubscriptionStatus
                         : null,
@@ -728,8 +892,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       enabled: !isUnsubscribing,
-                      leading: const Icon(Icons.unsubscribe,
-                          color: AppColors.danger),
+                      leading: const Icon(
+                        Icons.unsubscribe,
+                        color: AppColors.danger,
+                      ),
                       title: const Text('Unsubscribe from SMS Service'),
                       subtitle: Text(
                         'Send unsubscribe.php — your number will stop receiving SMS',
@@ -741,8 +907,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               width: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.chevron_right,
-                              color: AppColors.danger),
+                          : const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.danger,
+                            ),
                       onTap: !isUnsubscribing
                           ? () => _confirmUnsubscribe(service)
                           : null,
@@ -780,9 +948,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('To: $phone',
-                  style: AppTypography.bodySmall
-                      .copyWith(color: AppColors.textSecondary)),
+              Text(
+                'To: $phone',
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: controller,
@@ -817,11 +988,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success
-            ? 'SMS dispatched via gateway.'
-            : 'SMS failed: ${service.errorMessage ?? "unknown error"}'),
-        backgroundColor:
-            success ? AppColors.success : AppColors.danger,
+        content: Text(
+          success
+              ? 'SMS dispatched via gateway.'
+              : 'SMS failed: ${service.errorMessage ?? "unknown error"}',
+        ),
+        backgroundColor: success ? AppColors.success : AppColors.danger,
       ),
     );
   }
@@ -858,51 +1030,51 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(service.subscriptionStatus == 'UNREGISTERED'
-            ? 'Unsubscribed successfully.'
-            : 'Unsubscribe attempt complete — see card for status.'),
+        content: Text(
+          service.subscriptionStatus == 'UNREGISTERED'
+              ? 'Unsubscribed successfully.'
+              : 'Unsubscribe attempt complete — see card for status.',
+        ),
         backgroundColor: AppColors.success,
       ),
     );
   }
 
-  Widget _buildAccountActionsCard(bool isGuest, User? user) {
+  Widget _buildAccountActionsCard(User? user) {
     return Card(
       child: Column(
         children: [
-          if (isGuest)
+          if (user?.email != null)
             ListTile(
-              leading: const Icon(Icons.login, color: AppColors.primaryGreen),
-              title: const Text('Create Account / Log In'),
-              subtitle: const Text('Sign in to sync your data across devices'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+              leading: const Icon(
+                Icons.lock_reset,
+                color: AppColors.primaryGreen,
+              ),
+              title: const Text('Send Password Reset Email'),
+              onTap: () async {
+                await _authService.sendPasswordResetEmail(user!.email!);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Password reset link sent to your email!'),
+                    backgroundColor: AppColors.success,
+                  ),
                 );
               },
-            )
-          else ...[
-            if (user?.email != null)
-              ListTile(
-                leading: const Icon(Icons.lock_reset, color: AppColors.primaryGreen),
-                title: const Text('Send Password Reset Email'),
-                onTap: () async {
-                  await _authService.sendPasswordResetEmail(user!.email!);
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Password reset link sent to your email!'), backgroundColor: AppColors.success),
-                  );
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.logout, color: AppColors.danger),
-              title: const Text('Log Out', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold)),
-              onTap: () async {
-                await _authService.signOut();
-              },
             ),
-          ],
+          ListTile(
+            leading: const Icon(Icons.logout, color: AppColors.danger),
+            title: const Text(
+              'Log Out',
+              style: TextStyle(
+                color: AppColors.danger,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onTap: () async {
+              await _authService.signOut();
+            },
+          ),
         ],
       ),
     );
@@ -923,7 +1095,9 @@ class _SmsResponseSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: (ok ? AppColors.success : AppColors.danger).withValues(alpha: 0.08),
+        color: (ok ? AppColors.success : AppColors.danger).withValues(
+          alpha: 0.08,
+        ),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -955,8 +1129,7 @@ class _SmsResponseSummary extends StatelessWidget {
           ],
           if (response.error != null) ...[
             const SizedBox(height: 2),
-            Text('error: ${response.error}',
-                style: AppTypography.bodySmall),
+            Text('error: ${response.error}', style: AppTypography.bodySmall),
           ],
         ],
       ),
@@ -975,8 +1148,9 @@ class _SubscriptionResponseSummary extends StatelessWidget {
     final subscribed = response.isSubscribed;
     final color = subscribed ? AppColors.success : AppColors.warning;
     final status = response.subscriptionStatus;
-    final statusText =
-        (status != null && status.isNotEmpty) ? status : 'NOT REGISTERED';
+    final statusText = (status != null && status.isNotEmpty)
+        ? status
+        : 'NOT REGISTERED';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1027,8 +1201,7 @@ class _SubscriptionResponseSummary extends StatelessWidget {
           ],
           if (response.error != null) ...[
             const SizedBox(height: 2),
-            Text('error: ${response.error}',
-                style: AppTypography.bodySmall),
+            Text('error: ${response.error}', style: AppTypography.bodySmall),
           ],
         ],
       ),
@@ -1048,7 +1221,9 @@ class _UnsubscribeResponseSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: (ok ? AppColors.success : AppColors.warning).withValues(alpha: 0.08),
+        color: (ok ? AppColors.success : AppColors.warning).withValues(
+          alpha: 0.08,
+        ),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(

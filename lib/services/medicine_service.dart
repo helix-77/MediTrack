@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../logic/auth_guard.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
 
@@ -7,18 +8,7 @@ class MedicineService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<User?> _ensureAuthenticated() async {
-    User? user = _auth.currentUser;
-    if (user == null) {
-      try {
-        final userCred = await _auth.signInAnonymously();
-        user = userCred.user;
-      } catch (e) {
-        // Safe catch if auth fails or is unconfigured
-      }
-    }
-    return user;
-  }
+  User _authenticatedUser() => requireAuthenticatedUser(_auth);
 
   // Stream all medicines for the current user safely
   Stream<List<Medicine>> streamMedicines() {
@@ -32,7 +22,10 @@ class MedicineService {
           .collection('medicines')
           .orderBy('createdAt', descending: true)
           .snapshots()
-          .map((snapshot) => snapshot.docs.map((doc) => Medicine.fromSnapshot(doc)).toList());
+          .map(
+            (snapshot) =>
+                snapshot.docs.map((doc) => Medicine.fromSnapshot(doc)).toList(),
+          );
     });
   }
 
@@ -50,10 +43,19 @@ class MedicineService {
           .collection('users')
           .doc(user.uid)
           .collection('doseLogs')
-          .where('scheduledAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('scheduledAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+          .where(
+            'scheduledAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+          )
+          .where(
+            'scheduledAt',
+            isLessThanOrEqualTo: Timestamp.fromDate(endOfDay),
+          )
           .snapshots()
-          .map((snapshot) => snapshot.docs.map((doc) => DoseLog.fromSnapshot(doc)).toList());
+          .map(
+            (snapshot) =>
+                snapshot.docs.map((doc) => DoseLog.fromSnapshot(doc)).toList(),
+          );
     });
   }
 
@@ -69,29 +71,41 @@ class MedicineService {
           .doc(user.uid)
           .collection('doseLogs')
           .where('medicineId', isEqualTo: medicineId)
-          .where('scheduledAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+          .where(
+            'scheduledAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+          )
           .orderBy('scheduledAt', descending: true)
           .snapshots()
-          .map((snapshot) => snapshot.docs.map((doc) => DoseLog.fromSnapshot(doc)).toList());
+          .map(
+            (snapshot) =>
+                snapshot.docs.map((doc) => DoseLog.fromSnapshot(doc)).toList(),
+          );
     });
   }
 
   // Add or update medicine document
   Future<void> saveMedicine(Medicine medicine) async {
-    final user = await _ensureAuthenticated();
-    if (user == null) throw Exception("User not authenticated");
+    final user = _authenticatedUser();
 
-    final medicinesRef = _firestore.collection('users').doc(user.uid).collection('medicines');
-    final docRef = medicine.id.isEmpty ? medicinesRef.doc() : medicinesRef.doc(medicine.id);
+    final medicinesRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('medicines');
+    final docRef = medicine.id.isEmpty
+        ? medicinesRef.doc()
+        : medicinesRef.doc(medicine.id);
     await docRef.set(medicine.toMap(), SetOptions(merge: true));
   }
 
   // Delete medicine document
   Future<void> deleteMedicine(String medicineId) async {
-    final user = await _ensureAuthenticated();
-    if (user == null) throw Exception("User not authenticated");
+    final user = _authenticatedUser();
 
-    final medicinesRef = _firestore.collection('users').doc(user.uid).collection('medicines');
+    final medicinesRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('medicines');
     await medicinesRef.doc(medicineId).delete();
   }
 
@@ -104,27 +118,30 @@ class MedicineService {
     required int doseAmount,
     DateTime? scheduledAt,
   }) async {
-    final user = await _ensureAuthenticated();
-    if (user == null) throw Exception("User not authenticated");
+    final user = _authenticatedUser();
 
     final now = DateTime.now();
     final batch = _firestore.batch();
 
-    final doseLogsRef = _firestore.collection('users').doc(user.uid).collection('doseLogs');
-    final medicinesRef = _firestore.collection('users').doc(user.uid).collection('medicines');
+    final doseLogsRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('doseLogs');
+    final medicinesRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('medicines');
 
     final logRef = logId.isEmpty ? doseLogsRef.doc() : doseLogsRef.doc(logId);
-    batch.set(
-      logRef,
-      {
-        'medicineId': medicineId,
-        'medicineName': medicineName,
-        'scheduledAt': scheduledAt != null ? Timestamp.fromDate(scheduledAt) : Timestamp.fromDate(now),
-        'status': status.name,
-        'respondedAt': Timestamp.fromDate(now),
-      },
-      SetOptions(merge: true),
-    );
+    batch.set(logRef, {
+      'medicineId': medicineId,
+      'medicineName': medicineName,
+      'scheduledAt': scheduledAt != null
+          ? Timestamp.fromDate(scheduledAt)
+          : Timestamp.fromDate(now),
+      'status': status.name,
+      'respondedAt': Timestamp.fromDate(now),
+    }, SetOptions(merge: true));
 
     // If taken, decrement quantityCurrent
     if (status == DoseStatus.taken) {
@@ -140,10 +157,12 @@ class MedicineService {
 
   // Scan and mark past pending doses as missed if > 2 hours overdue
   Future<void> checkAndMarkMissedDoses() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final user = _authenticatedUser();
 
-    final doseLogsRef = _firestore.collection('users').doc(user.uid).collection('doseLogs');
+    final doseLogsRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('doseLogs');
     final twoHoursAgo = DateTime.now().subtract(const Duration(hours: 2));
     final overdueLogs = await doseLogsRef
         .where('status', isEqualTo: DoseStatus.pending.name)

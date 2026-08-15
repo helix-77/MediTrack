@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
@@ -12,9 +11,12 @@ import 'core/network/dio_client.dart';
 import 'features/bdapps/bd_apps_service.dart';
 import 'features/bdapps/data/bd_apps_api_client.dart';
 import 'features/bdapps/data/sms_api_client.dart';
+import 'logic/auth_guard.dart';
 import 'theme/app_theme.dart';
 import 'theme/colors.dart';
+import 'services/auth_service.dart';
 import 'services/notification_service.dart';
+import 'screens/account_upgrade_screen.dart';
 import 'screens/main_navigation_shell.dart';
 import 'screens/welcome_screen.dart';
 import 'firebase_options.dart';
@@ -73,9 +75,11 @@ class MediTrackApp extends StatelessWidget {
     final dio = DioClient.create(baseUrl: ApiConfig.bdappsBaseUrl);
     final bdAppsApiClient = BdAppsApiClient(dio);
     final smsApiClient = SmsApiClient(dio);
+    final authService = AuthService();
 
     return MultiProvider(
       providers: [
+        Provider<AuthService>.value(value: authService),
         ChangeNotifierProvider<BdAppsService>(
           create: (_) => BdAppsService(
             apiClient: bdAppsApiClient,
@@ -87,22 +91,24 @@ class MediTrackApp extends StatelessWidget {
         title: 'MediTrack',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
+        home: StreamBuilder(
+          stream: authService.authStateChanges,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(
-                  child: CircularProgressIndicator(color: AppColors.primaryGreen),
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryGreen,
+                  ),
                 ),
               );
             }
 
-            if (snapshot.hasData && snapshot.data != null) {
-              return const MainNavigationShell();
-            }
-
-            return const WelcomeScreen();
+            return switch (authRouteFor(snapshot.data)) {
+              AuthRoute.welcome => const WelcomeScreen(),
+              AuthRoute.accountUpgrade => const AccountUpgradeScreen(),
+              AuthRoute.app => const MainNavigationShell(),
+            };
           },
         ),
       ),

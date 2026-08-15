@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../logic/auth_guard.dart';
 import '../models/prescription.dart';
 
 class PrescriptionService {
@@ -9,16 +10,7 @@ class PrescriptionService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<User?> _ensureAuthenticated() async {
-    User? user = _auth.currentUser;
-    if (user == null) {
-      try {
-        final userCred = await _auth.signInAnonymously();
-        user = userCred.user;
-      } catch (_) {}
-    }
-    return user;
-  }
+  User _authenticatedUser() => requireAuthenticatedUser(_auth);
 
   // Stream all saved prescriptions for current user
   Stream<List<Prescription>> streamPrescriptions() {
@@ -32,22 +24,35 @@ class PrescriptionService {
           .collection('prescriptions')
           .orderBy('createdAt', descending: true)
           .snapshots()
-          .map((snapshot) => snapshot.docs.map((doc) => Prescription.fromSnapshot(doc)).toList());
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => Prescription.fromSnapshot(doc))
+                .toList(),
+          );
     });
   }
 
   // Save prescription document & optional image to Firebase Storage
-  Future<void> savePrescription(Prescription prescription, File? imageFile) async {
-    final user = await _ensureAuthenticated();
-    if (user == null) throw Exception("User not authenticated");
+  Future<void> savePrescription(
+    Prescription prescription,
+    File? imageFile,
+  ) async {
+    final user = _authenticatedUser();
 
-    final ref = _firestore.collection('users').doc(user.uid).collection('prescriptions');
-    final docRef = prescription.id.isEmpty ? ref.doc() : ref.doc(prescription.id);
+    final ref = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('prescriptions');
+    final docRef = prescription.id.isEmpty
+        ? ref.doc()
+        : ref.doc(prescription.id);
     String? imageUrl = prescription.imageUrl;
 
     if (imageFile != null && imageFile.existsSync()) {
       try {
-        final storageRef = _storage.ref().child('users/${user.uid}/prescriptions/${docRef.id}.jpg');
+        final storageRef = _storage.ref().child(
+          'users/${user.uid}/prescriptions/${docRef.id}.jpg',
+        );
         final uploadTask = await storageRef.putFile(imageFile);
         imageUrl = await uploadTask.ref.getDownloadURL();
       } catch (e) {
@@ -72,10 +77,14 @@ class PrescriptionService {
 
   // Delete prescription from Firestore & Firebase Storage
   Future<void> deletePrescription(String id, String? imageUrl) async {
-    final user = await _ensureAuthenticated();
-    if (user == null) throw Exception("User not authenticated");
+    final user = _authenticatedUser();
 
-    await _firestore.collection('users').doc(user.uid).collection('prescriptions').doc(id).delete();
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('prescriptions')
+        .doc(id)
+        .delete();
 
     if (imageUrl != null && imageUrl.startsWith('http')) {
       try {

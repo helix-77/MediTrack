@@ -5,6 +5,8 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../logic/auth_guard.dart';
+
 enum GeminiActionType { addMedicine, addBuyItem, unknown }
 
 class GeminiAction {
@@ -96,11 +98,9 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
     required String userPrompt,
     File? imageFile,
   }) async {
-    try {
-      if (FirebaseAuth.instance.currentUser == null) {
-        await FirebaseAuth.instance.signInAnonymously();
-      }
+    requireAuthenticatedUser(FirebaseAuth.instance);
 
+    try {
       final model = _getModel();
       final hasImage = imageFile != null && imageFile.existsSync();
 
@@ -134,7 +134,8 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
       debugPrint('Firebase AI Gemini Error: $e');
       return GeminiChatMessage(
         role: 'model',
-        content: '⚠️ Firebase AI Error: $e\n\nEnsure Firebase is initialized and Firebase AI service is active.',
+        content:
+            '⚠️ Firebase AI Error: $e\n\nEnsure Firebase is initialized and Firebase AI service is active.',
       );
     }
   }

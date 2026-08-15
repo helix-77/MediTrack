@@ -1,17 +1,20 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+import '../logic/auth_guard.dart';
 
-  // Get current user stream
+class AuthService {
+  AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _googleSignIn = googleSignIn ?? GoogleSignIn();
+
+  final FirebaseAuth _auth;
+  final GoogleSignIn _googleSignIn;
+
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Get current user
   User? get currentUser => _auth.currentUser;
 
-  // Sign up with Email & Password
   Future<UserCredential> signUpWithEmailAndPassword({
     required String email,
     required String password,
@@ -28,12 +31,11 @@ class AuthService {
       }
 
       return credential;
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
+    } on FirebaseAuthException catch (error) {
+      throw Exception(_authErrorMessage(error));
     }
   }
 
-  // Sign in with Email & Password
   Future<UserCredential> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -43,75 +45,99 @@ class AuthService {
         email: email.trim(),
         password: password.trim(),
       );
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
+    } on FirebaseAuthException catch (error) {
+      throw Exception(_authErrorMessage(error));
     }
   }
 
-  // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // Trigger Google Sign-In flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) {
-        // User cancelled Google sign-in
-        return null;
-      }
-
-      // Obtain auth details from Google request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // Create new credential for Firebase
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in to Firebase with Google credentials
+      final credential = await _googleCredential();
+      if (credential == null) return null;
       return await _auth.signInWithCredential(credential);
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    } catch (e) {
-      throw Exception("Google Sign-In failed: ${e.toString()}");
+    } on FirebaseAuthException catch (error) {
+      throw Exception(_authErrorMessage(error));
+    } catch (error) {
+      throw Exception('Google Sign-In failed: $error');
     }
   }
 
-  // Sign in anonymously (Guest Mode)
-  Future<UserCredential> signInAnonymously() async {
+  Future<UserCredential> linkAnonymousWithEmail({
+    required String email,
+    required String password,
+    String? displayName,
+  }) async {
+    final user = _requireAnonymousUser();
     try {
-      return await _auth.signInAnonymously();
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
+      final authCredential = EmailAuthProvider.credential(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      final credential = await user.linkWithCredential(authCredential);
+      if (displayName != null && displayName.trim().isNotEmpty) {
+        await credential.user?.updateDisplayName(displayName.trim());
+      }
+      return credential;
+    } on FirebaseAuthException catch (error) {
+      throw Exception(_authErrorMessage(error));
     }
   }
 
-  // Password reset email
+  Future<UserCredential?> linkAnonymousWithGoogle() async {
+    final user = _requireAnonymousUser();
+    try {
+      final credential = await _googleCredential();
+      if (credential == null) return null;
+      return await user.linkWithCredential(credential);
+    } on FirebaseAuthException catch (error) {
+      throw Exception(_authErrorMessage(error));
+    } catch (error) {
+      throw Exception('Google account linking failed: $error');
+    }
+  }
+
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
+    } on FirebaseAuthException catch (error) {
+      throw Exception(_authErrorMessage(error));
     }
   }
 
-  // Sign out
   Future<void> signOut() async {
-    await Future.wait([
-      _auth.signOut(),
-      _googleSignIn.signOut(),
-    ]);
+    await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
   }
 
-  // User-friendly error message handler
-  String _handleAuthException(FirebaseAuthException e) {
-    switch (e.code) {
+  User _requireAnonymousUser() {
+    final user = _auth.currentUser;
+    if (user == null) throw const UnauthenticatedException();
+    if (!user.isAnonymous) {
+      throw StateError('The current account is already registered.');
+    }
+    return user;
+  }
+
+  Future<OAuthCredential?> _googleCredential() async {
+    final googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) return null;
+
+    final googleAuth = await googleUser.authentication;
+    return GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+  }
+
+  String _authErrorMessage(FirebaseAuthException error) {
+    switch (error.code) {
       case 'user-not-found':
         return 'No account found with this email address.';
       case 'wrong-password':
-        return 'Incorrect password. Please try again.';
+      case 'invalid-credential':
+        return 'The email or password is incorrect.';
       case 'email-already-in-use':
-        return 'An account already exists for this email.';
+      case 'credential-already-in-use':
+        return 'This credential already belongs to another account. Sign in to that account instead; your current data cannot be merged automatically.';
       case 'invalid-email':
         return 'Please enter a valid email address.';
       case 'weak-password':
@@ -121,9 +147,12 @@ class AuthService {
       case 'too-many-requests':
         return 'Too many failed attempts. Please try again later.';
       case 'operation-not-allowed':
-        return 'Sign-in method is disabled in Firebase Console.';
+        return 'This sign-in method is not enabled.';
+      case 'network-request-failed':
+        return 'A network connection is required. Check your connection and try again.';
       default:
-        return e.message ?? 'Authentication error occurred (${e.code}).';
+        return error.message ??
+            'Authentication error occurred (${error.code}).';
     }
   }
 }
