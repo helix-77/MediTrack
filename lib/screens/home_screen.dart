@@ -14,6 +14,11 @@ import 'medicine_detail_screen.dart';
 import 'prescription_vault_screen.dart';
 import 'scan_prescription_screen.dart';
 import 'calendar_routine_screen.dart';
+import 'medicine_search_screen.dart';
+import 'nearby_pharmacies_screen.dart';
+import 'doctor_summary_screen.dart';
+import '../models/family_member.dart';
+import '../services/family_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,8 +30,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final MedicineService _medicineService = MedicineService();
   final UserProfileService _profileService = UserProfileService();
+  final FamilyService _familyService = FamilyService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _selectedFamilyMemberId; // null = all, 'self' = self, or member.id
 
   @override
   void dispose() {
@@ -56,15 +63,25 @@ class _HomeScreenState extends State<HomeScreen> {
               stream: _medicineService.streamMedicines(),
               builder: (context, medSnapshot) {
                 final allMedicines = medSnapshot.data ?? [];
-                final filteredMedicines = _searchQuery.isEmpty
-                    ? allMedicines
-                    : allMedicines
-                          .where(
-                            (m) => m.name.toLowerCase().contains(
-                              _searchQuery.toLowerCase(),
-                            ),
-                          )
-                          .toList();
+                var filteredMedicines = allMedicines;
+                if (_selectedFamilyMemberId == 'self') {
+                  filteredMedicines = filteredMedicines
+                      .where((m) => m.familyMemberId == null)
+                      .toList();
+                } else if (_selectedFamilyMemberId != null) {
+                  filteredMedicines = filteredMedicines
+                      .where((m) => m.familyMemberId == _selectedFamilyMemberId)
+                      .toList();
+                }
+                if (_searchQuery.isNotEmpty) {
+                  filteredMedicines = filteredMedicines
+                      .where(
+                        (m) => m.name.toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        ),
+                      )
+                      .toList();
+                }
 
                 final lowStockMedicines = allMedicines
                     .where(
@@ -122,7 +139,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         // Welcome Hero Card Banner
                         _buildWelcomeHeroBanner(),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+
+                        // Family Filter Chips
+                        _buildFamilyFilterChips(),
+                        const SizedBox(height: 16),
 
                         // Ongoing Routine Header
                         Row(
@@ -438,8 +459,159 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: AppColors.primaryGreen.withValues(alpha: 0.4),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MedicineSearchScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.search_rounded,
+                  size: 16,
+                  color: AppColors.primaryGreen,
+                ),
+                label: const Text(
+                  'Price & Generic Lookup',
+                  style: TextStyle(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: AppColors.primaryGreen.withValues(alpha: 0.4),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NearbyPharmaciesScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.local_pharmacy_outlined,
+                  size: 16,
+                  color: AppColors.primaryGreen,
+                ),
+                label: const Text(
+                  'Nearby Pharmacies',
+                  style: TextStyle(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: AppColors.primaryGreen.withValues(alpha: 0.4),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DoctorSummaryScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.picture_as_pdf_outlined,
+                  size: 16,
+                  color: AppColors.primaryGreen,
+                ),
+                label: const Text(
+                  'Doctor Summary',
+                  style: TextStyle(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFamilyFilterChips() {
+    return StreamBuilder<List<FamilyMember>>(
+      stream: _familyService.streamFamilyMembers(),
+      builder: (context, snapshot) {
+        final members = snapshot.data ?? [];
+        if (members.isEmpty) return const SizedBox.shrink();
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ChoiceChip(
+                label: const Text('All'),
+                selected: _selectedFamilyMemberId == null,
+                selectedColor: AppColors.accentPinkLight,
+                onSelected: (selected) {
+                  if (selected) setState(() => _selectedFamilyMemberId = null);
+                },
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('Self'),
+                selected: _selectedFamilyMemberId == 'self',
+                selectedColor: AppColors.accentPinkLight,
+                onSelected: (selected) {
+                  if (selected) setState(() => _selectedFamilyMemberId = 'self');
+                },
+              ),
+              const SizedBox(width: 8),
+              ...members.map(
+                (m) => Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(m.displayName),
+                    selected: _selectedFamilyMemberId == m.id,
+                    selectedColor: AppColors.accentPinkLight,
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedFamilyMemberId = selected ? m.id : null;
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

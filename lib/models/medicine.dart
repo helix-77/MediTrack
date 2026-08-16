@@ -14,6 +14,7 @@ class Medicine {
   final String? manufacturer;
   final String? imageUrl;
   final int lowStockThreshold;
+  final String? familyMemberId;
   final MedicineSchedule schedule;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -31,6 +32,7 @@ class Medicine {
     this.manufacturer,
     this.imageUrl,
     this.lowStockThreshold = 5,
+    this.familyMemberId,
     required this.schedule,
     required this.createdAt,
     required this.updatedAt,
@@ -49,6 +51,7 @@ class Medicine {
       'manufacturer': manufacturer,
       'imageUrl': imageUrl,
       'lowStockThreshold': lowStockThreshold,
+      'familyMemberId': familyMemberId,
       'schedule': schedule.toMap(),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
@@ -70,6 +73,7 @@ class Medicine {
       manufacturer: data['manufacturer'] as String?,
       imageUrl: data['imageUrl'] as String?,
       lowStockThreshold: data['lowStockThreshold'] as int? ?? 5,
+      familyMemberId: data['familyMemberId'] as String?,
       schedule: MedicineSchedule.fromMap(
         Map<String, dynamic>.from(data['schedule'] ?? {}),
       ),

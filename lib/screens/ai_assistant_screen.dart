@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import '../models/buy_list_item.dart';
 import '../models/medicine.dart';
 import '../models/medicine_schedule.dart';
 import '../services/buy_list_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/gemini_ai_service.dart';
 import '../services/medicine_service.dart';
 import '../theme/colors.dart';
@@ -78,6 +80,32 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final text = (customText ?? _textController.text).trim();
     if (text.isEmpty && _selectedImage == null) return;
 
+    final entitlement = context.read<EntitlementService>();
+    final quota = entitlement.checkAiQuota();
+
+    if (!quota.isAllowed) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: AppColors.primaryGreen),
+              SizedBox(width: 8),
+              Text('Daily Limit Reached'),
+            ],
+          ),
+          content: Text(quota.statusMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final userMsg = GeminiChatMessage(
       role: 'user',
       content: text.isEmpty && _selectedImage != null
@@ -103,6 +131,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       userPrompt: text,
       imageFile: imageToSend,
     );
+
+    await entitlement.recordAiUsage();
 
     setState(() {
       _messages.add(aiResponse);
@@ -247,20 +277,74 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Message List
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                return _buildMessageBubble(msg);
-              },
-            ),
-          ),
+      body: Consumer<EntitlementService>(
+        builder: (context, entitlement, _) {
+          final quota = entitlement.checkAiQuota();
+          return Column(
+            children: [
+              // Safety Disclaimer Banner
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: AppColors.accentPinkLight.withValues(alpha: 0.6),
+                child: Row(
+                  children: [
+                    const Icon(Icons.security, size: 16, color: AppColors.primaryGreen),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'MediTrack AI is for informational purposes only. Consult a doctor for medical diagnosis or emergencies.',
+                        style: AppTypography.bodySmall.copyWith(
+                          fontSize: 11,
+                          color: AppColors.primaryGreen,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Quota Tracker Banner
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                color: AppColors.surface,
+                child: Row(
+                  children: [
+                    Icon(
+                      entitlement.isSubscribed ? Icons.verified : Icons.hourglass_bottom_rounded,
+                      size: 14,
+                      color: entitlement.isSubscribed ? AppColors.primaryGreen : AppColors.warning,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        quota.statusMessage,
+                        style: AppTypography.bodySmall.copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: AppColors.divider),
+
+              // Message List
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = _messages[index];
+                    return _buildMessageBubble(msg);
+                  },
+                ),
+              ),
 
           // Loading Indicator
           if (_isLoading)
@@ -421,9 +505,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  ),
+);
+}
 
   Widget _buildQuickChip(String label, String prompt) {
     return Padding(

@@ -13,6 +13,9 @@ class UserProfile {
   final bool enableDoseReminders;
   final bool enableExpiryAlerts;
   final bool enableLowStockAlerts;
+  final int refillAlertDaysBefore;
+  final int expiryAlertDaysBefore;
+  final int lowStockThreshold;
 
   /// BD-format mobile number used as the `subscriberId` for BD Apps
   /// SMS / subscription actions. Nullable so Firebase-only users can
@@ -34,6 +37,9 @@ class UserProfile {
     this.enableDoseReminders = true,
     this.enableExpiryAlerts = true,
     this.enableLowStockAlerts = true,
+    this.refillAlertDaysBefore = 3,
+    this.expiryAlertDaysBefore = 30,
+    this.lowStockThreshold = 5,
     this.bdMobile,
   });
 
@@ -50,6 +56,9 @@ class UserProfile {
       'enableDoseReminders': enableDoseReminders,
       'enableExpiryAlerts': enableExpiryAlerts,
       'enableLowStockAlerts': enableLowStockAlerts,
+      'refillAlertDaysBefore': refillAlertDaysBefore,
+      'expiryAlertDaysBefore': expiryAlertDaysBefore,
+      'lowStockThreshold': lowStockThreshold,
       'bdMobile': bdMobile,
     };
   }
@@ -69,6 +78,9 @@ class UserProfile {
       enableDoseReminders: data['enableDoseReminders'] as bool? ?? true,
       enableExpiryAlerts: data['enableExpiryAlerts'] as bool? ?? true,
       enableLowStockAlerts: data['enableLowStockAlerts'] as bool? ?? true,
+      refillAlertDaysBefore: (data['refillAlertDaysBefore'] as num?)?.toInt() ?? 3,
+      expiryAlertDaysBefore: (data['expiryAlertDaysBefore'] as num?)?.toInt() ?? 30,
+      lowStockThreshold: (data['lowStockThreshold'] as num?)?.toInt() ?? 5,
       bdMobile: data['bdMobile'] as String?,
     );
   }

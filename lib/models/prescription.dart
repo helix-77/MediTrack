@@ -8,6 +8,7 @@ class Prescription {
   final String? imageUrl;
   final String extractedText;
   final String? notes;
+  final String status; // 'draft' | 'reviewed'
   final DateTime createdAt;
 
   Prescription({
@@ -18,6 +19,7 @@ class Prescription {
     this.imageUrl,
     required this.extractedText,
     this.notes,
+    this.status = 'draft',
     required this.createdAt,
   });
 
@@ -29,6 +31,7 @@ class Prescription {
       'imageUrl': imageUrl,
       'extractedText': extractedText,
       'notes': notes,
+      'status': status,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -43,6 +46,7 @@ class Prescription {
       imageUrl: data['imageUrl'] as String?,
       extractedText: data['extractedText'] as String? ?? '',
       notes: data['notes'] as String?,
+      status: data['status'] as String? ?? 'draft',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }

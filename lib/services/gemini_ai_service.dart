@@ -5,6 +5,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../logic/ai_action_validator.dart';
 import '../logic/auth_guard.dart';
 
 enum GeminiActionType { addMedicine, addBuyItem, unknown }
@@ -16,13 +17,14 @@ class GeminiAction {
   GeminiAction({required this.type, required this.data});
 
   factory GeminiAction.fromJson(Map<String, dynamic> json) {
-    final actionStr = (json['action'] as String?)?.toUpperCase() ?? '';
-    GeminiActionType type = GeminiActionType.unknown;
-    if (actionStr == 'ADD_MEDICINE') {
-      type = GeminiActionType.addMedicine;
-    } else if (actionStr == 'ADD_BUY_ITEM') {
-      type = GeminiActionType.addBuyItem;
+    final validated = AiActionValidator.validate(json);
+    if (validated == null) {
+      return GeminiAction(type: GeminiActionType.unknown, data: json);
     }
+    final type = switch (validated.type) {
+      ValidatedActionType.addMedicine => GeminiActionType.addMedicine,
+      ValidatedActionType.addBuyItem => GeminiActionType.addBuyItem,
+    };
     return GeminiAction(type: type, data: json);
   }
 }

@@ -7,13 +7,20 @@ import '../features/bdapps/data/models/check_subscription_response.dart';
 import '../features/bdapps/data/models/send_sms_response.dart';
 import '../features/bdapps/data/models/unsubscribe_response.dart';
 import '../models/user_profile.dart';
+import '../models/family_member.dart';
 import '../services/user_profile_service.dart';
 import '../services/auth_service.dart';
 import '../services/medicine_service.dart';
 import '../services/notification_service.dart';
+import '../services/family_service.dart';
+import '../l10n/locale_notifier.dart';
+import '../l10n/app_strings.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../theme/theme_notifier.dart';
 import 'prescription_vault_screen.dart';
+import 'nearby_pharmacies_screen.dart';
+import 'doctor_summary_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -27,13 +34,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final AuthService _authService = AuthService();
   final MedicineService _medicineService = MedicineService();
   final NotificationService _notificationService = NotificationService();
+  final FamilyService _familyService = FamilyService();
   final TextEditingController _subMobileController = TextEditingController();
   final TextEditingController _subOtpController = TextEditingController();
+  final TextEditingController _newFamilyMemberController = TextEditingController();
 
   @override
   void dispose() {
     _subMobileController.dispose();
     _subOtpController.dispose();
+    _newFamilyMemberController.dispose();
     super.dispose();
   }
 
@@ -189,6 +199,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 enableDoseReminders: currentProfile.enableDoseReminders,
                 enableExpiryAlerts: currentProfile.enableExpiryAlerts,
                 enableLowStockAlerts: currentProfile.enableLowStockAlerts,
+                refillAlertDaysBefore: currentProfile.refillAlertDaysBefore,
+                expiryAlertDaysBefore: currentProfile.expiryAlertDaysBefore,
+                lowStockThreshold: currentProfile.lowStockThreshold,
                 bdMobile: _normalisedBdMobile(bdMobileController.text),
               );
 
@@ -248,6 +261,22 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             children: [
               // User Profile Header Card
               _buildProfileHeaderCard(profile, user),
+              const SizedBox(height: 20),
+
+              // Language Selector Card
+              _buildLanguageSettingsCard(),
+              const SizedBox(height: 20),
+
+              // Dark Mode Theme Card
+              _buildThemeSettingsCard(),
+              const SizedBox(height: 20),
+
+              // Medical Tools & Reports Card
+              _buildMedicalToolsCard(),
+              const SizedBox(height: 20),
+
+              // Family Profiles Card
+              _buildFamilyProfilesCard(),
               const SizedBox(height: 20),
 
               // Medical & Emergency Info Card
@@ -458,6 +487,239 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
 
+  Widget _buildLanguageSettingsCard() {
+    return Consumer<LocaleNotifier>(
+      builder: (context, localeNotifier, _) {
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.language, color: AppColors.primaryGreen),
+                    const SizedBox(width: 8),
+                    Text('App Language (ভাষা)', style: AppTypography.headingMedium),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Select your preferred display language across the app.',
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                ),
+                const Divider(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Center(child: Text('English')),
+                        selected: !localeNotifier.isBangla,
+                        selectedColor: AppColors.accentPinkLight,
+                        onSelected: (selected) {
+                          if (selected) localeNotifier.setLanguage(AppLanguage.english);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Center(child: Text('বাংলা (Bangla)')),
+                        selected: localeNotifier.isBangla,
+                        selectedColor: AppColors.accentPinkLight,
+                        onSelected: (selected) {
+                          if (selected) localeNotifier.setLanguage(AppLanguage.bangla);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeSettingsCard() {
+    return Consumer<ThemeNotifier>(
+      builder: (context, themeNotifier, _) {
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.dark_mode_outlined, color: AppColors.primaryGreen),
+                    const SizedBox(width: 8),
+                    Text('Appearance & Theme', style: AppTypography.headingMedium),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Choose Light, Dark, or System default theme.',
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                ),
+                const Divider(),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Dark Mode'),
+                  subtitle: const Text('Reduces eye strain at night'),
+                  value: themeNotifier.isDarkMode,
+                  activeThumbColor: AppColors.primaryGreen,
+                  onChanged: (val) {
+                    themeNotifier.toggleDarkMode(val);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMedicalToolsCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.medical_services_outlined, color: AppColors.primaryGreen),
+                const SizedBox(width: 8),
+                Text('Medical Tools & Reports', style: AppTypography.headingMedium),
+              ],
+            ),
+            const Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.local_pharmacy_outlined, color: AppColors.primaryGreen),
+              title: const Text('Nearby Pharmacies'),
+              subtitle: const Text('Find 24/7 pharmacies close to your current location'),
+              trailing: const Icon(Icons.chevron_right, color: AppColors.primaryGreen),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NearbyPharmaciesScreen()),
+                );
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.primaryGreen),
+              title: const Text('Export Doctor Clinical Summary'),
+              subtitle: const Text('Generate printable medication & adherence report'),
+              trailing: const Icon(Icons.chevron_right, color: AppColors.primaryGreen),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DoctorSummaryScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFamilyProfilesCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.family_restroom, color: AppColors.primaryGreen),
+                const SizedBox(width: 8),
+                Text('Family Members', style: AppTypography.headingMedium),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Track medicines separately for your parents, children, or dependents.',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+            ),
+            const Divider(),
+            StreamBuilder<List<FamilyMember>>(
+              stream: _familyService.streamFamilyMembers(),
+              builder: (context, snapshot) {
+                final members = snapshot.data ?? [];
+                if (members.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      'No family members added yet. Add one below to categorize medications.',
+                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: members.map((member) {
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const CircleAvatar(
+                        radius: 16,
+                        backgroundColor: AppColors.accentPinkLight,
+                        child: Icon(Icons.person, size: 18, color: AppColors.primaryGreen),
+                      ),
+                      title: Text(member.displayName, style: AppTypography.bodyMedium),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
+                        onPressed: () async {
+                          await _familyService.deleteFamilyMember(member.id);
+                        },
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _newFamilyMemberController,
+                    decoration: const InputDecoration(
+                      hintText: 'e.g. Amma, Baba, Child',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    final name = _newFamilyMemberController.text.trim();
+                    if (name.isNotEmpty) {
+                      await _familyService.addFamilyMember(name);
+                      _newFamilyMemberController.clear();
+                    }
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildNotificationSettingsCard(UserProfile profile) {
     return Card(
       child: Padding(
@@ -491,6 +753,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   enableDoseReminders: val,
                   enableExpiryAlerts: profile.enableExpiryAlerts,
                   enableLowStockAlerts: profile.enableLowStockAlerts,
+                  refillAlertDaysBefore: profile.refillAlertDaysBefore,
+                  expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
+                  lowStockThreshold: profile.lowStockThreshold,
+                  bdMobile: profile.bdMobile,
                 );
                 await _profileService.saveProfile(updated);
                 await _rescheduleMedicines(updated);
@@ -498,8 +764,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             ),
             SwitchListTile(
               title: const Text('Expiry Alerts'),
-              subtitle: const Text(
-                '30-day early warnings before medicine expires',
+              subtitle: Text(
+                '${profile.expiryAlertDaysBefore}-day early warnings before medicine expires',
               ),
               value: profile.enableExpiryAlerts,
               activeThumbColor: AppColors.primaryGreen,
@@ -517,6 +783,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   enableDoseReminders: profile.enableDoseReminders,
                   enableExpiryAlerts: val,
                   enableLowStockAlerts: profile.enableLowStockAlerts,
+                  refillAlertDaysBefore: profile.refillAlertDaysBefore,
+                  expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
+                  lowStockThreshold: profile.lowStockThreshold,
+                  bdMobile: profile.bdMobile,
                 );
                 await _profileService.saveProfile(updated);
                 await _rescheduleMedicines(updated);
@@ -524,8 +794,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             ),
             SwitchListTile(
               title: const Text('Low Stock Alerts'),
-              subtitle: const Text(
-                'Notifications when stock drops below threshold',
+              subtitle: Text(
+                'Alerts when stock drops to or below ${profile.lowStockThreshold} units',
               ),
               value: profile.enableLowStockAlerts,
               activeThumbColor: AppColors.primaryGreen,
@@ -543,10 +813,121 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   enableDoseReminders: profile.enableDoseReminders,
                   enableExpiryAlerts: profile.enableExpiryAlerts,
                   enableLowStockAlerts: val,
+                  refillAlertDaysBefore: profile.refillAlertDaysBefore,
+                  expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
+                  lowStockThreshold: profile.lowStockThreshold,
+                  bdMobile: profile.bdMobile,
                 );
                 await _profileService.saveProfile(updated);
                 await _rescheduleMedicines(updated);
               },
+            ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Text(
+                'Alert Thresholds',
+                style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Refill Warning (Days Before)'),
+              subtitle: Text('${profile.refillAlertDaysBefore} days before running out'),
+              trailing: DropdownButton<int>(
+                value: profile.refillAlertDaysBefore,
+                items: [1, 2, 3, 5, 7, 10, 14]
+                    .map((d) => DropdownMenuItem(value: d, child: Text('$d days')))
+                    .toList(),
+                onChanged: (newVal) async {
+                  if (newVal == null) return;
+                  final updated = UserProfile(
+                    uid: profile.uid,
+                    displayName: profile.displayName,
+                    email: profile.email,
+                    bloodGroup: profile.bloodGroup,
+                    allergies: profile.allergies,
+                    doctorName: profile.doctorName,
+                    doctorPhone: profile.doctorPhone,
+                    emergencyContactName: profile.emergencyContactName,
+                    emergencyContactPhone: profile.emergencyContactPhone,
+                    enableDoseReminders: profile.enableDoseReminders,
+                    enableExpiryAlerts: profile.enableExpiryAlerts,
+                    enableLowStockAlerts: profile.enableLowStockAlerts,
+                    refillAlertDaysBefore: newVal,
+                    expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
+                    lowStockThreshold: profile.lowStockThreshold,
+                    bdMobile: profile.bdMobile,
+                  );
+                  await _profileService.saveProfile(updated);
+                },
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Expiry Warning (Days Before)'),
+              subtitle: Text('${profile.expiryAlertDaysBefore} days before expiration'),
+              trailing: DropdownButton<int>(
+                value: profile.expiryAlertDaysBefore,
+                items: [7, 14, 30, 60, 90]
+                    .map((d) => DropdownMenuItem(value: d, child: Text('$d days')))
+                    .toList(),
+                onChanged: (newVal) async {
+                  if (newVal == null) return;
+                  final updated = UserProfile(
+                    uid: profile.uid,
+                    displayName: profile.displayName,
+                    email: profile.email,
+                    bloodGroup: profile.bloodGroup,
+                    allergies: profile.allergies,
+                    doctorName: profile.doctorName,
+                    doctorPhone: profile.doctorPhone,
+                    emergencyContactName: profile.emergencyContactName,
+                    emergencyContactPhone: profile.emergencyContactPhone,
+                    enableDoseReminders: profile.enableDoseReminders,
+                    enableExpiryAlerts: profile.enableExpiryAlerts,
+                    enableLowStockAlerts: profile.enableLowStockAlerts,
+                    refillAlertDaysBefore: profile.refillAlertDaysBefore,
+                    expiryAlertDaysBefore: newVal,
+                    lowStockThreshold: profile.lowStockThreshold,
+                    bdMobile: profile.bdMobile,
+                  );
+                  await _profileService.saveProfile(updated);
+                },
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Default Low Stock Threshold'),
+              subtitle: Text('${profile.lowStockThreshold} units remaining'),
+              trailing: DropdownButton<int>(
+                value: profile.lowStockThreshold,
+                items: [2, 5, 10, 15, 20]
+                    .map((d) => DropdownMenuItem(value: d, child: Text('$d units')))
+                    .toList(),
+                onChanged: (newVal) async {
+                  if (newVal == null) return;
+                  final updated = UserProfile(
+                    uid: profile.uid,
+                    displayName: profile.displayName,
+                    email: profile.email,
+                    bloodGroup: profile.bloodGroup,
+                    allergies: profile.allergies,
+                    doctorName: profile.doctorName,
+                    doctorPhone: profile.doctorPhone,
+                    emergencyContactName: profile.emergencyContactName,
+                    emergencyContactPhone: profile.emergencyContactPhone,
+                    enableDoseReminders: profile.enableDoseReminders,
+                    enableExpiryAlerts: profile.enableExpiryAlerts,
+                    enableLowStockAlerts: profile.enableLowStockAlerts,
+                    refillAlertDaysBefore: profile.refillAlertDaysBefore,
+                    expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
+                    lowStockThreshold: newVal,
+                    bdMobile: profile.bdMobile,
+                  );
+                  await _profileService.saveProfile(updated);
+                },
+              ),
             ),
           ],
         ),

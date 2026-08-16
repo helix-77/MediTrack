@@ -14,7 +14,10 @@ import 'features/bdapps/data/sms_api_client.dart';
 import 'logic/auth_guard.dart';
 import 'theme/app_theme.dart';
 import 'theme/colors.dart';
+import 'theme/theme_notifier.dart';
+import 'l10n/locale_notifier.dart';
 import 'services/auth_service.dart';
+import 'services/entitlement_service.dart';
 import 'services/notification_service.dart';
 import 'screens/account_upgrade_screen.dart';
 import 'screens/main_navigation_shell.dart';
@@ -95,6 +98,15 @@ class MediTrackApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<AuthService>.value(value: authService),
+        ChangeNotifierProvider<ThemeNotifier>(
+          create: (_) => ThemeNotifier(),
+        ),
+        ChangeNotifierProvider<LocaleNotifier>(
+          create: (_) => LocaleNotifier(),
+        ),
+        ChangeNotifierProvider<EntitlementService>(
+          create: (_) => EntitlementService()..refreshEntitlement(),
+        ),
         ChangeNotifierProvider<BdAppsService>(
           create: (_) => BdAppsService(
             apiClient: bdAppsApiClient,
@@ -102,12 +114,17 @@ class MediTrackApp extends StatelessWidget {
           ),
         ),
       ],
-      child: MaterialApp(
-        navigatorKey: appNavigatorKey,
-        title: 'MediTrack',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        home: StreamBuilder(
+      child: Builder(
+        builder: (context) {
+          final themeNotifier = context.watch<ThemeNotifier>();
+          return MaterialApp(
+            navigatorKey: appNavigatorKey,
+            title: 'MediTrack',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeNotifier.themeMode,
+            home: StreamBuilder(
           stream: authService.authStateChanges,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -127,7 +144,9 @@ class MediTrackApp extends StatelessWidget {
             };
           },
         ),
-      ),
-    );
+      );
+    },
+  ),
+);
   }
 }

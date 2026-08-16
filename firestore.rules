@@ -8,5 +8,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Read-only reference catalogue for authenticated users; writes denied to clients
+    match /medicineReference/{document} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
   }
 }
