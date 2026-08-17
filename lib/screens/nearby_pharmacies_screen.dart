@@ -19,8 +19,10 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
   Position? _currentPosition;
   bool _isLoadingLocation = true;
   bool _isOpeningMap = false;
+  bool _isEmulatorDefault = false;
   LocationFailureReason? _failureReason;
   bool _isEntitled = true;
+  String? _selectedCityName;
 
   final List<_PharmacyCategory> _categories = const [
     _PharmacyCategory(
@@ -51,6 +53,13 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
       icon: Icons.medical_services_rounded,
       color: Color(0xFF7B1FA2),
     ),
+  ];
+
+  final List<_PresetLocation> _presetLocations = const [
+    _PresetLocation(name: 'Dhaka', latitude: 23.8103, longitude: 90.4125),
+    _PresetLocation(name: 'Chittagong', latitude: 22.3569, longitude: 91.7832),
+    _PresetLocation(name: 'Sylhet', latitude: 24.8949, longitude: 91.8687),
+    _PresetLocation(name: 'Rajshahi', latitude: 24.3636, longitude: 88.6241),
   ];
 
   @override
@@ -87,6 +96,7 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
     setState(() {
       _isLoadingLocation = true;
       _failureReason = null;
+      _selectedCityName = null;
     });
 
     final result = await _pharmacyService.getCurrentPositionDetailed();
@@ -97,16 +107,17 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
       _isLoadingLocation = false;
       _currentPosition = result.position;
       _failureReason = result.failureReason;
+      _isEmulatorDefault = result.isEmulatorDefault;
     });
   }
 
-  void _useDhakaCoordinates() {
+  void _setLocation(double lat, double lon, String cityName) {
     setState(() {
       _currentPosition = Position(
-        latitude: 23.8103,
-        longitude: 90.4125,
+        latitude: lat,
+        longitude: lon,
         timestamp: DateTime.now(),
-        accuracy: 10,
+        accuracy: 5,
         altitude: 0,
         heading: 0,
         speed: 0,
@@ -115,12 +126,15 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
         headingAccuracy: 0,
       );
       _failureReason = null;
+      _isEmulatorDefault = false;
+      _selectedCityName = cityName;
     });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Location set to Dhaka Center (23.8103° N, 90.4125° E)'),
+      SnackBar(
+        content: Text('Location set to $cityName ($lat° N, $lon° E)'),
         backgroundColor: AppColors.primaryGreen,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -219,6 +233,8 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
         padding: const EdgeInsets.all(16.0),
         children: [
           _buildLocationStatusCard(),
+          const SizedBox(height: 12),
+          _buildCityPresetChips(),
           const SizedBox(height: 16),
           _buildHeroMapsCard(),
           const SizedBox(height: 24),
@@ -236,10 +252,61 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
     );
   }
 
+  Widget _buildCityPresetChips() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Preset Locations (Bangladesh)',
+          style: AppTypography.bodySmall.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _presetLocations.map((loc) {
+              final isSelected = _selectedCityName == loc.name ||
+                  (_selectedCityName == null &&
+                      _currentPosition != null &&
+                      (_currentPosition!.latitude - loc.latitude).abs() < 0.01 &&
+                      (_currentPosition!.longitude - loc.longitude).abs() < 0.01);
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: ChoiceChip(
+                  label: Text(loc.name),
+                  selected: isSelected,
+                  selectedColor: AppColors.primaryGreen,
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  backgroundColor: AppColors.surface,
+                  side: BorderSide(
+                    color: isSelected ? AppColors.primaryGreen : AppColors.divider,
+                  ),
+                  onSelected: (selected) {
+                    if (selected) {
+                      _setLocation(loc.latitude, loc.longitude, loc.name);
+                    }
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildLocationStatusCard() {
     if (_isLoadingLocation) {
       return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
@@ -257,7 +324,7 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
             ),
             SizedBox(width: 12),
             Text(
-              'Detecting device GPS location...',
+              'Acquiring precise GPS coordinates...',
               style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
           ],
@@ -266,6 +333,48 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
     }
 
     if (_currentPosition != null) {
+      if (_isEmulatorDefault) {
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.warning.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.devices_other_rounded, color: AppColors.warning, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Emulator Location Detected',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    Text(
+                      'Defaulting to Mountain View (${_currentPosition!.latitude.toStringAsFixed(2)}, ${_currentPosition!.longitude.toStringAsFixed(2)})',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => _setLocation(23.8103, 90.4125, 'Dhaka'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Text('Set Dhaka', style: TextStyle(fontSize: 11)),
+              ),
+            ],
+          ),
+        );
+      }
+
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -287,9 +396,11 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'GPS Location Active',
-                    style: TextStyle(
+                  Text(
+                    _selectedCityName != null
+                        ? 'Location: $_selectedCityName'
+                        : 'GPS Location Active',
+                    style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                       color: AppColors.textPrimary,
@@ -321,7 +432,14 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
     // Handle failure reasons with clear, actionable UI
     String title = 'GPS Unavailable';
     String description = 'Google Maps will search your general area.';
-    Widget? actionButton;
+    Widget actionButton = TextButton(
+      onPressed: () => _setLocation(23.8103, 90.4125, 'Dhaka'),
+      style: TextButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        foregroundColor: AppColors.primaryGreen,
+      ),
+      child: const Text('Use Dhaka', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+    );
 
     switch (_failureReason) {
       case LocationFailureReason.serviceDisabled:
@@ -369,15 +487,7 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
       case LocationFailureReason.timeoutOrUnavailable:
       default:
         title = 'GPS Fix Pending / Emulator';
-        description = 'No satellite fix yet. Maps can still search your area.';
-        actionButton = TextButton(
-          onPressed: _useDhakaCoordinates,
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            foregroundColor: AppColors.primaryGreen,
-          ),
-          child: const Text('Use Dhaka', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-        );
+        description = 'No satellite fix yet. Select a city or search Maps directly.';
         break;
     }
 
@@ -469,7 +579,9 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Real-time pins, opening hours & directions',
+                      _currentPosition != null
+                          ? 'Coordinates: ${_currentPosition!.latitude.toStringAsFixed(4)}, ${_currentPosition!.longitude.toStringAsFixed(4)}'
+                          : 'Searches automatically around your location',
                       style: AppTypography.bodySmall,
                     ),
                   ],
@@ -479,7 +591,7 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Explore pharmacies around your current position on Google Maps with verified reviews, contact numbers, and turn-by-turn navigation.',
+            'Explore pharmacies around your selected coordinates on Google Maps with verified reviews, contact numbers, and turn-by-turn navigation.',
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondary,
               fontSize: 13,
@@ -652,6 +764,18 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
       ],
     );
   }
+}
+
+class _PresetLocation {
+  final String name;
+  final double latitude;
+  final double longitude;
+
+  const _PresetLocation({
+    required this.name,
+    required this.latitude,
+    required this.longitude,
+  });
 }
 
 class _PharmacyCategory {

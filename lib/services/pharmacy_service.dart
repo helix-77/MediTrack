@@ -12,9 +12,13 @@ enum LocationFailureReason {
 class LocationFetchResult {
   final Position? position;
   final LocationFailureReason? failureReason;
+  final bool isEmulatorDefault;
 
-  const LocationFetchResult.success(this.position) : failureReason = null;
-  const LocationFetchResult.failure(this.failureReason) : position = null;
+  const LocationFetchResult.success(this.position, {this.isEmulatorDefault = false})
+      : failureReason = null;
+  const LocationFetchResult.failure(this.failureReason)
+      : position = null,
+        isEmulatorDefault = false;
 
   bool get isSuccess => position != null;
 }
@@ -22,7 +26,12 @@ class LocationFetchResult {
 /// Service responsible for acquiring device GPS location and launching
 /// Google Maps to locate nearby pharmacies.
 class PharmacyService {
-  /// Request and retrieve the user's current GPS position with robust fallbacks.
+  /// Check if coordinates match the Android Emulator default (Mountain View, CA).
+  static bool isDefaultEmulatorLocation(double lat, double lon) {
+    return (lat >= 37.41 && lat <= 37.43) && (lon >= -122.09 && lon <= -122.07);
+  }
+
+  /// Request and retrieve the user's current GPS position with high accuracy.
   Future<LocationFetchResult> getCurrentPositionDetailed() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -42,30 +51,34 @@ class PharmacyService {
         return const LocationFetchResult.failure(LocationFailureReason.permissionDeniedForever);
       }
 
-      // 1. Try to get last known position first (fast, works on emulators & cached fixes)
-      Position? lastKnown;
+      // 1. Attempt to obtain a fresh high-accuracy position from GPS / Fused Provider
+      Position? position;
       try {
-        lastKnown = await Geolocator.getLastKnownPosition();
-      } catch (e) {
-        debugPrint('Error getting last known position: $e');
-      }
-
-      // 2. Try to get a fresh fix
-      try {
-        final current = await Geolocator.getCurrentPosition(
+        position = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium,
-            timeLimit: Duration(seconds: 5),
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 12),
           ),
         );
-        return LocationFetchResult.success(current);
       } catch (e) {
-        debugPrint('Error obtaining current fresh position: $e');
-        if (lastKnown != null) {
-          return LocationFetchResult.success(lastKnown);
-        }
-        return const LocationFetchResult.failure(LocationFailureReason.timeoutOrUnavailable);
+        debugPrint('Fresh position acquisition timed out or failed: $e');
       }
+
+      // 2. Fall back to last known position if fresh position timed out
+      if (position == null) {
+        try {
+          position = await Geolocator.getLastKnownPosition();
+        } catch (e) {
+          debugPrint('Error getting last known position: $e');
+        }
+      }
+
+      if (position != null) {
+        final isEmulator = isDefaultEmulatorLocation(position.latitude, position.longitude);
+        return LocationFetchResult.success(position, isEmulatorDefault: isEmulator);
+      }
+
+      return const LocationFetchResult.failure(LocationFailureReason.timeoutOrUnavailable);
     } catch (e) {
       debugPrint('Unexpected error in getCurrentPositionDetailed: $e');
       return const LocationFetchResult.failure(LocationFailureReason.timeoutOrUnavailable);
@@ -116,6 +129,17 @@ class PharmacyService {
     );
   }
 
+  /// Construct a native geo: URI for Android maps intent.
+  Uri buildGeoSearchUri({
+    double? latitude,
+    double? longitude,
+    String query = 'pharmacy',
+  }) {
+    final lat = latitude ?? 0;
+    final lon = longitude ?? 0;
+    return Uri.parse('geo:$lat,$lon?q=${Uri.encodeComponent(query)}');
+  }
+
   /// Launch Google Maps app (or browser fallback) with the given search query and location.
   Future<bool> openNearbyPharmaciesInMaps({
     double? latitude,
@@ -131,7 +155,28 @@ class PharmacyService {
       }
     }
 
-    final uri = buildGoogleMapsSearchUri(
+    // 1. Try launching with native geo: URI on Android/iOS
+    if (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        final geoUri = buildGeoSearchUri(
+          latitude: latitude,
+          longitude: longitude,
+          query: query,
+        );
+        if (await canLaunchUrl(geoUri)) {
+          final launched = await launchUrl(
+            geoUri,
+            mode: LaunchMode.externalApplication,
+          );
+          if (launched) return true;
+        }
+      } catch (e) {
+        debugPrint('Failed to launch geo URI, falling back to HTTPS: $e');
+      }
+    }
+
+    // 2. Fallback to HTTPS Google Maps Search URL
+    final httpsUri = buildGoogleMapsSearchUri(
       latitude: latitude,
       longitude: longitude,
       query: query,
@@ -139,11 +184,11 @@ class PharmacyService {
 
     try {
       return await launchUrl(
-        uri,
+        httpsUri,
         mode: LaunchMode.externalApplication,
       );
     } catch (e) {
-      debugPrint('Error launching Google Maps search: $e');
+      debugPrint('Error launching Google Maps HTTPS search: $e');
       return false;
     }
   }
