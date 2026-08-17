@@ -19,5 +19,7 @@ if ($appId === false || $appId === '' || $appPassword === false || $appPassword 
     exit;
 }
 
-define('BDAPPS_APP_ID', $appId);
-define('BDAPPS_APP_PASSWORD', $appPassword);
+define('BDAPPS_APP_ID', 'APP_139363');
+define('BDAPPS_APP_PASSWORD', '0e74fafba35bd80a3e484ca07ab43715');
+
+

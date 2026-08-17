@@ -1,15 +1,26 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../logic/bd_mobile_validator.dart';
 import 'data/bd_apps_api_client.dart';
 import 'data/models/check_subscription_response.dart';
 import 'data/models/send_otp_response.dart';
 import 'data/models/send_sms_response.dart';
+import 'data/models/subscribe_response.dart';
 import 'data/models/unsubscribe_response.dart';
 import 'data/models/verify_otp_response.dart';
 import 'data/sms_api_client.dart';
 
-/// Holds the BD Apps side of the Profile tab's SMS / Subscribe cards.
+enum SubscriptionState {
+  idle,
+  requesting,
+  pending,
+  registered,
+  failed,
+}
+
+/// Holds the BD Apps side of the Profile tab and Subscription Offer screens.
 class BdAppsService extends ChangeNotifier {
   BdAppsService({
     required BdAppsApiClient apiClient,
@@ -32,18 +43,26 @@ class BdAppsService extends ChangeNotifier {
   /// Most recent server responses.
   SendOtpResponse? lastSendOtpResponse;
   VerifyOtpResponse? lastVerifyOtpResponse;
+  SubscribeResponse? lastSubscribeResponse;
   SendSmsResponse? lastSendSmsResponse;
   CheckSubscriptionResponse? lastCheckSubscriptionResponse;
   UnsubscribeResponse? lastUnsubscribeResponse;
 
-  /// Last-known subscription lifecycle state (e.g. `"REGISTERED"` / `"UNREGISTERED"`).
+  /// Current subscription state machine status.
+  SubscriptionState subscriptionState = SubscriptionState.idle;
+
+  /// Last-known subscription lifecycle state (e.g. `"REGISTERED"` / `"UNREGISTERED"` / `"PENDING"`).
   String? subscriptionStatus;
 
   bool isSendingOtp = false;
   bool isVerifyingOtp = false;
+  bool isRequestingSubscription = false;
   bool isSendingSms = false;
   bool isCheckingSubscription = false;
   bool isUnsubscribing = false;
+
+  /// Remaining seconds in active polling loop (for UI countdown).
+  int pollingSecondsRemaining = 0;
 
   String? errorMessage;
 
@@ -57,6 +76,110 @@ class BdAppsService extends ChangeNotifier {
 
   /// Convenience: `true` when a BD mobile is linked.
   bool get hasBdMobile => _bdMobile != null && _bdMobile!.isNotEmpty;
+
+  /// Convenience: `true` when subscription is confirmed registered.
+  bool get isRegistered =>
+      subscriptionStatus?.toUpperCase() == 'REGISTERED' ||
+      subscriptionState == SubscriptionState.registered;
+
+  /// Requests direct carrier subscription for Robi/Airtel numbers, followed by
+  /// a 5-second polling loop up to 60 seconds.
+  Future<bool> requestSubscription({
+    required String mobileNumber,
+    Duration pollInterval = const Duration(seconds: 5),
+    Duration maxPollDuration = const Duration(seconds: 60),
+  }) async {
+    final validationError = BdMobileValidator.validateRobiAirtel(mobileNumber);
+    if (validationError != null) {
+      errorMessage = validationError;
+      subscriptionState = SubscriptionState.failed;
+      notifyListeners();
+      return false;
+    }
+
+    final normalized = BdMobileValidator.normalize(mobileNumber);
+    _bdMobile = normalized;
+    isRequestingSubscription = true;
+    subscriptionState = SubscriptionState.requesting;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.subscribe(userMobile: normalized);
+      lastSubscribeResponse = response;
+
+      if (response.isRegistered) {
+        subscriptionStatus = 'REGISTERED';
+        subscriptionState = SubscriptionState.registered;
+        isRequestingSubscription = false;
+        notifyListeners();
+        return true;
+      }
+
+      if (response.isPending || response.isRequestAccepted) {
+        subscriptionState = SubscriptionState.pending;
+        subscriptionStatus = 'PENDING';
+        notifyListeners();
+
+        // Start carrier status polling
+        final totalSeconds = maxPollDuration.inSeconds;
+        final intervalSeconds = pollInterval.inSeconds.clamp(1, 60);
+        final maxAttempts = (totalSeconds / intervalSeconds).ceil();
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+          pollingSecondsRemaining = totalSeconds - ((attempt - 1) * intervalSeconds);
+          notifyListeners();
+
+          await Future<void>.delayed(pollInterval);
+
+          // Query carrier status
+          await refreshSubscriptionStatus();
+
+          if (subscriptionStatus?.toUpperCase() == 'REGISTERED') {
+            subscriptionState = SubscriptionState.registered;
+            isRequestingSubscription = false;
+            pollingSecondsRemaining = 0;
+            notifyListeners();
+            return true;
+          }
+
+          if (subscriptionStatus?.toUpperCase() == 'UNREGISTERED' && attempt > 1) {
+            // Explicit rejection
+            subscriptionState = SubscriptionState.failed;
+            errorMessage = 'Subscription was cancelled or declined by carrier.';
+            isRequestingSubscription = false;
+            pollingSecondsRemaining = 0;
+            notifyListeners();
+            return false;
+          }
+        }
+
+        // Timed out polling
+        subscriptionState = SubscriptionState.failed;
+        errorMessage =
+            'Confirmation timed out. If you confirmed the carrier prompt, tap Refresh Status.';
+        return false;
+      }
+
+      subscriptionState = SubscriptionState.failed;
+      errorMessage = response.statusDetail ??
+          response.error ??
+          'Failed to initiate subscription.';
+      return false;
+    } on DioException catch (e) {
+      subscriptionState = SubscriptionState.failed;
+      errorMessage = _messageForDioException(e);
+      return false;
+    } catch (e) {
+      subscriptionState = SubscriptionState.failed;
+      errorMessage = 'Something went wrong: $e';
+      return false;
+    } finally {
+      isRequestingSubscription = false;
+      pollingSecondsRemaining = 0;
+      notifyListeners();
+    }
+  }
 
   /// Requests a subscription OTP from BD Apps for the target mobile number.
   Future<bool> sendOtp({required String mobileNumber}) async {
@@ -106,6 +229,7 @@ class BdAppsService extends ChangeNotifier {
       lastVerifyOtpResponse = response;
       if (response.isSuccess || response.isSubscribed) {
         subscriptionStatus = 'REGISTERED';
+        subscriptionState = SubscriptionState.registered;
         pendingReferenceNo = null;
         return true;
       }
@@ -140,6 +264,11 @@ class BdAppsService extends ChangeNotifier {
       final status = response.subscriptionStatus;
       if (status != null && status.isNotEmpty) {
         subscriptionStatus = status;
+        if (status.toUpperCase() == 'REGISTERED') {
+          subscriptionState = SubscriptionState.registered;
+        } else if (status.toUpperCase() == 'UNREGISTERED') {
+          subscriptionState = SubscriptionState.idle;
+        }
       }
     } on DioException catch (e) {
       errorMessage = _messageForDioException(e);
@@ -169,6 +298,7 @@ class BdAppsService extends ChangeNotifier {
       } else {
         subscriptionStatus = 'UNREGISTERED';
       }
+      subscriptionState = SubscriptionState.idle;
     } on DioException catch (e) {
       errorMessage = _messageForDioException(e);
     } catch (_) {

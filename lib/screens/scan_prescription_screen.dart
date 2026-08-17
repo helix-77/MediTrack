@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import 'package:provider/provider.dart';
+
+import '../logic/entitlement_guard.dart';
 import '../logic/image_preflight.dart';
 import '../logic/prescription_validator.dart';
 import '../models/prescription.dart';
 import '../models/prescription_extraction.dart';
+import '../services/entitlement_service.dart';
 import '../services/prescription_extraction_service.dart';
 import '../services/prescription_service.dart';
 import '../theme/colors.dart';
@@ -48,7 +52,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
         'Prescription ${DateFormat('MMM d, yyyy').format(DateTime.now())}';
     if (widget.initialImage != null) {
       _imageFile = widget.initialImage;
-      _runExtraction(_imageFile!);
+      _preflightImage(_imageFile!);
     }
   }
 
@@ -59,6 +63,17 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
     _patientController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<ImageQualityResult> _preflightImage(File file) async {
+    final size = await file.length();
+    final preflight = ImagePreflight.evaluate(fileSizeBytes: size);
+    if (mounted) {
+      setState(() {
+        _preflightWarning = preflight.warningMessage;
+      });
+    }
+    return preflight;
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -74,22 +89,30 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
         _imageFile = file;
         _errorMessage = null;
       });
+      await _preflightImage(file);
       await _runExtraction(file);
     }
   }
 
   Future<void> _runExtraction(File file) async {
     // Preflight quality check
-    final size = await file.length();
-    final preflight = ImagePreflight.evaluate(fileSizeBytes: size);
-    setState(() {
-      _preflightWarning = preflight.warningMessage;
-    });
-
+    final preflight = await _preflightImage(file);
     if (!preflight.isAcceptable) {
-      setState(() {
-        _errorMessage = preflight.warningMessage;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = preflight.warningMessage;
+        });
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    final entitlement = context.read<EntitlementService>();
+    final isAllowed = await entitlement.requirePremium(
+      context,
+      feature: EntitlementFeature.prescriptionOcr,
+    );
+    if (!isAllowed || !mounted) {
       return;
     }
 
@@ -100,6 +123,8 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
 
     try {
       final draft = await _aiService.extractPrescription(imageFile: file);
+      await entitlement.recordPrescriptionScanUsage();
+      if (!mounted) return;
       setState(() {
         if (draft.doctorName != null && draft.doctorName!.isNotEmpty) {
           _doctorController.text = draft.doctorName!;

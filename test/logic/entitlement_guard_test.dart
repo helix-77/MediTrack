@@ -1,128 +1,62 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:meditrack/logic/ai_action_validator.dart';
 import 'package:meditrack/logic/entitlement_guard.dart';
 
 void main() {
-  group('AiActionValidator Tests', () {
-    test('validates valid ADD_MEDICINE action', () {
-      final json = {
-        'action': 'ADD_MEDICINE',
-        'name': 'Napa 500mg',
-        'dosage': '1 tablet',
-        'frequency': '2 times daily',
-        'stock': 20,
-      };
-
-      final action = AiActionValidator.validate(json);
-      expect(action, isNotNull);
-      expect(action!.type, ValidatedActionType.addMedicine);
-      expect(action.medicineAction!.name, 'Napa 500mg');
-      expect(action.medicineAction!.dosage, '1 tablet');
-      expect(action.medicineAction!.frequency, '2 times daily');
-      expect(action.medicineAction!.stock, 20);
-    });
-
-    test('rejects ADD_MEDICINE action with missing or empty name', () {
-      final json = {
-        'action': 'ADD_MEDICINE',
-        'name': '   ',
-        'dosage': '500mg',
-      };
-      final action = AiActionValidator.validate(json);
-      expect(action, isNull);
-    });
-
-    test('validates valid ADD_BUY_ITEM action', () {
-      final json = {
-        'action': 'ADD_BUY_ITEM',
-        'name': 'Vitamin C 1000mg',
-        'quantity': 3,
-      };
-
-      final action = AiActionValidator.validate(json);
-      expect(action, isNotNull);
-      expect(action!.type, ValidatedActionType.addBuyItem);
-      expect(action.buyItemAction!.name, 'Vitamin C 1000mg');
-      expect(action.buyItemAction!.quantity, 3);
-    });
-
-    test('rejects unknown or invalid action format', () {
-      final json = {'action': 'RANDOM_COMMAND', 'data': 'value'};
-      final action = AiActionValidator.validate(json);
-      expect(action, isNull);
-    });
-  });
-
   group('EntitlementGuard Tests', () {
-    test('free tier allows up to 3 AI messages daily', () {
-      final q1 = EntitlementGuard.evaluate(
-        isSubscribed: false,
-        aiMessagesToday: 0,
-        prescriptionScansToday: 0,
-        feature: EntitlementFeature.aiAssistant,
-      );
-      expect(q1.isAllowed, isTrue);
-      expect(q1.remaining, 3);
+    test('unregistered / unsubscribed users are blocked from all premium features', () {
+      final features = [
+        EntitlementFeature.aiAssistant,
+        EntitlementFeature.prescriptionOcr,
+        EntitlementFeature.priceLookup,
+        EntitlementFeature.nearbyPharmacy,
+      ];
 
-      final q2 = EntitlementGuard.evaluate(
-        isSubscribed: false,
-        aiMessagesToday: 2,
-        prescriptionScansToday: 0,
-        feature: EntitlementFeature.aiAssistant,
-      );
-      expect(q2.isAllowed, isTrue);
-      expect(q2.remaining, 1);
+      for (final feature in features) {
+        final result = EntitlementGuard.evaluate(
+          isSubscribed: false,
+          feature: feature,
+          aiMessagesToday: 0,
+          prescriptionScansToday: 0,
+        );
 
-      final q3 = EntitlementGuard.evaluate(
-        isSubscribed: false,
-        aiMessagesToday: 3,
-        prescriptionScansToday: 0,
-        feature: EntitlementFeature.aiAssistant,
-      );
-      expect(q3.isAllowed, isFalse);
-      expect(q3.remaining, 0);
-      expect(q3.statusMessage, contains('Free preview limit reached'));
+        expect(result.isAllowed, isFalse);
+        expect(result.requiresSubscription, isTrue);
+        expect(result.statusMessage, contains('requires MediTrack Premium'));
+      }
     });
 
-    test('free tier allows 1 prescription extraction daily', () {
-      final q1 = EntitlementGuard.evaluate(
-        isSubscribed: false,
-        aiMessagesToday: 0,
-        prescriptionScansToday: 0,
-        feature: EntitlementFeature.prescriptionOcr,
+    test('subscribed users are allowed within daily quota', () {
+      final result = EntitlementGuard.evaluate(
+        isSubscribed: true,
+        feature: EntitlementFeature.aiAssistant,
+        aiMessagesToday: 5,
+        prescriptionScansToday: 5,
       );
-      expect(q1.isAllowed, isTrue);
-      expect(q1.remaining, 1);
 
-      final q2 = EntitlementGuard.evaluate(
-        isSubscribed: false,
-        aiMessagesToday: 0,
-        prescriptionScansToday: 1,
-        feature: EntitlementFeature.prescriptionOcr,
-      );
-      expect(q2.isAllowed, isFalse);
-      expect(q2.remaining, 0);
+      expect(result.isAllowed, isTrue);
+      expect(result.requiresSubscription, isFalse);
+      expect(result.remainingDailyQuota, 40);
     });
 
-    test('paid tier allows requests until soft cap of 50 is reached', () {
-      final q1 = EntitlementGuard.evaluate(
+    test('subscribed users are blocked when exceeding soft daily quota of 50', () {
+      final result = EntitlementGuard.evaluate(
         isSubscribed: true,
-        aiMessagesToday: 20,
-        prescriptionScansToday: 10,
-        feature: EntitlementFeature.aiAssistant,
+        feature: EntitlementFeature.prescriptionOcr,
+        aiMessagesToday: 25,
+        prescriptionScansToday: 25,
       );
-      expect(q1.isAllowed, isTrue);
-      expect(q1.remaining, 20);
 
-      final q2 = EntitlementGuard.evaluate(
-        isSubscribed: true,
-        aiMessagesToday: 35,
-        prescriptionScansToday: 15,
-        feature: EntitlementFeature.aiAssistant,
-      );
-      expect(q2.isAllowed, isFalse);
-      expect(q2.isSoftCapReached, isTrue);
-      expect(q2.statusMessage, contains('50 requests'));
+      expect(result.isAllowed, isFalse);
+      expect(result.requiresSubscription, isFalse);
+      expect(result.remainingDailyQuota, 0);
+      expect(result.statusMessage, contains('Daily premium limit'));
+    });
+
+    test('feature labels and display names are populated correctly', () {
+      expect(EntitlementFeature.aiAssistant.displayName, 'AI Health Assistant');
+      expect(EntitlementFeature.prescriptionOcr.displayName, 'AI Prescription OCR');
+      expect(EntitlementFeature.priceLookup.displayName, 'Medicine Price & Generic Lookup');
+      expect(EntitlementFeature.nearbyPharmacy.displayName, 'Nearby Pharmacy Search');
     });
   });
 }

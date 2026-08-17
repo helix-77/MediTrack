@@ -6,14 +6,17 @@
 
 ## 🌟 Key Features
 
-- 💊 **Medication Tracking & Reminders**: Set precise schedules with local notifications powered by `flutter_local_notifications` and timezone support.
-- 🤖 **AI Assistant**: Get medication guidance and health insights powered by Firebase AI (Gemini API).
-- 📷 **OCR Prescription Scanner**: Automatically scan and extract medicine details from physical prescription images using Google ML Kit Text Recognition.
-- 📁 **Prescription Vault**: Securely upload and manage digital copies of prescriptions and medical records via Firebase Storage.
-- 📅 **Calendar & Daily Routine**: View and track past and upcoming medication schedules with interactive calendar controls.
-- 🛒 **Medicine Buy List**: Keep track of low-stock medications and manage restocking lists.
-- 🔐 **Firebase Authentication**: Support for Anonymous sign-in, Email/Password, and Google Sign-In.
-- 📱 **BDApps SMS Integration**: Backend support for SMS subscription alerts and notifications.
+- 💊 **Medication Tracking & Reminders**: Set precise schedules with local notifications powered by `flutter_local_notifications` and timezone support (Free forever).
+- 📷 **OCR Box Scanner & Vault**: Fast on-device medicine box recognition and secure prescription storage (Free forever).
+- 📅 **Calendar & Daily Routine**: Interactive calendar medication schedules and refill tracker (Free forever).
+- 🛒 **Medicine Buy List**: Keep track of low-stock medications and restocking lists (Free forever).
+- ⭐ **MediTrack Premium (BD Apps Carrier Micro-Subscription - ৳2.78/day)**:
+  - 🤖 **AI Assistant**: Multimodal Gemini 2.5 Flash health insights and advice.
+  - 📝 **AI Prescription OCR**: Structured dosage and schedule extraction from prescription photos.
+  - 🔍 **Medicine Price & Generic Lookup**: Price checking and generic alternative finder.
+  - 🏥 **Nearby Pharmacies**: Real-time pharmacy locator with GPS and direct dialing.
+- 🔐 **Firebase Authentication**: Seamless Anonymous Guest, Email/Password, and Google Sign-In.
+- 📱 **BD Apps Carrier Billing**: Direct Robi / Airtel carrier billing integration with OTP fallback.
 
 ---
 

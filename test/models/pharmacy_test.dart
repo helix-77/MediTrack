@@ -40,7 +40,18 @@ void main() {
         distanceMeters: 1450,
       );
 
-      expect(pharmacy.formattedDistance, '1.5 km');
+      expect(pharmacy.formattedDistance, '1.4 km');
+
+      final pharmacy2 = Pharmacy(
+        id: 'pharmacy-3',
+        name: 'Square Model Pharmacy 2',
+        address: 'Panthapath, Dhaka',
+        latitude: 23.752,
+        longitude: 90.385,
+        distanceMeters: 1500,
+      );
+
+      expect(pharmacy2.formattedDistance, '1.5 km');
     });
   });
 

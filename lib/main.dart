@@ -82,36 +82,69 @@ void main() async {
   runApp(const MediTrackApp());
 }
 
-class MediTrackApp extends StatelessWidget {
+class MediTrackApp extends StatefulWidget {
   const MediTrackApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Single Dio instance shared by all BD Apps feature clients so the
-    // base URL / timeouts stay consistent. The Provider scope is the
-    // whole app so the Profile tab can read subscription state.
+  State<MediTrackApp> createState() => _MediTrackAppState();
+}
+
+class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver {
+  late final AuthService _authService;
+  late final EntitlementService _entitlementService;
+  late final BdAppsService _bdAppsService;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     final dio = DioClient.create(baseUrl: ApiConfig.bdappsBaseUrl);
     final bdAppsApiClient = BdAppsApiClient(dio);
     final smsApiClient = SmsApiClient(dio);
-    final authService = AuthService();
 
+    _authService = AuthService();
+    _entitlementService = EntitlementService(bdAppsApiClient: bdAppsApiClient);
+    _bdAppsService = BdAppsService(
+      apiClient: bdAppsApiClient,
+      smsApiClient: smsApiClient,
+    );
+
+    _entitlementService.refreshEntitlement();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _entitlementService.dispose();
+    _bdAppsService.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _entitlementService.refreshEntitlement();
+      _bdAppsService.refreshSubscriptionStatus();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<AuthService>.value(value: authService),
+        Provider<AuthService>.value(value: _authService),
         ChangeNotifierProvider<ThemeNotifier>(
           create: (_) => ThemeNotifier(),
         ),
         ChangeNotifierProvider<LocaleNotifier>(
           create: (_) => LocaleNotifier(),
         ),
-        ChangeNotifierProvider<EntitlementService>(
-          create: (_) => EntitlementService()..refreshEntitlement(),
+        ChangeNotifierProvider<EntitlementService>.value(
+          value: _entitlementService,
         ),
-        ChangeNotifierProvider<BdAppsService>(
-          create: (_) => BdAppsService(
-            apiClient: bdAppsApiClient,
-            smsApiClient: smsApiClient,
-          ),
+        ChangeNotifierProvider<BdAppsService>.value(
+          value: _bdAppsService,
         ),
       ],
       child: Builder(
@@ -125,28 +158,28 @@ class MediTrackApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeNotifier.themeMode,
             home: StreamBuilder(
-          stream: authService.authStateChanges,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primaryGreen,
-                  ),
-                ),
-              );
-            }
+              stream: _authService.authStateChanges,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
+                  );
+                }
 
-            return switch (authRouteFor(snapshot.data)) {
-              AuthRoute.welcome => const WelcomeScreen(),
-              AuthRoute.accountUpgrade => const AccountUpgradeScreen(),
-              AuthRoute.app => const MainNavigationShell(),
-            };
-          },
-        ),
-      );
-    },
-  ),
-);
+                return switch (authRouteFor(snapshot.data)) {
+                  AuthRoute.welcome => const WelcomeScreen(),
+                  AuthRoute.accountUpgrade => const AccountUpgradeScreen(),
+                  AuthRoute.app => const MainNavigationShell(),
+                };
+              },
+            ),
+          );
+        },
+      ),
+    );
   }
 }

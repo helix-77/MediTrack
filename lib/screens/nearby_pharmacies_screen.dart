@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../logic/entitlement_guard.dart';
 import '../models/pharmacy.dart';
+import '../services/entitlement_service.dart';
 import '../services/pharmacy_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -21,7 +24,9 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPharmacies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadPharmacies();
+    });
   }
 
   Future<void> _loadPharmacies() async {
@@ -29,6 +34,19 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
+
+    final entitlement = context.read<EntitlementService>();
+    final isAllowed = await entitlement.requirePremium(
+      context,
+      feature: EntitlementFeature.nearbyPharmacy,
+    );
+    if (!isAllowed || !mounted) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'MediTrack Premium required to view nearby pharmacies.';
+      });
+      return;
+    }
 
     try {
       final position = await _pharmacyService.getCurrentPosition();

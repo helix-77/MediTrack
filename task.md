@@ -1,0 +1,21 @@
+# fix:
+
+D/FlutterJNI(22345): Sending viewport metrics to the engine.
+I/ImeTracker(22345): com.meditrack.app.meditrack:8f355dfc: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false userId 0 displayId 0
+D/InsetsController(22345): show(ime())
+I/ImeTracker(22345): com.meditrack.app.meditrack:8f355dfc: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+I/flutter (22345): Firebase AI Gemini Error: [firebase_app_check/unknown] com.google.firebase.FirebaseException: Error returned from API. code: 403 body: App attestation failed.
+
+---
+
+## Future
+
+- Add a paid BD Apps SMS reminder channel.
+- Send one Bangla SMS containing only today's active doses shortly before the first dose time.
+
+---
+
+# List (working or not )
+
+[x] Test SMS service
+[x] Subscription service

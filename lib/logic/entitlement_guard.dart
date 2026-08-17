@@ -2,6 +2,16 @@ enum EntitlementFeature {
   aiAssistant,
   prescriptionOcr,
   priceLookup,
+  nearbyPharmacy;
+
+  String get displayName {
+    return switch (this) {
+      EntitlementFeature.aiAssistant => 'AI Health Assistant',
+      EntitlementFeature.prescriptionOcr => 'AI Prescription OCR',
+      EntitlementFeature.priceLookup => 'Medicine Price & Generic Lookup',
+      EntitlementFeature.nearbyPharmacy => 'Nearby Pharmacy Search',
+    };
+  }
 }
 
 class QuotaEvaluation {
@@ -16,11 +26,12 @@ class QuotaEvaluation {
     required this.isSoftCapReached,
     required this.statusMessage,
   });
+
+  bool get requiresSubscription => !isAllowed && !isSoftCapReached;
+  int get remainingDailyQuota => remaining;
 }
 
 class EntitlementGuard {
-  static const int freeDailyAiMessages = 3;
-  static const int freeDailyPrescriptions = 1;
   static const int paidDailySoftCapCombined = 50;
 
   /// Evaluates whether a user can perform an action based on their subscription
@@ -32,70 +43,49 @@ class EntitlementGuard {
     required EntitlementFeature feature,
   }) {
     if (isSubscribed) {
-      final totalCombined = aiMessagesToday + prescriptionScansToday;
-      if (totalCombined >= paidDailySoftCapCombined) {
-        return const QuotaEvaluation(
-          isAllowed: false,
-          remaining: 0,
-          isSoftCapReached: true,
-          statusMessage:
-              'Daily premium limit (50 requests) reached. Resets at midnight.',
+      if (feature == EntitlementFeature.aiAssistant ||
+          feature == EntitlementFeature.prescriptionOcr) {
+        final totalCombined = aiMessagesToday + prescriptionScansToday;
+        if (totalCombined >= paidDailySoftCapCombined) {
+          return const QuotaEvaluation(
+            isAllowed: false,
+            remaining: 0,
+            isSoftCapReached: true,
+            statusMessage:
+                'Daily premium limit (50 requests) reached. Resets at midnight.',
+          );
+        }
+        final remaining = paidDailySoftCapCombined - totalCombined;
+        return QuotaEvaluation(
+          isAllowed: true,
+          remaining: remaining,
+          isSoftCapReached: false,
+          statusMessage: 'Premium active ($remaining daily requests remaining)',
         );
       }
-      final remaining = paidDailySoftCapCombined - totalCombined;
-      return QuotaEvaluation(
+
+      return const QuotaEvaluation(
         isAllowed: true,
-        remaining: remaining,
+        remaining: 999,
         isSoftCapReached: false,
-        statusMessage: 'Premium active ($remaining daily requests remaining)',
+        statusMessage: 'Premium active',
       );
     }
 
-    // Free Preview Tier
-    switch (feature) {
-      case EntitlementFeature.aiAssistant:
-        if (aiMessagesToday >= freeDailyAiMessages) {
-          return const QuotaEvaluation(
-            isAllowed: false,
-            remaining: 0,
-            isSoftCapReached: false,
-            statusMessage:
-                'Free preview limit reached (3 messages/day). Subscribe via BD Apps for unlimited AI access.',
-          );
-        }
-        final remaining = freeDailyAiMessages - aiMessagesToday;
-        return QuotaEvaluation(
-          isAllowed: true,
-          remaining: remaining,
-          isSoftCapReached: false,
-          statusMessage: 'Free preview: $remaining of $freeDailyAiMessages daily messages remaining',
-        );
+    // Unsubscribed / Free Tier: Gated cost centers are blocked
+    final featureName = switch (feature) {
+      EntitlementFeature.aiAssistant => 'AI Assistant',
+      EntitlementFeature.prescriptionOcr => 'Prescription AI OCR',
+      EntitlementFeature.priceLookup => 'Medicine Price & Generic Lookup',
+      EntitlementFeature.nearbyPharmacy => 'Nearby Pharmacy Search',
+    };
 
-      case EntitlementFeature.prescriptionOcr:
-        if (prescriptionScansToday >= freeDailyPrescriptions) {
-          return const QuotaEvaluation(
-            isAllowed: false,
-            remaining: 0,
-            isSoftCapReached: false,
-            statusMessage:
-                'Free preview limit reached (1 scan/day). Subscribe via BD Apps for unlimited prescription OCR.',
-          );
-        }
-        final remaining = freeDailyPrescriptions - prescriptionScansToday;
-        return QuotaEvaluation(
-          isAllowed: true,
-          remaining: remaining,
-          isSoftCapReached: false,
-          statusMessage: 'Free preview: $remaining of $freeDailyPrescriptions daily scans remaining',
-        );
-
-      case EntitlementFeature.priceLookup:
-        return const QuotaEvaluation(
-          isAllowed: true,
-          remaining: 999,
-          isSoftCapReached: false,
-          statusMessage: 'Free reference price lookup',
-        );
-    }
+    return QuotaEvaluation(
+      isAllowed: false,
+      remaining: 0,
+      isSoftCapReached: false,
+      statusMessage:
+          '$featureName requires MediTrack Premium (৳2.78/day via Robi/Airtel).',
+    );
   }
 }

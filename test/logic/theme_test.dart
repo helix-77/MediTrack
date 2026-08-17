@@ -6,14 +6,14 @@ import 'package:meditrack/theme/theme_notifier.dart';
 
 void main() {
   group('Theme Tests', () {
-    test('lightTheme has light brightness and valid primary color', () {
+    testWidgets('lightTheme has light brightness and valid primary color', (tester) async {
       final theme = AppTheme.lightTheme;
       expect(theme.brightness, Brightness.light);
       expect(theme.colorScheme.primary, AppColors.primaryGreen);
       expect(theme.scaffoldBackgroundColor, AppColors.background);
     });
 
-    test('darkTheme has dark brightness and valid dark background', () {
+    testWidgets('darkTheme has dark brightness and valid dark background', (tester) async {
       final theme = AppTheme.darkTheme;
       expect(theme.brightness, Brightness.dark);
       expect(theme.scaffoldBackgroundColor, AppColors.darkBackground);

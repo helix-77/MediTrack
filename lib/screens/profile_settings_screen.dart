@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../features/bdapps/bd_apps_service.dart';
@@ -10,17 +11,20 @@ import '../models/user_profile.dart';
 import '../models/family_member.dart';
 import '../services/user_profile_service.dart';
 import '../services/auth_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/medicine_service.dart';
 import '../services/notification_service.dart';
 import '../services/family_service.dart';
 import '../l10n/locale_notifier.dart';
 import '../l10n/app_strings.dart';
+import '../logic/bd_mobile_validator.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../theme/theme_notifier.dart';
 import 'prescription_vault_screen.dart';
 import 'nearby_pharmacies_screen.dart';
 import 'doctor_summary_screen.dart';
+import 'subscription_offer_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -35,14 +39,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final MedicineService _medicineService = MedicineService();
   final NotificationService _notificationService = NotificationService();
   final FamilyService _familyService = FamilyService();
-  final TextEditingController _subMobileController = TextEditingController();
-  final TextEditingController _subOtpController = TextEditingController();
   final TextEditingController _newFamilyMemberController = TextEditingController();
 
   @override
   void dispose() {
-    _subMobileController.dispose();
-    _subOtpController.dispose();
     _newFamilyMemberController.dispose();
     super.dispose();
   }
@@ -1012,28 +1012,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
-  /// Subscribe service card — exposes the BD Apps subscription lifecycle
-  /// (`check_subscription.php`, `unsubscribe.php`). Lets the user see
-  /// their REGISTERED / UNREGISTERED state, refresh it from the server,
-  /// and trigger an unsubscribe without logging out.
+  /// MediTrack Premium BD Apps subscription management card.
   Widget _buildSubscribeServiceCard() {
-    return Consumer<BdAppsService>(
-      builder: (context, service, _) {
+    return Consumer2<BdAppsService, EntitlementService>(
+      builder: (context, service, entitlement, _) {
         final mobile = service.bdMobile;
-        final enabled = service.hasBdMobile;
         final isChecking = service.isCheckingSubscription;
         final isUnsubscribing = service.isUnsubscribing;
-        final isSendingOtp = service.isSendingOtp;
-        final isVerifyingOtp = service.isVerifyingOtp;
-        final status = service.subscriptionStatus;
-        final isRegistered = status?.toUpperCase() == 'REGISTERED';
-        final hasPendingOtp = service.pendingReferenceNo != null;
+        final isSubscribed = entitlement.isSubscribed || service.isRegistered;
+        final verifiedAt = entitlement.lastVerifiedAt;
+        final formattedVerified = verifiedAt != null
+            ? DateFormat('MMM d, yyyy h:mm a').format(verifiedAt)
+            : 'Not checked yet';
         final lastResponse = service.lastCheckSubscriptionResponse;
         final lastUnsubscribe = service.lastUnsubscribeResponse;
-
-        if (_subMobileController.text.isEmpty && mobile != null) {
-          _subMobileController.text = mobile;
-        }
 
         return Card(
           child: Padding(
@@ -1042,226 +1034,66 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(
-                      Icons.wifi_tethering,
-                      color: AppColors.primaryGreen,
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.stars,
+                          color: AppColors.primaryGreen,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'MediTrack Premium',
+                          style: AppTypography.headingMedium,
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Subscribe Service',
-                      style: AppTypography.headingMedium,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isSubscribed
+                            ? AppColors.success.withValues(alpha: 0.15)
+                            : AppColors.textSecondary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isSubscribed ? 'ACTIVE' : 'INACTIVE',
+                        style: TextStyle(
+                          color: isSubscribed ? AppColors.success : AppColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
-                  isRegistered
-                      ? 'You are subscribed to BD Apps daily SMS service.'
-                      : 'Subscribe via OTP to receive daily SMS medication updates.',
+                  isSubscribed
+                      ? 'Active subscription via Robi / Airtel (৳2.78/day). AI Assistant, Prescription OCR, Price Lookup, and Nearby Pharmacies enabled.'
+                      : 'Subscribe via Robi / Airtel (৳2.78/day) to unlock AI Prescription OCR, Gemini Assistant, Medicine Price Lookup, and Nearby Pharmacies.',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
+                    height: 1.4,
                   ),
                 ),
                 const Divider(),
                 _buildInfoRow(
                   Icons.phone_android,
-                  'BD Mobile',
-                  enabled ? mobile! : 'Not linked',
+                  'Linked BD Mobile',
+                  (mobile != null && mobile.isNotEmpty)
+                      ? BdMobileValidator.maskMobile(mobile)
+                      : 'Not linked',
                 ),
                 _buildInfoRow(
-                  Icons.toggle_on_outlined,
-                  'Subscription State',
-                  status ?? 'UNKNOWN',
+                  Icons.verified_outlined,
+                  'Last Verified',
+                  formattedVerified,
                 ),
                 const SizedBox(height: 12),
 
-                if (!isRegistered) ...[
-                  Text(
-                    'Subscribe via OTP (Robi / Airtel)',
-                    style: AppTypography.bodyMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _subMobileController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'BD Mobile Number',
-                      hintText: '018XXXXXXXX',
-                      prefixIcon: Icon(Icons.phone),
-                      border: OutlineInputBorder(),
-                      helperText: '11-digit Robi (018) or Airtel (016) number',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: isSendingOtp
-                          ? null
-                          : () async {
-                              final raw = _subMobileController.text.trim();
-                              if (raw.length != 11 || !raw.startsWith('01')) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Enter a valid 11-digit mobile number starting with 01',
-                                    ),
-                                    backgroundColor: AppColors.warning,
-                                  ),
-                                );
-                                return;
-                              }
-
-                              final messenger = ScaffoldMessenger.of(context);
-                              final success = await service.sendOtp(
-                                mobileNumber: raw,
-                              );
-                              if (!mounted) return;
-
-                              if (success) {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'OTP sent to $raw via SMS. Enter code below.',
-                                    ),
-                                    backgroundColor: AppColors.success,
-                                  ),
-                                );
-                              } else {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      service.errorMessage ??
-                                          'Failed to send OTP.',
-                                    ),
-                                    backgroundColor: AppColors.danger,
-                                  ),
-                                );
-                              }
-                            },
-                      icon: isSendingOtp
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.sms),
-                      label: Text(
-                        isSendingOtp
-                            ? 'Sending OTP...'
-                            : 'Send OTP to Subscribe',
-                      ),
-                    ),
-                  ),
-
-                  if (hasPendingOtp) ...[
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    Text(
-                      'Enter Received OTP',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _subOtpController,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      decoration: const InputDecoration(
-                        labelText: 'OTP Code',
-                        hintText: '123456',
-                        prefixIcon: Icon(Icons.pin),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryGreen,
-                        ),
-                        onPressed: isVerifyingOtp
-                            ? null
-                            : () async {
-                                final code = _subOtpController.text.trim();
-                                if (code.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please enter the OTP code received via SMS',
-                                      ),
-                                      backgroundColor: AppColors.warning,
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                final messenger = ScaffoldMessenger.of(context);
-                                final bdAppsService = context
-                                    .read<BdAppsService>();
-                                final ok = await service.verifyOtp(otp: code);
-                                if (!mounted) return;
-
-                                if (ok) {
-                                  final newMobile = _subMobileController.text
-                                      .trim();
-                                  await _profileService.updateBdMobile(
-                                    newMobile,
-                                  );
-
-                                  bdAppsService.updateBdMobile(newMobile);
-                                  _subOtpController.clear();
-
-                                  messenger.showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Successfully subscribed to BD Apps daily service!',
-                                      ),
-                                      backgroundColor: AppColors.success,
-                                    ),
-                                  );
-                                } else {
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        service.errorMessage ??
-                                            'OTP verification failed.',
-                                      ),
-                                      backgroundColor: AppColors.danger,
-                                    ),
-                                  );
-                                }
-                              },
-                        icon: isVerifyingOtp
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.check_circle),
-                        label: Text(
-                          isVerifyingOtp
-                              ? 'Verifying...'
-                              : 'Verify OTP & Subscribe',
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-
-                if (enabled) ...[
-                  const Divider(),
+                if (isSubscribed) ...[
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     enabled: !isChecking,
@@ -1271,7 +1103,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ),
                     title: const Text('Refresh Status'),
                     subtitle: const Text(
-                      'Re-query check_subscription.php for current lifecycle state',
+                      'Re-verify entitlement against BD Apps carrier servers',
                     ),
                     trailing: isChecking
                         ? const SizedBox(
@@ -1284,36 +1116,61 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             color: AppColors.primaryGreen,
                           ),
                     onTap: !isChecking
-                        ? service.refreshSubscriptionStatus
+                        ? () async {
+                            await entitlement.refreshEntitlement(forceCarrierCheck: true);
+                            await service.refreshSubscriptionStatus();
+                          }
                         : null,
                   ),
-                  if (isRegistered)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      enabled: !isUnsubscribing,
-                      leading: const Icon(
-                        Icons.unsubscribe,
-                        color: AppColors.danger,
-                      ),
-                      title: const Text('Unsubscribe from SMS Service'),
-                      subtitle: Text(
-                        'Send unsubscribe.php — your number will stop receiving SMS',
-                        style: AppTypography.bodySmall,
-                      ),
-                      trailing: isUnsubscribing
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(
-                              Icons.chevron_right,
-                              color: AppColors.danger,
-                            ),
-                      onTap: !isUnsubscribing
-                          ? () => _confirmUnsubscribe(service)
-                          : null,
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    enabled: !isUnsubscribing,
+                    leading: const Icon(
+                      Icons.unsubscribe,
+                      color: AppColors.danger,
                     ),
+                    title: const Text('Unsubscribe from Premium'),
+                    subtitle: Text(
+                      'Cancel daily carrier auto-renewal',
+                      style: AppTypography.bodySmall,
+                    ),
+                    trailing: isUnsubscribing
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(
+                            Icons.chevron_right,
+                            color: AppColors.danger,
+                          ),
+                    onTap: !isUnsubscribing
+                        ? () => _confirmUnsubscribe(service, entitlement)
+                        : null,
+                  ),
+                ] else ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryGreen,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.stars, size: 18),
+                      label: const Text('Upgrade to Premium (৳2.78/day)'),
+                      onPressed: () async {
+                        final result = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SubscriptionOfferScreen(),
+                          ),
+                        );
+                        if (result == true) {
+                          await entitlement.refreshEntitlement(forceCarrierCheck: true);
+                        }
+                      },
+                    ),
+                  ),
                 ],
 
                 if (lastResponse != null) ...[
@@ -1321,7 +1178,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   _SubscriptionResponseSummary(lastResponse),
                 ],
                 if (lastUnsubscribe != null) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   _UnsubscribeResponseSummary(lastUnsubscribe),
                 ],
               ],
@@ -1329,6 +1186,62 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _confirmUnsubscribe(
+    BdAppsService service,
+    EntitlementService entitlement,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel Premium Subscription?'),
+        content: const Text(
+          'This will cancel your BD Apps daily auto-renewal (৳2.78/day). '
+          'You will lose access to AI Assistant, Prescription OCR, Price Lookup, and Nearby Pharmacy searches. '
+          'Your saved medicines and local alerts will remain completely free.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep Premium'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Unsubscribe'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+
+    await service.unsubscribe();
+    entitlement.updateSubscribedState(false);
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        await _profileService.saveProfile(
+          UserProfile(
+            uid: user.uid,
+            displayName: user.displayName ?? 'User',
+            email: user.email ?? '',
+            subscriptionStatus: 'UNREGISTERED',
+          ),
+        );
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Unsubscribed successfully.'),
+        backgroundColor: AppColors.success,
+      ),
     );
   }
 
@@ -1393,48 +1306,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               : 'SMS failed: ${service.errorMessage ?? "unknown error"}',
         ),
         backgroundColor: success ? AppColors.success : AppColors.danger,
-      ),
-    );
-  }
-
-  Future<void> _confirmUnsubscribe(BdAppsService service) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Unsubscribe from SMS Service?'),
-        content: const Text(
-          'This sends an unsubscribe request to the BD Apps backend. '
-          'You will stop receiving MediTrack SMS on this number. '
-          'You can re-subscribe by linking the number again later.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Unsubscribe'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-    if (!mounted) return;
-
-    await service.unsubscribe();
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          service.subscriptionStatus == 'UNREGISTERED'
-              ? 'Unsubscribed successfully.'
-              : 'Unsubscribe attempt complete — see card for status.',
-        ),
-        backgroundColor: AppColors.success,
       ),
     );
   }

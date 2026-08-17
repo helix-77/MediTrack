@@ -2,11 +2,12 @@ import 'package:dio/dio.dart';
 
 import 'models/check_subscription_response.dart';
 import 'models/send_otp_response.dart';
+import 'models/subscribe_response.dart';
 import 'models/unsubscribe_response.dart';
 import 'models/verify_otp_response.dart';
 
-/// Calls the BD Apps subscription backend (`send_otp.php`, `verify_otp.php`,
-/// `check_subscription.php`, `unsubscribe.php`).
+/// Calls the BD Apps subscription backend (`subscribe.php`, `send_otp.php`,
+/// `verify_otp.php`, `check_subscription.php`, `unsubscribe.php`).
 ///
 /// All endpoints read PHP `$_POST`, so every request is sent as
 /// `application/x-www-form-urlencoded`.
@@ -17,6 +18,19 @@ class BdAppsApiClient {
 
   static final _formEncoded =
       Options(contentType: Headers.formUrlEncodedContentType);
+
+  /// Initiates the direct carrier subscription flow for Robi/Airtel subscribers.
+  Future<SubscribeResponse> subscribe({
+    required String userMobile,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/subscribe.php',
+      data: {'user_mobile': userMobile},
+      options: _formEncoded,
+    );
+
+    return SubscribeResponse.fromJson(response.data!);
+  }
 
   /// Requests a subscription OTP from BD Apps for the given mobile number.
   Future<SendOtpResponse> sendOtp({

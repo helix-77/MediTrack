@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../logic/entitlement_guard.dart';
 import '../models/buy_list_item.dart';
 import '../models/medicine_reference.dart';
 import '../services/buy_list_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/medicine_reference_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -57,6 +60,15 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
       return;
     }
 
+    final entitlement = context.read<EntitlementService>();
+    final isAllowed = await entitlement.requirePremium(
+      context,
+      feature: EntitlementFeature.priceLookup,
+    );
+    if (!isAllowed || !mounted) {
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final list = await _referenceService.searchMedicines(trimmed);
@@ -80,6 +92,15 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
   }
 
   Future<void> _showAlternatives(MedicineReference med) async {
+    final entitlement = context.read<EntitlementService>();
+    final isAllowed = await entitlement.requirePremium(
+      context,
+      feature: EntitlementFeature.priceLookup,
+    );
+    if (!isAllowed || !mounted) {
+      return;
+    }
+
     setState(() {
       _selectedGeneric = med.genericName;
       _isLoadingAlternatives = true;

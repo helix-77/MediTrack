@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../logic/entitlement_guard.dart';
 import '../models/buy_list_item.dart';
 import '../models/medicine.dart';
 import '../models/medicine_schedule.dart';
@@ -81,30 +82,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     if (text.isEmpty && _selectedImage == null) return;
 
     final entitlement = context.read<EntitlementService>();
-    final quota = entitlement.checkAiQuota();
-
-    if (!quota.isAllowed) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.lock_outline, color: AppColors.primaryGreen),
-              SizedBox(width: 8),
-              Text('Daily Limit Reached'),
-            ],
-          ),
-          content: Text(quota.statusMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
+    final isAllowed = await entitlement.requirePremium(
+      context,
+      feature: EntitlementFeature.aiAssistant,
+    );
+    if (!isAllowed || !mounted) return;
 
     final userMsg = GeminiChatMessage(
       role: 'user',

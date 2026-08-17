@@ -9,6 +9,7 @@ PHP endpoints that proxy between the Flutter app and the BD Apps platform
 | File | Purpose |
 |------|---------|
 | `config.php` | Loads `BDAPPS_APP_ID` / `BDAPPS_APP_PASSWORD` from the deployment environment and fails closed when either is absent. |
+| `subscribe.php` | Initiates carrier subscription confirmation flow (`POST user_mobile`, Robi `018` & Airtel `016` only). |
 | `check_subscription.php` | Returns the current subscription status for a subscriber. |
 | `unsubscribe.php` | Sends an unsubscribe request (`POST user_mobile`). |
 | `send_sms.php` | Client-initiated outbound SMS (`POST user_mobile, message`) — used by the profile tab's "Send test SMS" action. |

@@ -731,61 +731,28 @@ Gemini structured-action support that already exists (Section 5.8's AI Assistant
 
 ### 5.10 BD Apps Subscription & Paywall Strategy
 
-The BD Apps subscription rail (Section 5.8) and "paywall planning" are the same problem:
-BD Apps carrier billing is already wired end-to-end for OTP subscribe, status check,
-and unsubscribe (`BdAppsService`, `backend/*.php`) — it's a working billing rail with
-**nothing in the app currently reading `subscriptionStatus` to gate anything.** This
-section is the plan for connecting that rail to an actual entitlement.
+The BD Apps subscription rail connects carrier billing (Robi / Airtel) to premium feature entitlements.
+MediTrack operates a hybrid model: core tracking is free forever, while external API cost centers
+are gated behind an active ৳2.78/day (+VAT+SD+SC) micro-subscription.
 
-**Design considerations:**
-- A user has two independent identities: the Firebase `uid` (app account) and the BD Apps
-  `bdMobile`/subscriber id (billing account), linked via `UserProfile.bdMobile`. That link
-  can change (a user updates their phone number), so entitlement must be re-verified
-  against BD Apps, not trusted forever from a stale local flag.
-- Recommend caching the last-verified state as fields on `users/{uid}` (e.g.
-  `subscriptionStatus`, `subscriptionVerifiedAt`), refreshed on app foreground and before
-  any gated action — avoids calling the BD Apps status endpoint on every navigation while
-  still catching lapses reasonably quickly.
-- Carrier billing subscriptions can lapse silently (low balance, a dropped renewal, the
-  user unsubscribing via USSD outside the app). Handle "was premium, now isn't" as
-  read-only access to previously created data — never delete data because entitlement
-  lapsed.
-- BD Apps is Bangladesh-carrier-specific by nature. If MediTrack ever needs a
-  non-BD-carrier audience, a second billing path (Google Play Billing) would be required
-  — flagged in Section 7 as a decision to make later, not built speculatively now.
+**Implemented Gatekeeping (Option A - Active):**
+- **Free Tier (Free forever, offline-first):**
+  - Medicine management, pill schedule tracking, local notifications.
+  - On-device box/strip OCR (ML Kit text recognition).
+  - Digital Prescription Vault (photo storage & retrieval).
+  - Low-stock Buy List.
+- **Premium Tier (৳2.78/day via Robi 018 / Airtel 016 carrier billing):**
+  1. **Prescription AI OCR:** Multi-page structured Gemini 2.5 Flash dosage extraction.
+  2. **AI Health Assistant:** Multimodal Gemini conversation & prescription analysis.
+  3. **Medicine Price & Generic Lookup:** Bangladesh reference database search & cheap alternatives.
+  4. **Nearby Pharmacies:** Live GPS & Google Places locator with call / directions shortcuts.
 
-**Gatekeeping options (Section 7 records the actual choice — this is a business decision,
-not a technical one):**
-- **Option A — recommended: gate the calls that cost MediTrack money.** Keep manual
-  tracking, reminders, on-device box OCR (Section 5.1), the buy list, and prescription
-  vault storage free indefinitely — they run entirely on-device or against Firestore's
-  free/cheap tier. Gate prescription OCR (Section 5.2, calls Gemini), the AI Assistant
-  (Section 5.11, calls Gemini), price/generic lookup (Section 5.4, cheap but still a
-  deliberate product tier), and nearby pharmacy (Section 5.5, calls paid Google Places)
-  behind an active subscription. This lines the paywall up with actual cost centers,
-  which is both defensible to users and simple to implement as one check per external-API
-  call site.
-- **Option B — usage-metered free tier.** Same gated feature list as Option A, but give
-  free users a small monthly quota (e.g. N prescription scans, N AI messages — exact N is
-  a Section 7 decision) before requiring a subscription, rather than a hard gate from the
-  first use. Softer conversion funnel, more moving parts (quota tracking/reset) to build.
-- **Option C — full app gate after a trial.** Require an active subscription for the
-  entire app after a free trial window. Simplest to build, but carrier-billing audiences
-  in Bangladesh are price-sensitive and this risks killing adoption before the app proves
-  its value — not recommended as the starting point.
-
-**Execution steps (once Section 7 confirms the gated feature list and any quota):**
-1. Add an `EntitlementService` in `lib/services/` that owns the cached/refreshed
-   `subscriptionStatus` from `users/{uid}` plus a `isEntitled` check.
-2. Add one reusable gate helper (e.g. `EntitlementService.requirePremium(BuildContext)`)
-   that shows a "Subscribe via BD Apps" prompt reusing the existing OTP flow when not
-   entitled, otherwise proceeds — call it at each gated feature's entry point once that
-   list is final. Don't gate speculatively before the decision is made.
-3. Refresh entitlement on app foreground/resume and surface a clear "Manage Subscription"
-   section in Profile Settings reusing the existing subscribe/unsubscribe flow.
-4. Re-confirm `firestore.rules` doesn't need changes for this — the gate is a client-side
-   UX/API-call check, not a new Firestore write path, as long as the gated features stay
-   that way.
+**Architecture & Implementation:**
+- `EntitlementGuard` & `EntitlementService`: Check cached entitlement state (`subscriptionStatus` on `users/{uid}/profile/main`), enforce a 5-minute cache freshness window, query BD Apps carrier servers on stale/foreground resume, and guard against non-registered accounts.
+- `SubscriptionOfferScreen`: Commercial subscription UI showing carrier badges, clear pricing disclosure, legal consent checkboxes, terms / privacy dialogs, auto-renewal rules, and polling activation state machine.
+- `backend/subscribe.php`: Server-side endpoint executing direct carrier billing subscription requests.
+- Gated entry points: `AiAssistantScreen`, `ScanPrescriptionScreen`, `MedicineSearchScreen`, and `NearbyPharmaciesScreen` invoke `requirePremium()` before executing billable operations.
+- SMS reminder channels (paid SMS generation/delivery) remain planned future work.
 
 ### 5.11 AI Assistant Roadmap
 
