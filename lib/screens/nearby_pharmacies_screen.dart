@@ -19,7 +19,7 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
   Position? _currentPosition;
   bool _isLoadingLocation = true;
   bool _isOpeningMap = false;
-  String? _locationStatusMessage;
+  LocationFailureReason? _failureReason;
   bool _isEntitled = true;
 
   final List<_PharmacyCategory> _categories = const [
@@ -86,21 +86,43 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
   Future<void> _detectLocation() async {
     setState(() {
       _isLoadingLocation = true;
-      _locationStatusMessage = null;
+      _failureReason = null;
     });
 
-    final position = await _pharmacyService.getCurrentPosition();
+    final result = await _pharmacyService.getCurrentPositionDetailed();
 
     if (!mounted) return;
 
     setState(() {
       _isLoadingLocation = false;
-      _currentPosition = position;
-      if (position == null) {
-        _locationStatusMessage =
-            'Device GPS unavailable or permission denied. Searches will use your general area.';
-      }
+      _currentPosition = result.position;
+      _failureReason = result.failureReason;
     });
+  }
+
+  void _useDhakaCoordinates() {
+    setState(() {
+      _currentPosition = Position(
+        latitude: 23.8103,
+        longitude: 90.4125,
+        timestamp: DateTime.now(),
+        accuracy: 10,
+        altitude: 0,
+        heading: 0,
+        speed: 0,
+        speedAccuracy: 0,
+        altitudeAccuracy: 0,
+        headingAccuracy: 0,
+      );
+      _failureReason = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Location set to Dhaka Center (23.8103° N, 90.4125° E)'),
+        backgroundColor: AppColors.primaryGreen,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _launchMapsSearch({String query = 'pharmacy'}) async {
@@ -243,7 +265,121 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
       );
     }
 
-    final hasPosition = _currentPosition != null;
+    if (_currentPosition != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.success.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.location_on,
+              color: AppColors.success,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'GPS Location Active',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    '${_currentPosition!.latitude.toStringAsFixed(4)}° N, ${_currentPosition!.longitude.toStringAsFixed(4)}° E',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: _detectLocation,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                foregroundColor: AppColors.primaryGreen,
+              ),
+              child: const Text('Refresh', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Handle failure reasons with clear, actionable UI
+    String title = 'GPS Unavailable';
+    String description = 'Google Maps will search your general area.';
+    Widget? actionButton;
+
+    switch (_failureReason) {
+      case LocationFailureReason.serviceDisabled:
+        title = 'Location Services Off';
+        description = 'Turn on device location for exact GPS coordinates.';
+        actionButton = TextButton(
+          onPressed: () async {
+            await _pharmacyService.openLocationSettings();
+            _detectLocation();
+          },
+          style: TextButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            foregroundColor: AppColors.primaryGreen,
+          ),
+          child: const Text('Turn On', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        );
+        break;
+      case LocationFailureReason.permissionDenied:
+        title = 'Permission Denied';
+        description = 'Allow location permission to pinpoint nearby pharmacies.';
+        actionButton = TextButton(
+          onPressed: _detectLocation,
+          style: TextButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            foregroundColor: AppColors.primaryGreen,
+          ),
+          child: const Text('Allow', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        );
+        break;
+      case LocationFailureReason.permissionDeniedForever:
+        title = 'Permission Blocked';
+        description = 'Location permission is permanently denied in settings.';
+        actionButton = TextButton(
+          onPressed: () async {
+            await _pharmacyService.openAppSettings();
+            _detectLocation();
+          },
+          style: TextButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            foregroundColor: AppColors.primaryGreen,
+          ),
+          child: const Text('Settings', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        );
+        break;
+      case LocationFailureReason.timeoutOrUnavailable:
+      default:
+        title = 'GPS Fix Pending / Emulator';
+        description = 'No satellite fix yet. Maps can still search your area.';
+        actionButton = TextButton(
+          onPressed: _useDhakaCoordinates,
+          style: TextButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            foregroundColor: AppColors.primaryGreen,
+          ),
+          child: const Text('Use Dhaka', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        );
+        break;
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -251,14 +387,14 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: hasPosition ? AppColors.success.withValues(alpha: 0.3) : AppColors.warning.withValues(alpha: 0.4),
+          color: AppColors.warning.withValues(alpha: 0.4),
         ),
       ),
       child: Row(
         children: [
-          Icon(
-            hasPosition ? Icons.location_on : Icons.location_off_outlined,
-            color: hasPosition ? AppColors.success : AppColors.warning,
+          const Icon(
+            Icons.location_off_outlined,
+            color: AppColors.warning,
             size: 22,
           ),
           const SizedBox(width: 10),
@@ -267,7 +403,7 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasPosition ? 'GPS Location Detected' : 'GPS Unavailable',
+                  title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -275,9 +411,7 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
                   ),
                 ),
                 Text(
-                  hasPosition
-                      ? '${_currentPosition!.latitude.toStringAsFixed(4)}° N, ${_currentPosition!.longitude.toStringAsFixed(4)}° E'
-                      : (_locationStatusMessage ?? 'Permission denied or GPS disabled'),
+                  description,
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.textSecondary,
@@ -286,14 +420,7 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
               ],
             ),
           ),
-          TextButton(
-            onPressed: _detectLocation,
-            style: TextButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-              foregroundColor: AppColors.primaryGreen,
-            ),
-            child: const Text('Refresh', style: TextStyle(fontSize: 12)),
-          ),
+          actionButton,
         ],
       ),
     );

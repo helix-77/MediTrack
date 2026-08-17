@@ -2,38 +2,99 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+enum LocationFailureReason {
+  serviceDisabled,
+  permissionDenied,
+  permissionDeniedForever,
+  timeoutOrUnavailable,
+}
+
+class LocationFetchResult {
+  final Position? position;
+  final LocationFailureReason? failureReason;
+
+  const LocationFetchResult.success(this.position) : failureReason = null;
+  const LocationFetchResult.failure(this.failureReason) : position = null;
+
+  bool get isSuccess => position != null;
+}
+
 /// Service responsible for acquiring device GPS location and launching
 /// Google Maps to locate nearby pharmacies.
 class PharmacyService {
-  /// Request and retrieve the user's current GPS position.
-  Future<Position?> getCurrentPosition() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return null;
-    }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return null;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return null;
-    }
-
+  /// Request and retrieve the user's current GPS position with robust fallbacks.
+  Future<LocationFetchResult> getCurrentPositionDetailed() async {
     try {
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return const LocationFetchResult.failure(LocationFailureReason.serviceDisabled);
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return const LocationFetchResult.failure(LocationFailureReason.permissionDenied);
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        return const LocationFetchResult.failure(LocationFailureReason.permissionDeniedForever);
+      }
+
+      // 1. Try to get last known position first (fast, works on emulators & cached fixes)
+      Position? lastKnown;
+      try {
+        lastKnown = await Geolocator.getLastKnownPosition();
+      } catch (e) {
+        debugPrint('Error getting last known position: $e');
+      }
+
+      // 2. Try to get a fresh fix
+      try {
+        final current = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 5),
+          ),
+        );
+        return LocationFetchResult.success(current);
+      } catch (e) {
+        debugPrint('Error obtaining current fresh position: $e');
+        if (lastKnown != null) {
+          return LocationFetchResult.success(lastKnown);
+        }
+        return const LocationFetchResult.failure(LocationFailureReason.timeoutOrUnavailable);
+      }
     } catch (e) {
-      debugPrint('Error obtaining current position: $e');
-      return null;
+      debugPrint('Unexpected error in getCurrentPositionDetailed: $e');
+      return const LocationFetchResult.failure(LocationFailureReason.timeoutOrUnavailable);
+    }
+  }
+
+  /// Request and retrieve the user's current GPS position (convenience wrapper).
+  Future<Position?> getCurrentPosition() async {
+    final result = await getCurrentPositionDetailed();
+    return result.position;
+  }
+
+  /// Open device app settings.
+  Future<bool> openAppSettings() async {
+    try {
+      return await Geolocator.openAppSettings();
+    } catch (e) {
+      debugPrint('Error opening app settings: $e');
+      return false;
+    }
+  }
+
+  /// Open device location settings.
+  Future<bool> openLocationSettings() async {
+    try {
+      return await Geolocator.openLocationSettings();
+    } catch (e) {
+      debugPrint('Error opening location settings: $e');
+      return false;
     }
   }
 
