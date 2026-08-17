@@ -23,13 +23,28 @@ class BdAppsApiClient {
   Future<SubscribeResponse> subscribe({
     required String userMobile,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/subscribe.php',
-      data: {'user_mobile': userMobile},
-      options: _formEncoded,
-    );
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/subscribe.php',
+        data: {'user_mobile': userMobile},
+        options: _formEncoded,
+      );
 
-    return SubscribeResponse.fromJson(response.data!);
+      return SubscribeResponse.fromJson(response.data!);
+    } on DioException catch (e) {
+      return SubscribeResponse(
+        success: false,
+        error: e.response?.data is Map ? e.response?.data['error']?.toString() : e.message,
+        statusCode: e.response?.statusCode?.toString() ?? 'E1000',
+        statusDetail: e.message ?? 'Server error',
+      );
+    } catch (e) {
+      return SubscribeResponse(
+        success: false,
+        error: e.toString(),
+        statusCode: 'E1000',
+      );
+    }
   }
 
   /// Requests a subscription OTP from BD Apps for the given mobile number.

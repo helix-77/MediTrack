@@ -23,7 +23,6 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
   final TextEditingController _otpController = TextEditingController();
 
   bool _hasConsented = false;
-  bool _useOtpFallback = false;
   String? _inlineError;
 
   @override
@@ -104,48 +103,6 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     }
   }
 
-  Future<void> _handleSubscribe() async {
-    final rawNumber = _mobileController.text.trim();
-    final validationError = BdMobileValidator.validateRobiAirtel(rawNumber);
-    if (validationError != null) {
-      setState(() => _inlineError = validationError);
-      return;
-    }
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.isAnonymous) {
-      final upgraded = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(builder: (_) => const AccountUpgradeScreen()),
-      );
-      if (upgraded != true && (FirebaseAuth.instance.currentUser?.isAnonymous ?? true)) {
-        return;
-      }
-    }
-
-    setState(() => _inlineError = null);
-    final normalized = BdMobileValidator.normalize(rawNumber);
-
-    await _recordConsent(normalized);
-
-    if (!mounted) return;
-    final bdService = context.read<BdAppsService>();
-    final entitlementService = context.read<EntitlementService>();
-
-    final success = await bdService.requestSubscription(mobileNumber: normalized);
-
-    if (success && mounted) {
-      entitlementService.updateSubscribedState(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🎉 Welcome to MediTrack Premium!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-      Navigator.pop(context, true);
-    }
-  }
-
   Future<void> _handleSendOtp() async {
     final rawNumber = _mobileController.text.trim();
     final validationError = BdMobileValidator.validateRobiAirtel(rawNumber);
@@ -196,6 +153,24 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     final ok = await bdService.verifyOtp(otp: code);
     if (ok && mounted) {
       entitlementService.updateSubscribedState(true);
+      final user = FirebaseAuth.instance.currentUser;
+      final rawNumber = _mobileController.text.trim();
+      final normalized = BdMobileValidator.normalize(rawNumber);
+      if (user != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('profile')
+              .doc('main')
+              .set({
+            'bdMobile': normalized,
+            'subscriptionStatus': 'REGISTERED',
+            'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        } catch (_) {}
+      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('🎉 MediTrack Premium activated successfully!'),
@@ -228,10 +203,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                 const SizedBox(height: 20),
                 _buildFeaturesList(),
                 const SizedBox(height: 20),
-                if (!_useOtpFallback)
-                  _buildDirectCarrierSection(bdService)
-                else
-                  _buildOtpSection(bdService),
+                _buildOtpSection(bdService),
                 const SizedBox(height: 24),
               ],
             ),
@@ -455,35 +427,30 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     );
   }
 
-  Widget _buildDirectCarrierSection(BdAppsService service) {
-    final state = service.subscriptionState;
-    final isBusy = service.isRequestingSubscription;
-    final isPending = state == SubscriptionState.pending;
+  Widget _buildOtpSection(BdAppsService service) {
+    final hasPendingOtp = service.pendingReferenceNo != null;
+    final isBusy = service.isSendingOtp || service.isVerifyingOtp;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isPending ? AppColors.primaryGreen : AppColors.divider,
-          width: isPending ? 1.5 : 1,
-        ),
+        border: Border.all(color: AppColors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Instant 1-Click Subscription',
+            'Subscribe with Robi / Airtel (৳2.78/day)',
             style: AppTypography.headingSmall.copyWith(fontSize: 15),
           ),
           const SizedBox(height: 4),
           const Text(
-            'Enter your Robi or Airtel number to receive a confirmation prompt on your phone.',
+            'Enter your mobile number to receive a 6-digit verification code via SMS.',
             style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 14),
-
           TextField(
             controller: _mobileController,
             enabled: !isBusy,
@@ -497,16 +464,8 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // Consent Checkbox
           _buildConsentCheckbox(),
-
-          if (isPending) ...[
-            const SizedBox(height: 16),
-            _buildPendingStateBox(service),
-          ],
-
-          if (service.errorMessage != null && !isPending) ...[
+          if (service.errorMessage != null) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(10),
@@ -529,13 +488,12 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
               ),
             ),
           ],
-
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           SizedBox(
             width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
+            height: 48,
+            child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
                 foregroundColor: Colors.white,
@@ -543,173 +501,10 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed: (!_hasConsented || isBusy) ? null : _handleSubscribe,
-              child: isBusy
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          isPending
-                              ? 'Waiting for carrier confirmation...'
-                              : 'Connecting to carrier...',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    )
-                  : Text(
-                      'Subscribe for ${SubscriptionOfferConfig.formattedPrice}/day',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton.icon(
-              icon: const Icon(Icons.sms_outlined, size: 16),
-              label: const Text(
-                'Prefer SMS OTP verification instead? Tap here',
-                style: TextStyle(fontSize: 12),
-              ),
-              onPressed: isBusy ? null : () => setState(() => _useOtpFallback = true),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPendingStateBox(BdAppsService service) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.accentPinkLight.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryGreenLight),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: AppColors.primaryGreen,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Check your phone screen!',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryGreen,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'A carrier confirmation prompt has been sent to ${BdMobileValidator.maskMobile(_mobileController.text)}.\nPlease press 1 or reply YES to confirm.',
-                      style: const TextStyle(fontSize: 11, height: 1.3),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (service.pollingSecondsRemaining > 0) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                'Auto-checking: ${service.pollingSecondsRemaining}s',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOtpSection(BdAppsService service) {
-    final hasPendingOtp = service.pendingReferenceNo != null;
-    final isBusy = service.isSendingOtp || service.isVerifyingOtp;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Subscribe via SMS OTP',
-                style: AppTypography.headingSmall.copyWith(fontSize: 15),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                tooltip: 'Back to 1-Click',
-                onPressed: () => setState(() => _useOtpFallback = false),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _mobileController,
-            enabled: !isBusy,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(
-              labelText: 'Robi / Airtel Number',
-              hintText: '018XXXXXXXX',
-              prefixIcon: const Icon(Icons.phone_android),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              errorText: _inlineError,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildConsentCheckbox(),
-          const SizedBox(height: 12),
-
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-              ),
               icon: service.isSendingOtp
                   ? const SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: 18,
+                      height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -717,52 +512,76 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                     )
                   : const Icon(Icons.sms, size: 18),
               label: Text(
-                service.isSendingOtp ? 'Sending OTP...' : 'Send SMS OTP',
+                service.isSendingOtp
+                    ? 'Sending SMS Code...'
+                    : (hasPendingOtp ? 'Resend SMS OTP' : 'Send SMS OTP (৳2.78/day)'),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
               onPressed: (!_hasConsented || isBusy) ? null : _handleSendOtp,
             ),
           ),
 
           if (hasPendingOtp) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             const Divider(),
-            const Text(
-              'Enter Received 6-Digit OTP Code',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
             const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primaryGreenLight),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.mark_email_read_outlined, color: AppColors.primaryGreen, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'SMS OTP sent to ${BdMobileValidator.maskMobile(_mobileController.text)}.\nPlease enter the 6-digit code below.',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: _otpController,
               keyboardType: TextInputType.number,
               maxLength: 6,
               decoration: InputDecoration(
-                labelText: 'OTP Code',
+                labelText: '6-Digit OTP Code',
                 hintText: '123456',
-                prefixIcon: const Icon(Icons.pin),
+                prefixIcon: const Icon(Icons.pin, color: AppColors.primaryGreen),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
-              height: 46,
+              height: 50,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryGreen,
                   foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 icon: service.isVerifyingOtp
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
+                        width: 18,
+                        height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.white,
                         ),
                       )
-                    : const Icon(Icons.check_circle_outline, size: 18),
+                    : const Icon(Icons.verified, size: 18),
                 label: Text(
-                  service.isVerifyingOtp ? 'Verifying...' : 'Verify OTP & Activate',
+                  service.isVerifyingOtp ? 'Activating Premium...' : 'Verify OTP & Activate Premium',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 onPressed: isBusy ? null : _handleVerifyOtp,
               ),
