@@ -51,13 +51,28 @@ class BdAppsApiClient {
   Future<SendOtpResponse> sendOtp({
     required String userMobile,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/send_otp.php',
-      data: {'user_mobile': userMobile},
-      options: _formEncoded,
-    );
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/send_otp.php',
+        data: {'user_mobile': userMobile},
+        options: _formEncoded,
+      );
 
-    return SendOtpResponse.fromJson(response.data!);
+      return SendOtpResponse.fromJson(response.data!);
+    } on DioException catch (e) {
+      return SendOtpResponse(
+        isSuccess: false,
+        error: e.message ?? 'Connection error',
+        statusCode: e.response?.statusCode?.toString() ?? 'E1000',
+        statusDetail: e.message,
+      );
+    } catch (e) {
+      return SendOtpResponse(
+        isSuccess: false,
+        error: e.toString(),
+        statusCode: 'E1000',
+      );
+    }
   }
 
   /// Verifies the OTP code entered by the user against BD Apps referenceNo.
@@ -65,39 +80,83 @@ class BdAppsApiClient {
     required String referenceNo,
     required String otp,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/verify_otp.php',
-      data: {
-        'referenceNo': referenceNo,
-        'otp': otp,
-      },
-      options: _formEncoded,
-    );
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/verify_otp.php',
+        data: {
+          'referenceNo': referenceNo,
+          'otp': otp,
+        },
+        options: _formEncoded,
+      );
 
-    return VerifyOtpResponse.fromJson(response.data!);
+      return VerifyOtpResponse.fromJson(response.data!);
+    } on DioException catch (e) {
+      return VerifyOtpResponse(
+        isSuccess: false,
+        error: e.message ?? 'Verification connection failed',
+        statusCode: e.response?.statusCode?.toString() ?? 'E1000',
+        statusDetail: e.message,
+      );
+    } catch (e) {
+      return VerifyOtpResponse(
+        isSuccess: false,
+        error: e.toString(),
+        statusCode: 'E1000',
+      );
+    }
   }
 
   /// Returns the current subscription status for a subscriber.
   Future<CheckSubscriptionResponse> checkSubscription({
     required String userMobile,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/check_subscription.php',
-      data: {'user_mobile': userMobile},
-      options: _formEncoded,
-    );
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/check_subscription.php',
+        data: {'user_mobile': userMobile},
+        options: _formEncoded,
+      );
 
-    return CheckSubscriptionResponse.fromJson(response.data!);
+      return CheckSubscriptionResponse.fromJson(response.data!);
+    } on DioException catch (e) {
+      return CheckSubscriptionResponse(
+        subscriptionStatus: 'UNKNOWN',
+        error: e.message ?? 'Network error checking subscription',
+        statusCode: e.response?.statusCode?.toString() ?? 'E1000',
+        statusDetail: e.message,
+      );
+    } catch (e) {
+      return CheckSubscriptionResponse(
+        subscriptionStatus: 'UNKNOWN',
+        error: e.toString(),
+        statusCode: 'E1000',
+      );
+    }
   }
 
   /// Tells the backend to unregister the given mobile number.
   Future<UnsubscribeResponse> unsubscribe({required String userMobile}) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/unsubscribe.php',
-      data: {'user_mobile': userMobile},
-      options: _formEncoded,
-    );
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/unsubscribe.php',
+        data: {'user_mobile': userMobile},
+        options: _formEncoded,
+      );
 
-    return UnsubscribeResponse.fromJson(response.data!);
+      return UnsubscribeResponse.fromJson(response.data!);
+    } on DioException catch (e) {
+      return UnsubscribeResponse(
+        success: false,
+        statusCode: e.response?.statusCode?.toString() ?? 'E1000',
+        statusDetail: e.message ?? 'Network error unregistering',
+      );
+    } catch (e) {
+      return UnsubscribeResponse(
+        success: false,
+        statusCode: 'E1000',
+        statusDetail: e.toString(),
+      );
+    }
   }
 }

@@ -126,19 +126,25 @@ class EntitlementService extends ChangeNotifier {
               final response =
                   await client.checkSubscription(userMobile: bdMobile);
               final newStatus = response.subscriptionStatus ?? 'UNREGISTERED';
-              _isSubscribed = (newStatus.toUpperCase() == 'REGISTERED');
-              _lastVerifiedAt = DateTime.now();
+              if (newStatus.toUpperCase() == 'UNKNOWN') {
+                // BD Apps server error / timeout: retain existing cached Firestore status
+                _isSubscribed = status == 'REGISTERED';
+                _lastVerifiedAt = verifiedDate;
+              } else {
+                _isSubscribed = (newStatus.toUpperCase() == 'REGISTERED');
+                _lastVerifiedAt = DateTime.now();
 
-              // Persist fresh verification timestamp and status to Firestore
-              await _firestore
-                  .collection('users')
-                  .doc(user.uid)
-                  .collection('profile')
-                  .doc('main')
-                  .set({
-                'subscriptionStatus': newStatus,
-                'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
-              }, SetOptions(merge: true));
+                // Persist fresh verification timestamp and status to Firestore
+                await _firestore
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('profile')
+                    .doc('main')
+                    .set({
+                  'subscriptionStatus': newStatus,
+                  'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+                }, SetOptions(merge: true));
+              }
             } catch (e) {
               debugPrint('Carrier verification error: $e');
               // Fall back to cached status if network failed
