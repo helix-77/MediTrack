@@ -627,18 +627,12 @@ Ordered steps to take this from "planned" to shipped:
    reason to (Section 7 has the open question if that changes).
 
 ### 5.5 Nearby Pharmacy
-- Client calls a Cloud Function for Firebase (e.g. `nearbyPharmacies`, Node.js/TypeScript
-  via `firebase-functions` + `firebase-admin`) with the device's lat/lng (from
-  `geolocator`) → the function proxies Google Places API (Nearby Search, New) with
-  `type=pharmacy`, keeping the Google API key server-side → returns name, address,
-  distance, rating, open-now status. Call it via `dio` or `cloud_functions`
-  (`FirebaseFunctions.instance.httpsCallable(...)`) — prefer `cloud_functions` since it
-  already carries Firebase Auth context automatically.
-- `google_maps_flutter` renders markers + user location; toggle to a plain list view
-  sorted by distance.
-- Google Places coverage can thin out outside Dhaka/major cities — if a search returns
-  under ~3 results, that's worth surfacing to the user honestly ("few results found near
-  you") rather than silently showing an empty map.
+- Device location is acquired via `geolocator` (GPS coordinates `lat, lon` with standard permission handling).
+- The client constructs a Google Maps Universal Search URL:
+  `https://www.google.com/maps/search/?api=1&query=pharmacy+near+<lat>,<lon>` (or specific category queries like `24 hours pharmacy`, `model pharmacy`, `medicine store`).
+- Launch directly into Google Maps app / browser using `url_launcher` (`LaunchMode.externalApplication`).
+- This offloads live pharmacy discovery, store hours, contact dialing, customer reviews, and turn-by-turn navigation directly to Google Maps without requiring a paid Google Places API key or dummy fallback data.
+- Entitlement: Gated behind `EntitlementFeature.nearbyPharmacy` premium check.
 
 ### 5.6 Settings / Family Profiles (Phase 2)
 - Language toggle (English/Bangla) via `easy_localization` — this is why Section 2

@@ -1,10 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import '../models/pharmacy.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+/// Service responsible for acquiring device GPS location and launching
+/// Google Maps to locate nearby pharmacies.
 class PharmacyService {
+  /// Request and retrieve the user's current GPS position.
   Future<Position?> getCurrentPosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -36,112 +37,53 @@ class PharmacyService {
     }
   }
 
-  Future<List<Pharmacy>> fetchNearbyPharmacies({
-    required double latitude,
-    required double longitude,
-    double radiusMeters = 3000,
-  }) async {
-    try {
-      // Overpass API query for pharmacies around the given lat/long
-      final query =
-          '[out:json][timeout:15];(node["amenity"="pharmacy"](around:$radiusMeters,$latitude,$longitude);way["amenity"="pharmacy"](around:$radiusMeters,$latitude,$longitude););out center;';
-      final url = Uri.parse(
-        'https://overpass-api.de/api/interpreter?data=${Uri.encodeComponent(query)}',
-      );
-
-      final response = await http.get(url).timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final elements = (data['elements'] as List?) ?? [];
-
-        final pharmacies = <Pharmacy>[];
-        for (final el in elements) {
-          final tags = el['tags'] as Map<String, dynamic>? ?? {};
-          final name = tags['name'] as String? ?? tags['name:en'] as String? ?? 'Pharmacy';
-          final street = tags['addr:street'] as String? ?? '';
-          final city = tags['addr:city'] as String? ?? '';
-          final address = [street, city].where((s) => s.isNotEmpty).join(', ');
-          final phone = tags['phone'] as String? ?? tags['contact:phone'] as String?;
-
-          final lat = (el['lat'] ?? el['center']?['lat'] as num?)?.toDouble() ?? latitude;
-          final lon = (el['lon'] ?? el['center']?['lon'] as num?)?.toDouble() ?? longitude;
-
-          final distance = Geolocator.distanceBetween(latitude, longitude, lat, lon);
-
-          pharmacies.add(
-            Pharmacy(
-              id: el['id'].toString(),
-              name: name,
-              address: address.isNotEmpty ? address : 'Dhaka, Bangladesh',
-              latitude: lat,
-              longitude: lon,
-              distanceMeters: distance,
-              isOpen: tags['opening_hours'] != null ? true : null,
-              phone: phone,
-            ),
-          );
-        }
-
-        pharmacies.sort(
-          (a, b) => (a.distanceMeters ?? 0).compareTo(b.distanceMeters ?? 0),
-        );
-        return pharmacies;
-      }
-    } catch (e) {
-      debugPrint('Failed to query Overpass API for pharmacies: $e');
+  /// Construct a universal Google Maps search URI with optional coordinates and search query.
+  Uri buildGoogleMapsSearchUri({
+    double? latitude,
+    double? longitude,
+    String query = 'pharmacy',
+  }) {
+    final String searchQuery;
+    if (latitude != null && longitude != null) {
+      searchQuery = '$query near $latitude,$longitude';
+    } else {
+      searchQuery = query;
     }
 
-    // Default mock fallback nearby pharmacies for testing/offline support in Bangladesh
-    return _generateFallbackPharmacies(latitude, longitude);
+    return Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(searchQuery)}',
+    );
   }
 
-  List<Pharmacy> _generateFallbackPharmacies(double lat, double lon) {
-    return [
-      Pharmacy(
-        id: 'p1',
-        name: 'Lazz Pharma (24 Hours)',
-        address: 'Kalabagan Main Road, Dhaka',
-        latitude: lat + 0.003,
-        longitude: lon + 0.002,
-        distanceMeters: 350,
-        isOpen: true,
-        rating: 4.6,
-        phone: '01711223344',
-      ),
-      Pharmacy(
-        id: 'p2',
-        name: 'Tamanna Pharmacy',
-        address: 'Mirpur Road, Dhanmondi, Dhaka',
-        latitude: lat - 0.004,
-        longitude: lon + 0.003,
-        distanceMeters: 620,
-        isOpen: true,
-        rating: 4.4,
-        phone: '01819887766',
-      ),
-      Pharmacy(
-        id: 'p3',
-        name: 'Health & Hope Pharmacy',
-        address: 'Green Road, Panthapath, Dhaka',
-        latitude: lat + 0.007,
-        longitude: lon - 0.005,
-        distanceMeters: 1100,
-        isOpen: true,
-        rating: 4.5,
-        phone: '01911445566',
-      ),
-      Pharmacy(
-        id: 'p4',
-        name: 'Square Model Pharmacy',
-        address: 'Panthapath, Dhaka',
-        latitude: lat + 0.009,
-        longitude: lon + 0.006,
-        distanceMeters: 1450,
-        isOpen: false,
-        rating: 4.8,
-        phone: '01700998877',
-      ),
-    ];
+  /// Launch Google Maps app (or browser fallback) with the given search query and location.
+  Future<bool> openNearbyPharmaciesInMaps({
+    double? latitude,
+    double? longitude,
+    String query = 'pharmacy',
+  }) async {
+    // If coordinates were not provided, attempt to acquire them.
+    if (latitude == null || longitude == null) {
+      final position = await getCurrentPosition();
+      if (position != null) {
+        latitude = position.latitude;
+        longitude = position.longitude;
+      }
+    }
+
+    final uri = buildGoogleMapsSearchUri(
+      latitude: latitude,
+      longitude: longitude,
+      query: query,
+    );
+
+    try {
+      return await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (e) {
+      debugPrint('Error launching Google Maps search: $e');
+      return false;
+    }
   }
 }
