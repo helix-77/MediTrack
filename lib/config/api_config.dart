@@ -14,10 +14,12 @@ class ApiConfig {
   }
 
   /// Gemini API Endpoints & Models
-  static const String geminiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-  static const String geminiModel = 'gemini-2.5-flash';
+  static const String geminiBaseUrl =
+      'https://generativelanguage.googleapis.com/v1beta';
+  static const String geminiModel = 'gemini-3.6-flash';
 
   /// BD Apps backend base URL — the PHP endpoints under /backend/ are hosted
   /// here. All auth/subscription requests are POSTed to paths under this URL.
-  static const String bdappsBaseUrl = 'https://www.bdappsdigitalapps.com/NADB26067/';
+  static const String bdappsBaseUrl =
+      'https://www.bdappsdigitalapps.com/NADB26067/';
 }

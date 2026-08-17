@@ -4,6 +4,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/api_config.dart';
 import '../logic/auth_guard.dart';
 import '../logic/prescription_validator.dart';
 import '../models/prescription_extraction.dart';
@@ -12,7 +13,7 @@ class PrescriptionExtractionService {
   final GenerativeModel? _customModel;
 
   PrescriptionExtractionService({GenerativeModel? model})
-      : _customModel = model;
+    : _customModel = model;
 
   static const String _systemPrompt = '''
 You are a medical prescription OCR assistant. You will receive one or more images of a doctor's prescription, which may be handwritten and may mix Bangla and English. Extract only what is visibly present on the page — never infer or guess a medicine name, dosage, or duration that is not legible. If a field is not clearly readable, output null for it rather than guessing.
@@ -47,7 +48,7 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
     );
 
     return googleAI.generativeModel(
-      model: 'gemini-2.5-flash',
+      model: ApiConfig.geminiModel,
       systemInstruction: Content.system(_systemPrompt),
     );
   }
@@ -70,7 +71,9 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
       final model = _getModel();
 
       final content = Content.multi([
-        TextPart('Extract the medicines and details from this prescription according to the schema.'),
+        TextPart(
+          'Extract the medicines and details from this prescription according to the schema.',
+        ),
         InlineDataPart(mimeType, bytes),
       ]);
 

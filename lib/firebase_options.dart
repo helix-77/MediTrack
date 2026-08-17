@@ -25,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -62,13 +56,33 @@ class DefaultFirebaseOptions {
     projectId: 'meditrack-app-2026',
     storageBucket: 'meditrack-app-2026.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAEHuZ-G6xqO-oXP86wlsMBVIorzARFtHo',
     appId: '1:363299282373:ios:c4ed037a65603da49effac',
     messagingSenderId: '363299282373',
     projectId: 'meditrack-app-2026',
     storageBucket: 'meditrack-app-2026.firebasestorage.app',
+    androidClientId: '363299282373-f8tihnlnofaqn1c05uiet9tu9v819535.apps.googleusercontent.com',
+    iosClientId: '363299282373-3q4090u4no5v6gnscrg03vnfr5mur4dp.apps.googleusercontent.com',
     iosBundleId: 'com.meditrack.app.meditrack',
+  );
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyAEHuZ-G6xqO-oXP86wlsMBVIorzARFtHo',
+    appId: '1:363299282373:ios:c4ed037a65603da49effac',
+    messagingSenderId: '363299282373',
+    projectId: 'meditrack-app-2026',
+    storageBucket: 'meditrack-app-2026.firebasestorage.app',
+    androidClientId: '363299282373-f8tihnlnofaqn1c05uiet9tu9v819535.apps.googleusercontent.com',
+    iosClientId: '363299282373-3q4090u4no5v6gnscrg03vnfr5mur4dp.apps.googleusercontent.com',
+    iosBundleId: 'com.meditrack.app.meditrack',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyA92YFvysAvUOFP_Oez8V7oJGXy2VCQPt4',
+    appId: '1:363299282373:web:0dec63b8725b0b929effac',
+    messagingSenderId: '363299282373',
+    projectId: 'meditrack-app-2026',
+    authDomain: 'meditrack-app-2026.firebaseapp.com',
+    storageBucket: 'meditrack-app-2026.firebasestorage.app',
   );
 }

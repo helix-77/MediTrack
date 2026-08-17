@@ -30,7 +30,7 @@ how (Section 5).
   - Monetization: the BD Apps SMS integration below doubles as the carrier-billing
     subscription/entitlement mechanism (Section 5.10). No app-side paywall gate exists yet
     — don't add one speculatively before that section's gated-feature list is confirmed.
-- AI / vision: `firebase_ai` (Firebase AI Logic) calling Gemini 2.5 Flash directly from
+- AI / vision: `firebase_ai` (Firebase AI Logic) calling Gemini 3.6 Flash directly from
   the Flutter client, gated by App Check + Auth (no server proxy needed — App Check is
   the abuse control). See `medicine-manager-spec.md` Section 5.2 for the prescription-OCR
   pipeline design and its execution plan.

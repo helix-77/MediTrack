@@ -11,7 +11,7 @@
 - 📅 **Calendar & Daily Routine**: Interactive calendar medication schedules and refill tracker (Free forever).
 - 🛒 **Medicine Buy List**: Keep track of low-stock medications and restocking lists (Free forever).
 - ⭐ **MediTrack Premium (BD Apps Carrier Micro-Subscription - ৳2.78/day)**:
-  - 🤖 **AI Assistant**: Multimodal Gemini 2.5 Flash health insights and advice.
+  - 🤖 **AI Assistant**: Multimodal Gemini 3.6 Flash health insights and advice.
   - 📝 **AI Prescription OCR**: Structured dosage and schedule extraction from prescription photos.
   - 🔍 **Medicine Price & Generic Lookup**: Price checking and generic alternative finder.
   - 🏥 **Nearby Pharmacies**: Real-time pharmacy locator with GPS and direct dialing.

@@ -491,7 +491,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'AI Gemini 2.5 Flash will extract medicines & dosages',
+                    'AI Gemini 3.6 Flash will extract medicines & dosages',
                     style: AppTypography.bodySmall,
                   ),
                 ],

@@ -26,10 +26,7 @@ class SubscriptionOfferConfig {
 
   /// Formatted daily price using `intl` currency formatter.
   static String get formattedPrice {
-    final format = NumberFormat.currency(
-      symbol: '৳',
-      decimalDigits: 2,
-    );
+    final format = NumberFormat.currency(symbol: '৳', decimalDigits: 2);
     return format.format(dailyPrice).trim();
   }
 
@@ -37,17 +34,20 @@ class SubscriptionOfferConfig {
   static const List<Map<String, String>> features = [
     {
       'title': 'AI Prescription Extraction',
-      'subtitle': 'Scan handwritten & digital prescriptions with Gemini 2.5 Flash',
+      'subtitle':
+          'Scan handwritten & digital prescriptions with Gemini 3.6 Flash',
       'icon': 'document_scanner',
     },
     {
       'title': 'MediTrack AI Assistant',
-      'subtitle': 'Ask health questions, check dosages, and create routines automatically',
+      'subtitle':
+          'Ask health questions, check dosages, and create routines automatically',
       'icon': 'auto_awesome',
     },
     {
       'title': 'Price & Generic Database',
-      'subtitle': 'Search Bangladesh medicine MRPs and discover cheaper generic alternatives',
+      'subtitle':
+          'Search Bangladesh medicine MRPs and discover cheaper generic alternatives',
       'icon': 'search',
     },
     {

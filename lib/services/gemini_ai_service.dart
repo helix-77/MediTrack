@@ -5,6 +5,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/api_config.dart';
 import '../logic/ai_action_validator.dart';
 import '../logic/auth_guard.dart';
 
@@ -89,7 +90,7 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
       appCheck: FirebaseAppCheck.instance,
     );
     return googleAI.generativeModel(
-      model: 'gemini-2.5-flash',
+      model: ApiConfig.geminiModel,
       systemInstruction: Content.system(_systemInstructionText),
     );
   }

@@ -77,7 +77,7 @@ flag it instead of silently switching):
     (e.g. Google Places for Section 5.5). The Flutter client must never embed a raw
     secret key for a paid external API.
 - AI / vision (prescription OCR, in-app AI assistant): `firebase_ai` (Firebase AI Logic)
-  calling Gemini 2.5 Flash **directly from the Flutter client**, gated by
+  calling Gemini 3.6 Flash **directly from the Flutter client**, gated by
   `firebase_app_check` + `firebase_auth`. This is Firebase AI Logic's supported
   client-calling pattern — App Check attestation is the abuse control, so this does not
   violate the "no embedded secret key" rule above (there is no secret to embed). See
@@ -382,7 +382,7 @@ rigor than "send image to an LLM, show the text."
 on-device ML Kit text recognition and flags lines containing keywords like "mg"/"tab"/
 dose-pattern digits as "detected medicines" (a plain string list, no structured fields,
 no confidence, no persistence of line items), and separately, `AIPrescriptionService` /
-`GeminiAiService` can send a photo to Gemini 2.5 Flash and get back free-text analysis
+`GeminiAiService` can send a photo to Gemini 3.6 Flash and get back free-text analysis
 in the general AI-assistant chat. Neither path produces the structured, reviewable,
 confidence-scored extraction this feature needs, and they aren't wired together. The
 rest of this section is the target architecture, and 5.2.8 is the concrete plan to get
@@ -412,7 +412,7 @@ there — treat it as the current top priority (Section 6).
    enough for v1; a proper blur estimator is a nice-to-have, not a blocker). Surface this
    as "this looks unclear, retake?" with an explicit "use anyway" override — never a hard
    block, since a low-quality photo may still be the best one available.
-3. **Structured extraction call** — Firebase AI Logic (`firebase_ai`), Gemini 2.5 Flash,
+3. **Structured extraction call** — Firebase AI Logic (`firebase_ai`), Gemini 3.6 Flash,
    called with the exact contract in 5.2.3, using the SDK's structured-output support
    (`GenerationConfig` with a JSON response schema) so the JSON shape is enforced at the
    API level rather than relying on prompt-following alone. Verify the exact `Schema`
@@ -742,7 +742,7 @@ are gated behind an active ৳2.78/day (+VAT+SD+SC) micro-subscription.
   - Digital Prescription Vault (photo storage & retrieval).
   - Low-stock Buy List.
 - **Premium Tier (৳2.78/day via Robi 018 / Airtel 016 carrier billing):**
-  1. **Prescription AI OCR:** Multi-page structured Gemini 2.5 Flash dosage extraction.
+  1. **Prescription AI OCR:** Multi-page structured Gemini 3.6 Flash dosage extraction.
   2. **AI Health Assistant:** Multimodal Gemini conversation & prescription analysis.
   3. **Medicine Price & Generic Lookup:** Bangladesh reference database search & cheap alternatives.
   4. **Nearby Pharmacies:** Live GPS & Google Places locator with call / directions shortcuts.
