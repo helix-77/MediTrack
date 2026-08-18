@@ -113,28 +113,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Optional: Family Member Filters (if members exist)
                         _buildFamilyFilterChips(isDark),
 
-                        // 2. Hero Progress Card: "Today's Health" (Image 1 reference)
+                        // 2. Combined Hero Progress Card: "Today's Health & Overview"
                         _buildTodaysHealthCard(
                           completed: completedTodayDoses,
                           total: totalTodayDoses,
                           progress: todayProgressPercent,
-                          isDark: isDark,
-                        ),
-                        const SizedBox(height: 24),
-
-                        // 3. "Smart Health Tools" (Image 2 reference)
-                        _buildSmartHealthToolsCard(isDark),
-                        const SizedBox(height: 24),
-
-                        // 4. "Your health at a glance" (2 Stats Cards: Adherence & Active Medicines)
-                        _buildHealthAtAGlanceSection(
                           adherenceRate: adherenceRate,
                           activeMedicinesCount: filteredMedicines.length,
                           isDark: isDark,
                         ),
+                        const SizedBox(height: 24),
+
+                        // 3. "Smart Health Tools"
+                        _buildSmartHealthToolsCard(isDark),
                         const SizedBox(height: 28),
 
-                        // 5. "Ongoing Routine" (4 Time Slot Cards Grid - Image 2 reference)
+                        // 4. "Ongoing Routine" (4 Time Slot Cards Grid)
                         _buildOngoingRoutineSection(
                           doseItems: doseItems,
                           isDark: isDark,
@@ -235,6 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
     required int completed,
     required int total,
     required double progress,
+    required int adherenceRate,
+    required int activeMedicinesCount,
     required bool isDark,
   }) {
     final percentInt = (progress * 100).round();
@@ -252,10 +248,10 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF162032) : const Color(0xFFE8F1FF),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryBlue.withValues(alpha: isDark ? 0.05 : 0.08),
+            color: AppColors.primaryBlue.withValues(alpha: isDark ? 0.06 : 0.08),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -264,6 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top Row: Title, Message, & Circular Percentage Badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -272,14 +269,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "TODAY'S HEALTH",
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.primaryBlue,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        fontSize: 11,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primaryBlue,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "TODAY'S HEALTH",
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.primaryBlue,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -304,11 +314,18 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 12),
               // Circular Percentage Badge
               Container(
-                width: 58,
-                height: 58,
-                decoration: const BoxDecoration(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
                   color: AppColors.primaryBlue,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Text(
@@ -324,134 +341,134 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
+
           // Clean Linear Progress Bar
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: total == 0 ? 0.0 : progress,
               minHeight: 7,
-              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white.withValues(alpha: 0.8),
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white.withValues(alpha: 0.85),
               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Integrated 2-Stat Row (Health at a Glance metrics)
+          Row(
+            children: [
+              // Stat 1: Adherence
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: AppShadows.subtle,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE0EDFE),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.access_time_rounded,
+                          color: AppColors.primaryBlue,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Adherence',
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 11,
+                                color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              '$adherenceRate%',
+                              style: AppTypography.headingSmall.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Stat 2: Active Medicines
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: AppShadows.subtle,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFEF3C7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.medication_rounded,
+                          color: Color(0xFFF59E0B),
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Medicines',
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 11,
+                                color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              '$activeMedicinesCount active',
+                              style: AppTypography.headingSmall.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // 3. "YOUR HEALTH AT A GLANCE"
-  // ---------------------------------------------------------------------------
-  Widget _buildHealthAtAGlanceSection({
-    required int adherenceRate,
-    required int activeMedicinesCount,
-    required bool isDark,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Your health at a glance',
-          style: AppTypography.headingMedium.copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            // Left Stat Card: Adherence
-            Expanded(
-              child: SoftSurface(
-                padding: const EdgeInsets.all(18),
-                borderRadius: BorderRadius.circular(22),
-                color: isDark ? AppColors.darkSurface : Colors.white,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE0EDFE),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.access_time_rounded,
-                        color: AppColors.primaryBlue,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Adherence',
-                      style: AppTypography.caption.copyWith(
-                        color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$adherenceRate%',
-                      style: AppTypography.displayLarge.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            // Right Stat Card: Active Medicines
-            Expanded(
-              child: SoftSurface(
-                padding: const EdgeInsets.all(18),
-                borderRadius: BorderRadius.circular(22),
-                color: isDark ? AppColors.darkSurface : Colors.white,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFEF3C7),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.medication_rounded,
-                        color: Color(0xFFF59E0B),
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Medicines',
-                      style: AppTypography.caption.copyWith(
-                        color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$activeMedicinesCount active',
-                      style: AppTypography.displayLarge.copyWith(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
