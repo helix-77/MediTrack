@@ -17,6 +17,7 @@
   --accent-pink-dark: #E39A91;
   --bg-porcelain: #FBF6F1;
   --surface-white: #FFFFFF;
+  --surface-cream: #F7EFE8;
   --surface-card: #FFFFFF;
   --surface-glass: rgba(255, 255, 255, 0.75);
   
@@ -35,7 +36,7 @@
   
   /* Typography */
   --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   
   /* Elevation & Shadows */
   --shadow-sm: 0 2px 8px rgba(71, 89, 78, 0.05);
@@ -101,6 +102,15 @@ img, svg {
   max-width: 100%;
 }
 
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  background: rgba(71, 89, 78, 0.08);
+  color: var(--primary-green-dark);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
 .container {
   width: 100%;
   max-width: 1240px;
@@ -129,7 +139,7 @@ img, svg {
 }
 
 .navbar.scrolled {
-  background: rgba(251, 246, 241, 0.88);
+  background: rgba(251, 246, 241, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid rgba(240, 230, 223, 0.8);
@@ -173,13 +183,13 @@ img, svg {
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 2.25rem;
+  gap: 2rem;
   list-style: none;
 }
 
 .nav-link {
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   color: var(--text-primary);
   transition: color var(--transition-fast);
   position: relative;
@@ -242,7 +252,7 @@ img, svg {
 
 .btn-secondary {
   background-color: var(--accent-pink-light);
-  color: var(--primary-green);
+  color: var(--primary-green-dark);
   border: 1px solid var(--accent-pink);
 }
 
@@ -283,7 +293,7 @@ img, svg {
    -------------------------------------------------------------------------- */
 .hero-section {
   padding-top: 9.5rem;
-  padding-bottom: 5rem;
+  padding-bottom: 5.5rem;
   position: relative;
   overflow: hidden;
 }
@@ -292,9 +302,9 @@ img, svg {
   position: absolute;
   top: 5%;
   right: -5%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(244, 184, 176, 0.35) 0%, rgba(251, 246, 241, 0) 70%);
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(244, 184, 176, 0.4) 0%, rgba(251, 246, 241, 0) 70%);
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
@@ -304,9 +314,9 @@ img, svg {
   position: absolute;
   top: 30%;
   left: -10%;
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(107, 127, 111, 0.15) 0%, rgba(251, 246, 241, 0) 70%);
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(107, 127, 111, 0.18) 0%, rgba(251, 246, 241, 0) 70%);
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
@@ -314,7 +324,7 @@ img, svg {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.05fr 0.95fr;
   gap: 3.5rem;
   align-items: center;
   position: relative;
@@ -324,20 +334,24 @@ img, svg {
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 1.1rem;
+  gap: 0.6rem;
+  padding: 0.45rem 1.15rem;
   background-color: var(--accent-pink-light);
   border: 1px solid var(--accent-pink);
   border-radius: var(--radius-full);
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--primary-green);
+  color: var(--primary-green-dark);
   margin-bottom: 1.5rem;
+}
+
+.badge-flag {
+  font-size: 1.1rem;
 }
 
 .hero-title {
   font-family: var(--font-heading);
-  font-size: 3.25rem;
+  font-size: 3.15rem;
   font-weight: 700;
   line-height: 1.18;
   color: var(--primary-green);
@@ -357,16 +371,16 @@ img, svg {
   left: 0;
   width: 100%;
   height: 8px;
-  background-color: rgba(244, 184, 176, 0.5);
+  background-color: rgba(244, 184, 176, 0.55);
   z-index: -1;
   border-radius: 4px;
 }
 
 .hero-subtitle {
-  font-size: 1.15rem;
+  font-size: 1.12rem;
   color: var(--text-secondary);
   margin-bottom: 2.25rem;
-  max-width: 520px;
+  max-width: 530px;
   line-height: 1.65;
 }
 
@@ -376,119 +390,6 @@ img, svg {
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 2.5rem;
-}
-
-.store-badge-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  background-color: var(--primary-green);
-  color: var(--surface-white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-normal);
-}
-
-.store-badge-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
-  background-color: var(--primary-green-dark);
-}
-
-.store-icon {
-  width: 26px;
-  height: 26px;
-  fill: currentColor;
-}
-
-.store-text-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-}
-
-.store-sub {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.85;
-}
-
-.store-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  font-family: var(--font-heading);
-  line-height: 1.1;
-}
-
-/* Tooltips & Highlighted APK Download Button */
-.has-tooltip {
-  position: relative;
-  display: inline-flex;
-}
-
-.has-tooltip::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  background-color: #1e293b;
-  color: #ffffff;
-  padding: 0.55rem 0.95rem;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s ease;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-  z-index: 120;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.has-tooltip::before {
-  content: "";
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 8px 7px 0 7px;
-  border-style: solid;
-  border-color: #1e293b transparent transparent transparent;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
-  z-index: 120;
-}
-
-.has-tooltip:hover::after,
-.has-tooltip:hover::before,
-.has-tooltip:focus-within::after,
-.has-tooltip:focus-within::before {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-}
-
-.store-badge-btn.store-unreleased {
-  opacity: 0.75;
-  background-color: var(--surface-cream);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  box-shadow: none;
-}
-
-.store-badge-btn.store-unreleased:hover {
-  opacity: 0.95;
-  background-color: #eae6df;
-  border-color: var(--accent-pink);
-  transform: translateY(-2px);
 }
 
 .apk-highlight-btn {
@@ -508,7 +409,7 @@ img, svg {
 }
 
 .apk-highlight-btn:hover {
-  transform: translateY(-3px) scale(1.03);
+  transform: translateY(-3px) scale(1.02);
   box-shadow: 0 10px 30px rgba(71, 89, 78, 0.5);
   background: linear-gradient(135deg, var(--primary-green-dark) 0%, #28372d 100%);
   color: var(--surface-white);
@@ -526,81 +427,29 @@ img, svg {
   margin-left: 0.2rem;
 }
 
-.store-unreleased-btn {
-  opacity: 0.75;
-}
-
-.store-unreleased-btn:hover {
-  opacity: 0.95;
-}
-
-/* CTA Banner Store Button Overrides */
-.cta-banner-card .store-badge-btn.store-unreleased {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: var(--surface-white);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(4px);
-}
-
-.cta-banner-card .store-badge-btn.store-unreleased:hover {
-  background-color: rgba(255, 255, 255, 0.25);
-  border-color: var(--accent-pink);
-  transform: translateY(-2px);
-}
-
-.cta-banner-card .apk-highlight-btn {
-  background: var(--accent-pink);
-  color: var(--primary-green-dark);
-  border: 2px solid var(--accent-pink-light);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-}
-
-.cta-banner-card .apk-highlight-btn:hover {
-  background: var(--surface-white);
-  color: var(--primary-green-dark);
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-}
-
-.cta-banner-card .apk-badge-tag {
-  background-color: var(--primary-green-dark);
-  color: var(--surface-white);
-}
-
 .hero-trust-bar {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
 }
 
-.user-avatars {
+.trust-pill-list {
   display: flex;
   align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.avatar-img {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 2px solid var(--surface-white);
-  margin-left: -10px;
-  object-fit: cover;
-}
-
-.avatar-img:first-child {
-  margin-left: 0;
-}
-
-.trust-text {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.trust-text strong {
-  color: var(--text-primary);
-  font-weight: 700;
+.trust-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-green);
+  background: var(--surface-white);
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
 }
 
 /* --------------------------------------------------------------------------
@@ -615,8 +464,8 @@ img, svg {
 
 .phone-ambient-ring {
   position: absolute;
-  width: 420px;
-  height: 420px;
+  width: 440px;
+  height: 440px;
   border: 2px dashed rgba(107, 127, 111, 0.25);
   border-radius: 50%;
   animation: rotateRing 40s linear infinite;
@@ -629,8 +478,8 @@ img, svg {
 }
 
 .phone-mockup-card {
-  width: 310px;
-  height: 630px;
+  width: 320px;
+  height: 640px;
   background-color: #1E2521;
   border-radius: 46px;
   padding: 12px;
@@ -643,7 +492,7 @@ img, svg {
 }
 
 .phone-mockup-card:hover {
-  transform: translateY(-6px) rotate(1deg);
+  transform: translateY(-6px) rotate(0.5deg);
 }
 
 .phone-notch {
@@ -683,7 +532,7 @@ img, svg {
 .app-screen-header {
   background-color: var(--primary-green);
   color: var(--surface-white);
-  padding: 2.2rem 1.25rem 1rem;
+  padding: 2.2rem 1rem 0.9rem;
 }
 
 .app-header-top {
@@ -694,12 +543,12 @@ img, svg {
 }
 
 .app-user-greeting {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   opacity: 0.85;
 }
 
 .app-user-name {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-family: var(--font-heading);
   font-weight: 600;
 }
@@ -714,7 +563,7 @@ img, svg {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 /* Phone Interactive Tab Switcher */
@@ -728,10 +577,10 @@ img, svg {
 
 .phone-tab-btn {
   flex: 1;
-  padding: 6px 0;
-  font-size: 0.72rem;
+  padding: 5px 0;
+  font-size: 0.68rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
   border-radius: var(--radius-full);
   text-align: center;
   transition: all var(--transition-fast);
@@ -745,7 +594,7 @@ img, svg {
 
 .app-screen-body {
   flex: 1;
-  padding: 1rem;
+  padding: 0.9rem;
   overflow-y: auto;
   position: relative;
 }
@@ -764,13 +613,13 @@ img, svg {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* View 1: Today's Schedule UI */
+/* View 1: Today's Routine UI */
 .routine-date-strip {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
   background: var(--surface-white);
-  padding: 0.6rem;
+  padding: 0.5rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
 }
@@ -779,9 +628,9 @@ img, svg {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: var(--radius-sm);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 
 .date-pill.active {
@@ -793,25 +642,26 @@ img, svg {
 .med-card-item {
   background: var(--surface-white);
   border-radius: var(--radius-md);
-  padding: 0.85rem;
-  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.65rem;
   border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-fast);
 }
 
 .med-icon-box {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--accent-pink-light);
   color: var(--primary-green);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.1rem;
 }
 
 .med-info {
@@ -820,18 +670,29 @@ img, svg {
 
 .med-name {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--text-primary);
 }
 
 .med-dose {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-secondary);
 }
 
+.med-stock-tag {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.med-stock-tag.warning {
+  color: #c9751e;
+  font-weight: 600;
+}
+
 .med-check-btn {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 2px solid var(--border-color);
   display: flex;
@@ -847,18 +708,178 @@ img, svg {
   color: var(--surface-white);
 }
 
-/* View 2: AI Assistant UI */
+/* View 2: Prescription Scanner UI */
+.phone-rx-review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.rx-review-header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 0.3rem;
+}
+
+.rx-badge-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.badge-high {
+  background-color: var(--success-bg);
+  color: var(--success-green);
+  border: 1px solid #b7deb7;
+}
+
+.rx-date-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.rx-item-card {
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem;
+}
+
+.rx-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  margin-bottom: 3px;
+}
+
+.rx-form-chip {
+  font-size: 0.62rem;
+  background: var(--accent-pink-light);
+  color: var(--primary-green);
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.rx-item-meta {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.phone-mock-action-btn {
+  background-color: var(--primary-green);
+  color: var(--surface-white);
+  padding: 0.65rem;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.3rem;
+  text-align: center;
+}
+
+/* View 3: Price & Generics UI */
+.phone-generic-lookup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.phone-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface-white);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  color: var(--primary-green-dark);
+  font-weight: 600;
+}
+
+.searched-med-card {
+  background: var(--accent-pink-light);
+  border: 1px solid var(--accent-pink);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem;
+}
+
+.searched-med-title {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--primary-green-dark);
+}
+
+.searched-med-generic {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.searched-med-price {
+  font-size: 0.75rem;
+  margin-top: 3px;
+  color: var(--primary-green-dark);
+}
+
+.cheaper-alt-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--primary-green);
+  margin-top: 0.2rem;
+}
+
+.generic-alt-item {
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+}
+
+.alt-mfg {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+.alt-price-wrap {
+  text-align: right;
+}
+
+.alt-price {
+  font-weight: 700;
+  color: var(--primary-green);
+  font-size: 0.78rem;
+}
+
+.alt-save-pill {
+  font-size: 0.6rem;
+  background: #eaf4ea;
+  color: #2e6030;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* View 4: AI Health Assistant UI */
 .ai-chat-container {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .chat-bubble {
-  max-width: 85%;
+  max-width: 90%;
   padding: 0.65rem 0.85rem;
-  border-radius: 16px;
-  font-size: 0.75rem;
+  border-radius: 14px;
+  font-size: 0.72rem;
   line-height: 1.4;
 }
 
@@ -876,44 +897,14 @@ img, svg {
   border-bottom-right-radius: 4px;
 }
 
-/* View 3: Scanner UI */
-.ocr-scanner-demo {
-  height: 240px;
-  background-color: #26322A;
-  border-radius: var(--radius-md);
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--surface-white);
-}
-
-.scanner-laser-line {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--accent-pink), transparent);
-  box-shadow: 0 0 12px var(--accent-pink);
-  animation: laserScan 2.2s ease-in-out infinite alternate;
-}
-
-@keyframes laserScan {
-  0% { top: 10%; }
-  100% { top: 90%; }
-}
-
-.rx-paper-mockup {
-  width: 80%;
-  height: 75%;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 8px;
-  padding: 12px;
-  color: var(--text-primary);
-  font-size: 0.65rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+.chat-action-pill {
+  font-size: 0.68rem;
+  background: var(--accent-pink-light);
+  color: var(--primary-green-dark);
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  border: 1px dashed var(--accent-pink);
 }
 
 /* Floating Badges Around Phone */
@@ -932,13 +923,13 @@ img, svg {
 }
 
 .badge-top-left {
-  top: 12%;
-  left: -20px;
+  top: 10%;
+  left: -24px;
 }
 
 .badge-bottom-right {
-  bottom: 12%;
-  right: -20px;
+  bottom: 10%;
+  right: -24px;
   animation-delay: -2s;
 }
 
@@ -955,6 +946,7 @@ img, svg {
   align-items: center;
   justify-content: center;
   font-size: 1rem;
+  font-weight: 700;
 }
 
 .badge-text-title {
@@ -1046,12 +1038,6 @@ img, svg {
   border: 1px solid var(--accent-pink);
 }
 
-.promise-icon-wrapper.icon-future {
-  background-color: #eef2ff;
-  color: #4f46e5;
-  border-color: #c7d2fe;
-}
-
 .promise-badge {
   font-size: 0.72rem;
   font-weight: 600;
@@ -1063,12 +1049,6 @@ img, svg {
   background-color: #eaf4ea;
   color: #2e6030;
   border: 1px solid #c3e2c2;
-}
-
-.promise-badge.badge-planned {
-  background-color: #f0f3ff;
-  color: #4338ca;
-  border: 1px dashed #a5b4fc;
 }
 
 .promise-card-title {
@@ -1095,8 +1075,8 @@ img, svg {
 
 .section-header {
   text-align: center;
-  max-width: 680px;
-  margin: 0 auto 4rem;
+  max-width: 720px;
+  margin: 0 auto 3.5rem;
 }
 
 .section-tag {
@@ -1114,7 +1094,7 @@ img, svg {
 
 .section-title {
   font-family: var(--font-heading);
-  font-size: 2.5rem;
+  font-size: 2.35rem;
   font-weight: 700;
   color: var(--primary-green);
   margin-bottom: 1rem;
@@ -1122,7 +1102,7 @@ img, svg {
 }
 
 .section-description {
-  font-size: 1.1rem;
+  font-size: 1.08rem;
   color: var(--text-secondary);
 }
 
@@ -1147,18 +1127,20 @@ img, svg {
 }
 
 .bento-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-md);
   border-color: var(--primary-green-light);
 }
 
 .bento-col-8 { grid-column: span 8; }
-.bento-col-4 { grid-column: span 4; }
+.bento-col-7 { grid-column: span 7; }
 .bento-col-6 { grid-column: span 6; }
+.bento-col-5 { grid-column: span 5; }
+.bento-col-4 { grid-column: span 4; }
 .bento-col-12 { grid-column: span 12; }
 
 .bento-card-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .bento-icon-circle {
@@ -1171,6 +1153,8 @@ img, svg {
   align-items: center;
   justify-content: center;
   margin-bottom: 1.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .bento-card-title {
@@ -1187,12 +1171,191 @@ img, svg {
   line-height: 1.6;
 }
 
-/* Bento Interactive Widget 1: Interactive AI Assistant Query Demo */
+/* Bento 1: Dual OCR Pipeline Layout */
+.dual-ocr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.ocr-mode-box {
+  background: var(--bg-porcelain);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.ocr-mode-box.ocr-mode-cloud {
+  background: #faf4ef;
+  border-color: var(--accent-pink);
+}
+
+.ocr-mode-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary-green);
+  background: var(--surface-white);
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  margin-bottom: 0.65rem;
+  border: 1px solid var(--border-color);
+}
+
+.ocr-mode-badge.badge-cloud {
+  background: var(--accent-pink-light);
+  color: var(--primary-green-dark);
+  border-color: var(--accent-pink);
+}
+
+.ocr-mode-box h4 {
+  font-size: 1rem;
+  color: var(--primary-green-dark);
+  margin-bottom: 0.4rem;
+}
+
+.ocr-mode-box p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Bento 2: Refill Metric Display */
+.refill-metric-display {
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
+  margin-bottom: 0.75rem;
+  text-align: left;
+}
+
+.refill-days-left {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #c9751e;
+}
+
+.refill-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+/* Bento 3: Interactive Generic Finder */
+.generic-interactive-container {
+  margin-top: 1rem;
+}
+
+.medicine-pill-chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.med-search-chip {
+  padding: 0.4rem 0.85rem;
+  background: var(--bg-porcelain);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary-green);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.med-search-chip:hover, .med-search-chip.active {
+  background-color: var(--primary-green);
+  color: var(--surface-white);
+  border-color: var(--primary-green);
+}
+
+.generic-comparison-table-wrapper {
+  background: var(--bg-porcelain);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  transition: opacity 0.2s ease;
+}
+
+.current-brand-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-white);
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  margin-bottom: 0.85rem;
+}
+
+.table-brand-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--primary-green-dark);
+  display: block;
+}
+
+.table-brand-mfg {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.table-brand-price {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--primary-green);
+}
+
+.alt-list-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary-green);
+  margin-bottom: 0.5rem;
+}
+
+.alt-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.alt-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-white);
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+
+.alt-price-tag {
+  font-weight: 700;
+  color: var(--primary-green);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge-saving {
+  font-size: 0.7rem;
+  background: var(--success-bg);
+  color: var(--success-green);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* Bento 4: AI Health Assistant Demo */
 .interactive-ai-demo {
   background-color: var(--bg-porcelain);
   border-radius: var(--radius-md);
   padding: 1.25rem;
-  margin-top: 1.25rem;
+  margin-top: 1rem;
   border: 1px solid var(--border-color);
 }
 
@@ -1204,11 +1367,11 @@ img, svg {
 }
 
 .query-chip {
-  padding: 0.4rem 0.85rem;
+  padding: 0.35rem 0.8rem;
   background: var(--surface-white);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--primary-green);
   cursor: pointer;
@@ -1227,20 +1390,83 @@ img, svg {
   padding: 1rem;
   font-size: 0.88rem;
   border-left: 3px solid var(--accent-pink-dark);
+  line-height: 1.5;
+  transition: opacity 0.15s ease;
 }
 
-/* Bento Interactive Widget 2: Dosage Streak Counter */
+.ai-action-demo-pill {
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  background: var(--accent-pink-light);
+  color: var(--primary-green-dark);
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* Bento 5: Pharmacy Finder Preview */
+.pharmacy-finder-preview {
+  margin-top: 1rem;
+}
+
+.pharmacy-tag-group {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pharmacy-filter-pill {
+  background: var(--bg-porcelain);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary-green);
+}
+
+/* Bento 6: Vault & Buy List */
+.vault-buy-list-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.vault-preview-chip, .buy-list-preview-item {
+  background: var(--bg-porcelain);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.vault-chip-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.buy-list-price {
+  color: var(--primary-green);
+  font-weight: 700;
+}
+
+/* Bento 2 Dose Streak Box */
 .streak-demo-box {
   background: var(--bg-porcelain);
   border-radius: var(--radius-md);
-  padding: 1.5rem;
+  padding: 1.25rem;
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .streak-count-display {
   font-family: var(--font-heading);
-  font-size: 2.2rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--primary-green);
   margin-bottom: 0.5rem;
@@ -1262,7 +1488,172 @@ img, svg {
 }
 
 /* --------------------------------------------------------------------------
-   8. Adherence ROI Calculator Section
+   8. Pricing & BD Apps Carrier Billing Section
+   -------------------------------------------------------------------------- */
+.pricing-section {
+  padding: 6rem 0;
+  background: var(--surface-white);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  max-width: 980px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+.pricing-card {
+  background: var(--surface-cream);
+  border-radius: var(--radius-xl);
+  padding: 3rem 2.5rem;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.pricing-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.premium-tier-card {
+  background: #ffffff;
+  border: 2px solid var(--primary-green);
+  box-shadow: var(--shadow-md);
+}
+
+.popular-ribbon {
+  position: absolute;
+  top: -14px;
+  right: 28px;
+  background: var(--primary-green);
+  color: var(--surface-white);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.9rem;
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 10px rgba(71, 89, 78, 0.3);
+}
+
+.tier-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tier-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.75rem;
+  background: var(--surface-white);
+  color: var(--primary-green);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  margin-bottom: 0.75rem;
+}
+
+.tier-badge.badge-premium {
+  background: var(--accent-pink-light);
+  color: var(--primary-green-dark);
+  border-color: var(--accent-pink);
+}
+
+.tier-title {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  color: var(--primary-green);
+  margin-bottom: 0.5rem;
+}
+
+.tier-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.price-val {
+  font-family: var(--font-heading);
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--primary-green-dark);
+}
+
+.price-period {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.tier-desc {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.tier-feature-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-bottom: 2.5rem;
+  flex: 1;
+}
+
+.tier-feature-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.tier-feature-list li svg {
+  color: var(--success-green);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.tier-cta-btn {
+  width: 100%;
+  text-align: center;
+  padding: 0.85rem;
+}
+
+.carrier-logos-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.carrier-label {
+  font-weight: 600;
+}
+
+.carrier-chip {
+  background: var(--bg-porcelain);
+  border: 1px solid var(--border-color);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+  color: var(--primary-green-dark);
+}
+
+/* --------------------------------------------------------------------------
+   9. Adherence ROI & Savings Calculator Section
    -------------------------------------------------------------------------- */
 .calculator-section {
   padding: 5.5rem 0;
@@ -1285,14 +1676,14 @@ img, svg {
 
 .calc-title {
   font-family: var(--font-heading);
-  font-size: 2.2rem;
+  font-size: 2.1rem;
   font-weight: 700;
   color: var(--primary-green);
   margin-bottom: 1rem;
 }
 
 .slider-container {
-  margin: 2rem 0;
+  margin: 1.5rem 0;
 }
 
 .slider-label-group {
@@ -1307,12 +1698,12 @@ img, svg {
 
 .slider-label-text {
   color: var(--primary-green-dark);
-  font-size: 1.05rem;
+  font-size: 1rem;
   white-space: nowrap;
 }
 
 .slider-value-badge {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--primary-green);
   background-color: var(--accent-pink-light);
@@ -1354,7 +1745,7 @@ img, svg {
   border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .calc-metric-row {
@@ -1363,7 +1754,7 @@ img, svg {
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
-  padding-bottom: 1rem;
+  padding-bottom: 0.9rem;
   border-bottom: 1px dashed var(--border-color);
 }
 
@@ -1372,15 +1763,22 @@ img, svg {
   padding-bottom: 0;
 }
 
+.calc-metric-row.highlight-calc-row {
+  background: var(--surface-white);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
 .calc-metric-val {
   font-family: var(--font-heading);
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary-green);
 }
 
 /* --------------------------------------------------------------------------
-   9. Testimonials & Reviews Section
+   10. Testimonials & Reviews Section
    -------------------------------------------------------------------------- */
 .reviews-section {
   padding: 6.5rem 0;
@@ -1412,7 +1810,7 @@ img, svg {
 }
 
 .review-quote {
-  font-size: 0.98rem;
+  font-size: 0.96rem;
   color: var(--text-primary);
   line-height: 1.65;
   margin-bottom: 1.5rem;
@@ -1444,10 +1842,81 @@ img, svg {
 }
 
 /* --------------------------------------------------------------------------
-   10. Call to Action Banner & Footer
+   11. Frequently Asked Questions (FAQ) Section
+   -------------------------------------------------------------------------- */
+.faq-section {
+  padding: 6rem 0;
+  background: var(--surface-white);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.faq-accordion {
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.faq-item {
+  background: var(--bg-porcelain);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.faq-item.active {
+  border-color: var(--primary-green-light);
+}
+
+.faq-question {
+  width: 100%;
+  padding: 1.35rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--primary-green-dark);
+  text-align: left;
+}
+
+.faq-icon {
+  font-size: 1.4rem;
+  color: var(--primary-green);
+  transition: transform var(--transition-fast);
+}
+
+.faq-item.active .faq-icon {
+  transform: rotate(45deg);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s var(--ease-smooth), padding 0.35s var(--ease-smooth);
+  padding: 0 1.5rem;
+}
+
+.faq-item.active .faq-answer {
+  max-height: 300px;
+  padding: 0 1.5rem 1.35rem;
+}
+
+.faq-answer p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+/* --------------------------------------------------------------------------
+   12. Call to Action Banner & Footer
    -------------------------------------------------------------------------- */
 .cta-banner-section {
-  padding: 5rem 0;
+  padding: 5.5rem 0;
 }
 
 .cta-banner-card {
@@ -1463,23 +1932,142 @@ img, svg {
 
 .cta-title {
   font-family: var(--font-heading);
-  font-size: 2.75rem;
+  font-size: 2.6rem;
   font-weight: 700;
   margin-bottom: 1.25rem;
 }
 
 .cta-subtitle {
-  font-size: 1.15rem;
+  font-size: 1.12rem;
   opacity: 0.9;
-  max-width: 600px;
+  max-width: 620px;
   margin: 0 auto 2.5rem;
 }
 
 .cta-btn-group {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 1.25rem;
   flex-wrap: wrap;
+}
+
+.cta-banner-card .apk-highlight-btn {
+  background: var(--accent-pink);
+  color: var(--primary-green-dark);
+  border: 2px solid var(--accent-pink-light);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.cta-banner-card .apk-highlight-btn:hover {
+  background: var(--surface-white);
+  color: var(--primary-green-dark);
+  transform: translateY(-3px) scale(1.02);
+}
+
+.cta-banner-card .apk-badge-tag {
+  background-color: var(--primary-green-dark);
+  color: var(--surface-white);
+}
+
+/* Store Badge Buttons & Tooltips */
+.store-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+}
+
+.store-badge-btn.store-unreleased {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: var(--surface-white);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+}
+
+.store-badge-btn.store-unreleased:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--accent-pink);
+  transform: translateY(-2px);
+}
+
+.store-icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.store-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.store-sub {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.store-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  line-height: 1.1;
+}
+
+.has-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.has-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background-color: #1e293b;
+  color: #ffffff;
+  padding: 0.55rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease-smooth), transform 0.25s var(--ease-smooth), visibility 0.25s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  z-index: 120;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.has-tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 7px 0 7px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  z-index: 120;
+}
+
+.has-tooltip:hover::after,
+.has-tooltip:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 .site-footer {
@@ -1491,7 +2079,7 @@ img, svg {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 2fr repeat(3, 1fr);
+  grid-template-columns: 1.8fr repeat(3, 1fr);
   gap: 3rem;
   margin-bottom: 3.5rem;
 }
@@ -1502,6 +2090,20 @@ img, svg {
   font-size: 1.4rem;
   font-weight: 700;
   margin-bottom: 1rem;
+}
+
+.footer-tech-stack {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tech-pill {
+  font-size: 0.72rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
 }
 
 .footer-heading {
@@ -1537,7 +2139,7 @@ img, svg {
 }
 
 /* --------------------------------------------------------------------------
-   11. Responsive Breakpoints
+   13. Responsive Breakpoints
    -------------------------------------------------------------------------- */
 @media (max-width: 1024px) {
   .hero-grid {
@@ -1555,12 +2157,16 @@ img, svg {
     justify-content: center;
   }
   
-  .hero-trust-bar {
+  .trust-pill-list {
     justify-content: center;
   }
   
-  .bento-col-8, .bento-col-4, .bento-col-6 {
+  .bento-col-8, .bento-col-7, .bento-col-6, .bento-col-5, .bento-col-4 {
     grid-column: span 12;
+  }
+  
+  .pricing-grid {
+    grid-template-columns: 1fr;
   }
   
   .calc-card {
@@ -1568,18 +2174,10 @@ img, svg {
     gap: 2rem;
   }
   
-  .metrics-grid {
+  .promises-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-}
 
-@media (max-width: 640px) {
-  .metrics-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 1024px) {
   .reviews-grid {
     grid-template-columns: 1fr;
   }
@@ -1595,22 +2193,38 @@ img, svg {
   }
   
   .hero-title {
-    font-size: 2.35rem;
+    font-size: 2.25rem;
   }
   
   .phone-mockup-card {
-    width: 285px;
-    height: 580px;
+    width: 295px;
+    height: 600px;
+  }
+
+  .dual-ocr-grid {
+    grid-template-columns: 1fr;
   }
   
   .footer-grid {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .promises-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --------------------------------------------------------------------------
-   12. Accessibility & Reduced Motion
+   14. Accessibility & Reduced Motion
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

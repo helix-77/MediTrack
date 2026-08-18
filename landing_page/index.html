@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MediTrack — Smart Healthcare & Medication Companion</title>
+    <title>MediTrack — Smart Healthcare & Medication Companion for Bangladesh</title>
     <meta
       name="description"
-      content="MediTrack helps you never miss a dose. AI-powered prescription scanner, daily routine reminders, interaction check, and caregiver family sync."
+      content="Never miss a dose and save on medicine costs. MediTrack combines on-device box OCR, Gemini 3.6 Flash prescription scanning, smart refill alerts, and 25,000+ Bangladesh generic price comparisons."
     />
 
     <!-- OpenGraph Metadata -->
@@ -16,7 +16,7 @@
     />
     <meta
       property="og:description"
-      content="Never miss a dose. AI prescription scanner, dosage reminders, and family health sync."
+      content="Never miss a dose. AI prescription scanner, smart refill alerts, 25k+ BD generic price comparison, and offline-first pill tracking."
     />
     <meta property="og:type" content="website" />
 
@@ -24,7 +24,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
 
@@ -63,16 +63,22 @@
         <nav aria-label="Main Navigation">
           <ul class="nav-menu">
             <li><a href="#features" class="nav-link">Features</a></li>
-            <!-- <li><a href="#demo" class="nav-link">Interactive Demo</a></li> -->
-            <li><a href="#promises" class="nav-link">Why MediTrack</a></li>
-            <li><a href="#calculator" class="nav-link">Adherence ROI</a></li>
-            <li><a href="#reviews" class="nav-link">Reviews</a></li>
+            <li><a href="#ocr-tech" class="nav-link">Dual OCR</a></li>
+            <li><a href="#price-lookup" class="nav-link">Generic Lookup</a></li>
+            <li><a href="#pricing" class="nav-link">Pricing</a></li>
+            <li><a href="#calculator" class="nav-link">Savings Calculator</a></li>
+            <li><a href="#faq" class="nav-link">FAQ</a></li>
             <li><a href="#download" class="nav-link">Download</a></li>
           </ul>
         </nav>
 
         <div class="nav-actions">
-          <a href="https://github.com/helix-77/MediTrack/releases/download/v-0.0.2b/app-release.apk" class="btn btn-primary" download>
+          <a
+            href="https://github.com/helix-77/MediTrack/releases/download/v-0.0.2b/app-release.apk"
+            class="btn btn-primary"
+            download
+            aria-label="Download MediTrack APK"
+          >
             <svg
               width="18"
               height="18"
@@ -85,7 +91,7 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            Download App
+            Download APK
           </a>
         </div>
 
@@ -108,36 +114,25 @@
         <!-- Left Column: Copy & Actions -->
         <div class="hero-content">
           <div class="hero-badge">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polygon
-                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              ></polygon>
-            </svg>
-            Smart Medication Manager
+            <span class="badge-flag">🇧🇩</span>
+            <span>Tailored for Bangladesh • Smart Medication Companion</span>
           </div>
 
           <h1 class="hero-title">
             Never Miss a Dose.<br />
-            Empower Your <span>Daily Wellness</span>.
+            Find Cheaper Generics with <span>AI Precision</span>.
           </h1>
 
           <p class="hero-subtitle">
-            MediTrack combines AI prescription scanning, intelligent routine
-            reminders, drug interaction alerts, and family caregiver sync in one
-            elegant porcelain companion.
+            MediTrack combines on-device box OCR, multi-page Gemini 3.6 Flash prescription scanning,
+            smart refill & expiry alerts, and 25,000+ Bangladesh generic price comparisons in one
+            elegant, offline-first companion.
           </p>
 
           <div class="hero-cta-group">
             <a
               href="https://github.com/helix-77/MediTrack/releases/download/v-0.0.2b/app-release.apk"
-              class="btn btn-primary hero-download-btn"
+              class="btn btn-primary hero-download-btn apk-highlight-btn"
               download
               aria-label="Download MediTrack APK"
             >
@@ -153,36 +148,51 @@
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              <span>Download / Install</span>
+              <span>Download APK v0.0.2b</span>
+              <span class="apk-badge-tag">Free Install</span>
+            </a>
+
+            <a href="#features" class="btn btn-secondary">
+              <span>Explore Features</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
             </a>
           </div>
 
           <div class="hero-trust-bar">
-            <div class="user-avatars">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80"
-                alt="Patient Avatar"
-                class="avatar-img"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80"
-                alt="Patient Avatar"
-                class="avatar-img"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"
-                alt="Patient Avatar"
-                class="avatar-img"
-              />
-            </div>
-            <div class="trust-text">
-              Crafted for <strong>patients & families</strong> seeking daily
-              peace of mind
+            <div class="trust-pill-list">
+              <div class="trust-pill">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span>Offline-First</span>
+              </div>
+              <div class="trust-pill">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>25k+ BD Medicines</span>
+              </div>
+              <div class="trust-pill">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="m4.93 4.93 4.24 4.24"></path>
+                  <path d="m14.83 9.17 4.24-4.24"></path>
+                  <path d="m14.83 14.83 4.24 4.24"></path>
+                  <path d="m9.17 14.83-4.24 4.24"></path>
+                  <circle cx="12" cy="12" r="4"></circle>
+                </svg>
+                <span>Gemini 3.6 Flash</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Right Column: Interactive iPhone Mockup Frame -->
+        <!-- Right Column: Interactive Phone Mockup Frame -->
         <div class="phone-mockup-wrapper" id="demo">
           <div class="phone-ambient-ring"></div>
 
@@ -192,18 +202,18 @@
               ✓
             </div>
             <div>
-              <div class="badge-text-title">Dose Completed</div>
-              <div class="badge-text-sub">8:00 AM • Lisinopril 10mg</div>
+              <div class="badge-text-title">Dose Logged</div>
+              <div class="badge-text-sub">8:00 AM • Napa Extra 500mg</div>
             </div>
           </div>
 
           <div class="floating-feature-badge badge-bottom-right">
             <div class="badge-icon" style="background: #fbe0dc; color: #47594e">
-              ⚡
+              ৳
             </div>
             <div>
-              <div class="badge-text-title">AI Safety Alert</div>
-              <div class="badge-text-sub">No interactions found</div>
+              <div class="badge-text-title">Generic Match Found</div>
+              <div class="badge-text-sub">Save 33% on Paracetamol</div>
             </div>
           </div>
 
@@ -218,9 +228,9 @@
                 <div class="app-header-top">
                   <div>
                     <div class="app-user-greeting">Good Morning</div>
-                    <div class="app-user-name">Sarah Jenkins</div>
+                    <div class="app-user-name">Tanvir Ahmed</div>
                   </div>
-                  <div class="app-avatar">SJ</div>
+                  <div class="app-avatar">TA</div>
                 </div>
 
                 <!-- Interactive Screen View Selector Tabs -->
@@ -228,11 +238,14 @@
                   <button class="phone-tab-btn active" data-tab="routine">
                     Routine
                   </button>
-                  <button class="phone-tab-btn" data-tab="ai">
-                    AI Assistant
-                  </button>
                   <button class="phone-tab-btn" data-tab="scanner">
                     Rx Scan
+                  </button>
+                  <button class="phone-tab-btn" data-tab="generics">
+                    Generics
+                  </button>
+                  <button class="phone-tab-btn" data-tab="ai">
+                    AI Chat
                   </button>
                 </div>
               </div>
@@ -243,27 +256,28 @@
                 <div class="app-view-panel active" id="view-routine">
                   <div class="routine-date-strip">
                     <div class="date-pill">
-                      <span>M</span><strong>27</strong>
+                      <span>Sat</span><strong>16</strong>
                     </div>
                     <div class="date-pill">
-                      <span>T</span><strong>28</strong>
+                      <span>Sun</span><strong>17</strong>
                     </div>
                     <div class="date-pill active">
-                      <span>W</span><strong>29</strong>
+                      <span>Today</span><strong>18</strong>
                     </div>
                     <div class="date-pill">
-                      <span>T</span><strong>30</strong>
+                      <span>Tue</span><strong>19</strong>
                     </div>
                     <div class="date-pill">
-                      <span>F</span><strong>31</strong>
+                      <span>Wed</span><strong>20</strong>
                     </div>
                   </div>
 
                   <div class="med-card-item taken">
                     <div class="med-icon-box">💊</div>
                     <div class="med-info">
-                      <div class="med-name">Metformin</div>
+                      <div class="med-name">Napa Extra</div>
                       <div class="med-dose">500mg • Breakfast (8:00 AM)</div>
+                      <div class="med-stock-tag">Stock: 14 tabs remaining</div>
                     </div>
                     <div class="med-check-btn" title="Toggle Dose">
                       <svg
@@ -282,8 +296,9 @@
                   <div class="med-card-item">
                     <div class="med-icon-box">💧</div>
                     <div class="med-info">
-                      <div class="med-name">Omega-3 Fish Oil</div>
-                      <div class="med-dose">1000mg • Lunch (1:00 PM)</div>
+                      <div class="med-name">Seclo 20mg</div>
+                      <div class="med-dose">Omeprazole • Before Lunch (1:00 PM)</div>
+                      <div class="med-stock-tag warning">Refill in 3 days (4 left)</div>
                     </div>
                     <div class="med-check-btn" title="Toggle Dose"></div>
                   </div>
@@ -291,39 +306,98 @@
                   <div class="med-card-item">
                     <div class="med-icon-box">🌙</div>
                     <div class="med-info">
-                      <div class="med-name">Atorvastatin</div>
-                      <div class="med-dose">20mg • Bedtime (9:30 PM)</div>
+                      <div class="med-name">Montene 10mg</div>
+                      <div class="med-dose">Montelukast • Night (9:30 PM)</div>
+                      <div class="med-stock-tag">Stock: 20 tabs remaining</div>
                     </div>
                     <div class="med-check-btn" title="Toggle Dose"></div>
                   </div>
                 </div>
 
-                <!-- Panel 2: AI Health Assistant -->
-                <div class="app-view-panel" id="view-ai">
-                  <div class="ai-chat-container">
-                    <div class="chat-bubble bot">
-                      Hello Sarah! How can I assist with your prescriptions
-                      today?
+                <!-- Panel 2: Prescription Scanner OCR (Gemini 3.6 Flash) -->
+                <div class="app-view-panel" id="view-scanner">
+                  <div class="phone-rx-review">
+                    <div class="rx-review-header">
+                      <span class="rx-badge-pill badge-high">96% High Confidence</span>
+                      <span class="rx-date-label">Dr. K. Rahman • Square Hospital</span>
                     </div>
-                    <div class="chat-bubble user">
-                      Should I take Metformin with food?
+
+                    <div class="rx-item-card">
+                      <div class="rx-item-top">
+                        <strong>Cef-3 200mg Capsule</strong>
+                        <span class="rx-form-chip">Capsule</span>
+                      </div>
+                      <div class="rx-item-meta">1+0+1 • 7 Days (14 total) • After meal</div>
                     </div>
-                    <div class="chat-bubble bot">
-                      Yes, take Metformin with meals to reduce stomach upset and
-                      boost absorption.
+
+                    <div class="rx-item-card">
+                      <div class="rx-item-top">
+                        <strong>Napa 500mg Tablet</strong>
+                        <span class="rx-form-chip">Tablet</span>
+                      </div>
+                      <div class="rx-item-meta">1+1+1 • 3 Days (9 total) • If fever</div>
+                    </div>
+
+                    <button class="phone-mock-action-btn">
+                      ✓ Add 2 Medicines to Schedule
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Panel 3: Price & Generic Lookup -->
+                <div class="app-view-panel" id="view-generics">
+                  <div class="phone-generic-lookup">
+                    <div class="phone-search-bar">
+                      <span>🔍</span>
+                      <span>Napa 500mg</span>
+                    </div>
+
+                    <div class="searched-med-card">
+                      <div class="searched-med-title">Napa 500mg (Beximco)</div>
+                      <div class="searched-med-generic">Generic: Paracetamol</div>
+                      <div class="searched-med-price">MRP: <strong>৳1.20</strong> / tablet</div>
+                    </div>
+
+                    <div class="cheaper-alt-header">Cheaper Generic Alternatives:</div>
+
+                    <div class="generic-alt-item">
+                      <div>
+                        <strong>Ace 500mg</strong>
+                        <div class="alt-mfg">Square Pharmaceuticals</div>
+                      </div>
+                      <div class="alt-price-wrap">
+                        <div class="alt-price">৳0.80</div>
+                        <span class="alt-save-pill">Save 33%</span>
+                      </div>
+                    </div>
+
+                    <div class="generic-alt-item">
+                      <div>
+                        <strong>Renova 500mg</strong>
+                        <div class="alt-mfg">Opso Saline Ltd.</div>
+                      </div>
+                      <div class="alt-price-wrap">
+                        <div class="alt-price">৳0.80</div>
+                        <span class="alt-save-pill">Save 33%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Panel 3: Prescription Scanner OCR -->
-                <div class="app-view-panel" id="view-scanner">
-                  <div class="ocr-scanner-demo">
-                    <div class="scanner-laser-line"></div>
-                    <div class="rx-paper-mockup">
-                      <strong>PRESCRIPTION Rx #48291</strong><br />
-                      Patient: Sarah Jenkins<br />
-                      Rx: Lisinopril 10mg Oral<br />
-                      Take 1 tablet daily every morning.
+                <!-- Panel 4: AI Health Assistant -->
+                <div class="app-view-panel" id="view-ai">
+                  <div class="ai-chat-container">
+                    <div class="chat-bubble bot">
+                      Hello Tanvir! I'm your Gemini AI health assistant. Ask any question about your medicines or dosage schedules.
+                    </div>
+                    <div class="chat-bubble user">
+                      When is the best time to take Seclo 20mg?
+                    </div>
+                    <div class="chat-bubble bot">
+                      Take <strong>Seclo (Omeprazole 20mg)</strong> 30–60 minutes before breakfast on an empty stomach for optimal acid reduction.
+                    </div>
+                    <div class="chat-action-pill">
+                      ⚡ Action: Scheduled 30 min before 8:00 AM
                     </div>
                   </div>
                 </div>
@@ -335,14 +409,14 @@
     </section>
 
     <!-- =========================================================================
-       3. Guarantees & User Benefits Bar
+       3. Guarantees & Real Promises Bar
        ========================================================================= -->
     <section class="promises-section" id="promises">
       <div class="container">
         <div class="promises-header">
-          <span class="promises-tag">Why Try MediTrack</span>
+          <span class="promises-tag">Built for Bangladesh</span>
           <h2 class="promises-title">
-            Built on Real Promises, Not Marketing Hype
+            Engineered with Real Clinical & Technical Rigor
           </h2>
         </div>
 
@@ -363,12 +437,11 @@
                   <polyline points="9 11 12 14 22 4"></polyline>
                 </svg>
               </div>
-              <span class="promise-badge badge-active">Core Guarantee</span>
+              <span class="promise-badge badge-active">Exact Reminders</span>
             </div>
-            <h3 class="promise-card-title">Zero Missing Doses</h3>
+            <h3 class="promise-card-title">Zero Missed Doses</h3>
             <p class="promise-desc">
-              Smart multi-channel alerts engineered so you never second-guess a
-              pill.
+              Exact-alarm notifications, auto-decrementing inventory, 3-day refill warnings, and 30-day expiry countdowns.
             </p>
           </div>
 
@@ -395,12 +468,11 @@
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
               </div>
-              <span class="promise-badge badge-active">100% Local-First</span>
+              <span class="promise-badge badge-active">100% Offline-First</span>
             </div>
-            <h3 class="promise-card-title">100% Privacy First</h3>
+            <h3 class="promise-card-title">Privacy & Offline Ready</h3>
             <p class="promise-desc">
-              Your health records stay encrypted and private — never shared or
-              sold to third parties.
+              On-device box OCR works with no internet. Cloud Firestore offline cache ensures continuous access with private per-user rules.
             </p>
           </div>
 
@@ -421,19 +493,18 @@
                   ></polygon>
                 </svg>
               </div>
-              <span class="promise-badge badge-active">AI Vision</span>
+              <span class="promise-badge badge-active">Gemini 3.6 Flash</span>
             </div>
-            <h3 class="promise-card-title">30-Sec Snap Setup</h3>
+            <h3 class="promise-card-title">Multi-Page Prescription AI</h3>
             <p class="promise-desc">
-              Scan prescription bottles with AI — auto-import dosage & schedules
-              without tedious typing.
+              Digitize handwritten doctor prescriptions with structured dosage outputs, confidence scoring, and human verification before save.
             </p>
           </div>
 
           <!-- Promise 4 -->
           <div class="metric-item promise-card">
             <div class="promise-header-row">
-              <div class="promise-icon-wrapper icon-future">
+              <div class="promise-icon-wrapper">
                 <svg
                   width="22"
                   height="22"
@@ -442,20 +513,16 @@
                   stroke="currentColor"
                   stroke-width="2"
                 >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+                  <path d="M12 18V6"></path>
                 </svg>
               </div>
-              <span class="promise-badge badge-planned"
-                >🚀 Planned Feature</span
-              >
+              <span class="promise-badge badge-active">25k+ BD Database</span>
             </div>
-            <h3 class="promise-card-title">Family Peace of Mind</h3>
+            <h3 class="promise-card-title">Save Money on Generics</h3>
             <p class="promise-desc">
-              👨‍👩‍👧 Connected Care: Automatic caregiver sync so you know in
-              real-time when elderly parents take their doses safely.
+              Look up authentic MRP unit prices in ৳ (BDT) across Bangladeshi pharmaceutical brands and find equal generic substitutes instantly.
             </p>
           </div>
         </div>
@@ -470,18 +537,17 @@
         <div class="section-header">
           <span class="section-tag">Intelligent Capabilities</span>
           <h2 class="section-title">
-            Designed for Ultimate Health Peace of Mind
+            Everything You Need to Manage Health & Prescriptions
           </h2>
           <p class="section-description">
-            MediTrack goes beyond standard alarm clocks. It combines computer
-            vision, AI safety analysis, and caregiver synchronization into one
-            cohesive system.
+            MediTrack combines computer vision, cloud AI extraction, pharmacy discovery,
+            and Bangladesh pharmaceutical price intelligence into one cohesive experience.
           </p>
         </div>
 
         <div class="bento-grid">
-          <!-- Bento 1: AI Assistant Interactive Demo (8 Cols) -->
-          <div class="bento-card bento-col-8" id="ai-assistant">
+          <!-- Bento 1: Dual OCR Pipeline (8 Cols) -->
+          <div class="bento-card bento-col-8" id="ocr-tech">
             <div class="bento-card-header">
               <div class="bento-icon-circle">
                 <svg
@@ -492,87 +558,186 @@
                   stroke="currentColor"
                   stroke-width="2"
                 >
-                  <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
-                  <path d="M12 12L2.1 12.1"></path>
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
                 </svg>
               </div>
               <h3 class="bento-card-title">
-                AI Clinical Companion & Interaction Checker
+                Dual OCR Pipeline: On-Device & Gemini AI Vision
               </h3>
               <p class="bento-card-desc">
-                Ask real-time questions regarding drug-drug interactions, food
-                restrictions, and optimal dosage timing. Powered by Google
-                Gemini AI.
+                Two specialized recognition systems engineered for speed, privacy, and accuracy:
+              </p>
+            </div>
+
+            <div class="dual-ocr-grid">
+              <div class="ocr-mode-box">
+                <div class="ocr-mode-badge">⚡ On-Device • 100% Offline</div>
+                <h4>Box & Strip Scanner</h4>
+                <p>
+                  Powered by <code>Google ML Kit</code>. Instantly scans printed medicine boxes
+                  and blister strips for brand name, batch number, expiry date, and pack size without internet.
+                </p>
+              </div>
+              <div class="ocr-mode-box ocr-mode-cloud">
+                <div class="ocr-mode-badge badge-cloud">✨ Gemini 3.6 Flash AI</div>
+                <h4>Handwritten Prescription OCR</h4>
+                <p>
+                  Multi-page prescription pipeline extracting doctor name, medicine strengths,
+                  daily frequency (e.g. 1+0+1), duration, and instructions with confidence tags.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bento 2: Refill & Expiry Engine (4 Cols) -->
+          <div class="bento-card bento-col-4">
+            <div class="bento-card-header">
+              <div class="bento-icon-circle">⏰</div>
+              <h3 class="bento-card-title">Smart Refill & Expiry Engine</h3>
+              <p class="bento-card-desc">
+                Never run out of critical medicines or take an expired strip.
+              </p>
+            </div>
+
+            <div class="streak-demo-box">
+              <div class="refill-metric-display">
+                <div class="refill-days-left">3 Days Left</div>
+                <div class="refill-sub">Seclo 20mg • 4 capsules remaining</div>
+              </div>
+              <div class="streak-count-display" id="streakCount">7 Day Streak 🔥</div>
+              <button class="log-dose-btn" id="logDoseBtn">
+                + Log Afternoon Dose
+              </button>
+            </div>
+          </div>
+
+          <!-- Bento 3: Interactive Generic Alternative Lookup Demo (7 Cols) -->
+          <div class="bento-card bento-col-7" id="price-lookup">
+            <div class="bento-card-header">
+              <div class="bento-icon-circle">৳</div>
+              <h3 class="bento-card-title">
+                Bangladesh Medicine Price & Generic Lookup
+              </h3>
+              <p class="bento-card-desc">
+                Search 25,000+ medicines with authentic MRP prices in ৳ (BDT) from MedEx.
+                Click a medicine below to see how easy it is to find cheaper generic equivalents:
+              </p>
+            </div>
+
+            <div class="generic-interactive-container">
+              <div class="medicine-pill-chips">
+                <button class="med-search-chip active" data-med="napa">Napa 500mg (Paracetamol)</button>
+                <button class="med-search-chip" data-med="seclo">Seclo 20mg (Omeprazole)</button>
+                <button class="med-search-chip" data-med="montene">Montene 10mg (Montelukast)</button>
+                <button class="med-search-chip" data-med="sergel">Sergel 20mg (Esomeprazole)</button>
+              </div>
+
+              <div class="generic-comparison-table-wrapper" id="genericCompareBox">
+                <!-- Dynamically filled by JS -->
+                <div class="current-brand-row">
+                  <div>
+                    <span class="table-brand-name">Napa 500mg Tablet</span>
+                    <span class="table-brand-mfg">Beximco Pharmaceuticals</span>
+                  </div>
+                  <div class="table-brand-price">MRP: ৳1.20 / tab</div>
+                </div>
+
+                <div class="alt-list-title">Cheaper Brands with Same Generic (Paracetamol 500mg):</div>
+                <div class="alt-items-list">
+                  <div class="alt-result-row">
+                    <div>
+                      <strong>Ace 500mg</strong> • Square Pharmaceuticals
+                    </div>
+                    <div class="alt-price-tag">৳0.80 <span class="badge-saving">Save 33%</span></div>
+                  </div>
+                  <div class="alt-result-row">
+                    <div>
+                      <strong>Renova 500mg</strong> • Opso Saline Ltd.
+                    </div>
+                    <div class="alt-price-tag">৳0.80 <span class="badge-saving">Save 33%</span></div>
+                  </div>
+                  <div class="alt-result-row">
+                    <div>
+                      <strong>Fast 500mg</strong> • Acme Laboratories
+                    </div>
+                    <div class="alt-price-tag">৳0.80 <span class="badge-saving">Save 33%</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bento 4: AI Health Assistant (5 Cols) -->
+          <div class="bento-card bento-col-5" id="ai-assistant">
+            <div class="bento-card-header">
+              <div class="bento-icon-circle">🤖</div>
+              <h3 class="bento-card-title">
+                Gemini AI Health Assistant
+              </h3>
+              <p class="bento-card-desc">
+                Multimodal guidance, voice dictation, and one-tap schedule actions.
               </p>
             </div>
 
             <div class="interactive-ai-demo">
               <div class="sample-queries-list">
-                <button class="query-chip active" data-query="interaction">
-                  Aspirin + Ibuprofen?
+                <button class="query-chip active" data-query="timing">
+                  When to take Omeprazole?
                 </button>
                 <button class="query-chip" data-query="food">
-                  Atorvastatin with food?
+                  Montelukast with food?
                 </button>
-                <button class="query-chip" data-query="timing">
-                  Best time for BP meds?
+                <button class="query-chip" data-query="action">
+                  Add 500mg Paracetamol
                 </button>
               </div>
               <div class="ai-demo-response-box" id="aiDemoResponse">
-                <strong>AI Insight:</strong> Aspirin and Ibuprofen are both
-                NSAIDs. Taking them simultaneously can increase the risk of
-                stomach irritation. It is recommended to space them by at least
-                8 hours.
+                <strong>AI Guidance:</strong> Take Omeprazole (e.g. Seclo) 30–60 minutes before breakfast on an empty stomach.
+                <div class="ai-action-demo-pill">⚡ Action: Set reminder for 7:30 AM</div>
               </div>
             </div>
           </div>
 
-          <!-- Bento 2: Streak Counter & Routine (4 Cols) -->
-          <div class="bento-card bento-col-4">
+          <!-- Bento 5: Nearby Pharmacy Finder (6 Cols) -->
+          <div class="bento-card bento-col-6">
             <div class="bento-card-header">
-              <div class="bento-icon-circle">🔥</div>
-              <h3 class="bento-card-title">Adherence Streaks</h3>
+              <div class="bento-icon-circle">📍</div>
+              <h3 class="bento-card-title">Nearby Pharmacy & Model Store Finder</h3>
               <p class="bento-card-desc">
-                Build healthy daily habits with motivational streak counters.
+                Acquires GPS coordinates and opens Google Maps Universal Search with categorized shortcuts:
+                <code>24 Hours Pharmacy</code>, <code>Model Pharmacy</code>, and <code>Medicine Store</code> for turn-by-turn navigation and direct phone calls.
               </p>
             </div>
-
-            <div class="streak-demo-box">
-              <div class="streak-count-display" id="streakCount">7 Days 🔥</div>
-              <p style="font-size: 0.8rem; color: var(--text-secondary)">
-                100% adherence this week
-              </p>
-              <button class="log-dose-btn" id="logDoseBtn">
-                + Log Evening Dose
-              </button>
+            <div class="pharmacy-finder-preview">
+              <div class="pharmacy-tag-group">
+                <span class="pharmacy-filter-pill">🏥 24/7 Pharmacies</span>
+                <span class="pharmacy-filter-pill">⭐ Model Pharmacies</span>
+                <span class="pharmacy-filter-pill">📞 Direct Call</span>
+                <span class="pharmacy-filter-pill">🧭 Directions</span>
+              </div>
             </div>
           </div>
 
-          <!-- Bento 3: OCR Prescription Vault (6 Cols) -->
+          <!-- Bento 6: Digital Prescription Vault & Buy List (6 Cols) -->
           <div class="bento-card bento-col-6">
             <div class="bento-card-header">
-              <div class="bento-icon-circle">📷</div>
-              <h3 class="bento-card-title">Instant OCR Prescription Scanner</h3>
+              <div class="bento-icon-circle">📂</div>
+              <h3 class="bento-card-title">Prescription Vault & Restock Buy List</h3>
               <p class="bento-card-desc">
-                Snap a picture of any bottle label or paper prescription. ML Kit
-                instantly extracts medicine names, dosages, and refill dates
-                automatically.
+                Securely archive all past doctor prescriptions, doctor names, and clinical notes in private cloud storage.
+                Low-stock medicines automatically populate your shopping Buy List with estimated costs in ৳.
               </p>
             </div>
-          </div>
-
-          <!-- Bento 4: Caregiver & Family Sync (6 Cols) -->
-          <div class="bento-card bento-col-6">
-            <div class="bento-card-header">
-              <div class="bento-icon-circle">📱</div>
-              <h3 class="bento-card-title">
-                Caregiver & Family Sync (SMS Alert)
-              </h3>
-              <p class="bento-card-desc">
-                Enable peace of mind for family members. If a critical dose is
-                missed, automated SMS alerts notify designated caregivers
-                instantly.
-              </p>
+            <div class="vault-buy-list-preview">
+              <div class="vault-preview-chip">
+                <span>📁 Dr. K. Rahman (Square Hospital)</span>
+                <span class="vault-chip-date">12 Aug 2026</span>
+              </div>
+              <div class="buy-list-preview-item">
+                <span>🛒 Restock: Seclo 20mg (1 Box)</span>
+                <span class="buy-list-price">Est. ৳70.00</span>
+              </div>
             </div>
           </div>
         </div>
@@ -580,25 +745,143 @@
     </section>
 
     <!-- =========================================================================
-       5. Adherence ROI Calculator
+       5. Transparent Pricing & BD Apps Carrier Billing
+       ========================================================================= -->
+    <section class="pricing-section" id="pricing">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Fair & Transparent Pricing</span>
+          <h2 class="section-title">Free Core Tracking. Affordable Cloud AI.</h2>
+          <p class="section-description">
+            MediTrack believes essential medicine tracking should be free forever.
+            External cloud AI vision and price lookup are powered by an affordable BD Apps carrier micro-subscription.
+          </p>
+        </div>
+
+        <div class="pricing-grid">
+          <!-- Free Forever Tier -->
+          <div class="pricing-card free-tier-card">
+            <div class="tier-header">
+              <span class="tier-badge">Free Forever</span>
+              <h3 class="tier-title">Core Companion</h3>
+              <div class="tier-price">
+                <span class="price-val">৳0</span>
+                <span class="price-period">/ forever</span>
+              </div>
+              <p class="tier-desc">Complete medication tracking and offline-first reliability for personal and family use.</p>
+            </div>
+
+            <ul class="tier-feature-list">
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Full Medicine Inventory & Pill Tracking</span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Exact Dose Alarms & 3-Day Refill Alerts</span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>On-Device Box & Strip OCR (100% Offline)</span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Digital Prescription Vault & Notes</span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Low-Stock Shopping Buy List</span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Zero Ads • No Credit Card Required</span>
+              </li>
+            </ul>
+
+            <a
+              href="https://github.com/helix-77/MediTrack/releases/download/v-0.0.2b/app-release.apk"
+              class="btn btn-outline tier-cta-btn"
+              download
+            >
+              Download Free App
+            </a>
+          </div>
+
+          <!-- Premium Tier (BD Apps Carrier Billing) -->
+          <div class="pricing-card premium-tier-card">
+            <div class="popular-ribbon">⭐ Premium AI Plan</div>
+            <div class="tier-header">
+              <span class="tier-badge badge-premium">BD Apps Telco Billing</span>
+              <h3 class="tier-title">MediTrack Plus</h3>
+              <div class="tier-price">
+                <span class="price-val">৳2.00</span>
+                <span class="price-period">/ day (+VAT/SD)</span>
+              </div>
+              <p class="tier-desc">Unlock multimodal Gemini AI prescription parsing, 25k+ generic lookup, and pharmacy finder.</p>
+            </div>
+
+            <ul class="tier-feature-list">
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Everything in Free Forever, plus:</strong></span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Gemini 3.6 Flash Multi-Page Prescription OCR</strong></span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Gemini AI Health Assistant (Chat & Voice)</strong></span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>25,000+ BD Medicine Price & Generic Finder</strong></span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Nearby 24/7 Pharmacy GPS Locator</strong></span>
+              </li>
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Easy Robi / Airtel Airtime Billing (No Card)</strong></span>
+              </li>
+            </ul>
+
+            <a
+              href="https://github.com/helix-77/MediTrack/releases/download/v-0.0.2b/app-release.apk"
+              class="btn btn-primary tier-cta-btn apk-highlight-btn"
+              download
+            >
+              Get Premium APK
+            </a>
+
+            <div class="carrier-logos-row">
+              <span class="carrier-label">Direct Carrier Billing:</span>
+              <span class="carrier-chip">Robi (018)</span>
+              <span class="carrier-chip">Airtel (016)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+       6. Adherence ROI & Generic Savings Calculator
        ========================================================================= -->
     <section class="calculator-section" id="calculator">
       <div class="container">
         <div class="calc-card">
           <div class="calc-info">
-            <span class="section-tag">Interactive Calculator</span>
-            <h2 class="calc-title">Calculate Your Health Impact</h2>
+            <span class="section-tag">Interactive Health & Cost Calculator</span>
+            <h2 class="calc-title">Calculate Your Health & Financial Impact</h2>
             <p style="color: var(--text-secondary); margin-bottom: 1.5rem">
-              See how structured tracking drastically reduces missed doses and
-              protects long-term treatment outcomes.
+              See how structured tracking prevents missed doses and how generic substitution drastically cuts your monthly pharmacy bills.
             </p>
 
             <div class="slider-container">
               <div class="slider-label-group">
                 <span class="slider-label-text">Daily Medications:</span>
-                <span class="slider-value-badge" id="medsValueBadge"
-                  >3 medications</span
-                >
+                <span class="slider-value-badge" id="medsValueBadge">3 medications</span>
               </div>
               <input
                 type="range"
@@ -607,6 +890,22 @@
                 value="3"
                 class="range-slider"
                 id="medsSlider"
+              />
+            </div>
+
+            <div class="slider-container" style="margin-top: 1.5rem;">
+              <div class="slider-label-group">
+                <span class="slider-label-text">Monthly Medicine Bill:</span>
+                <span class="slider-value-badge" id="spendValueBadge">৳2,000 / month</span>
+              </div>
+              <input
+                type="range"
+                min="500"
+                max="10000"
+                step="250"
+                value="2000"
+                class="range-slider"
+                id="spendSlider"
               />
             </div>
           </div>
@@ -618,7 +917,7 @@
                   Total Annual Doses
                 </div>
                 <div style="font-size: 0.75rem; color: var(--text-muted)">
-                  Scheduled every year
+                  Scheduled throughout the year
                 </div>
               </div>
               <div class="calc-metric-val" id="annualDosesVal">1,095</div>
@@ -630,7 +929,7 @@
                   Missed Doses Prevented
                 </div>
                 <div style="font-size: 0.75rem; color: var(--text-muted)">
-                  Based on 22% avg unmanaged miss rate
+                  Based on 22% average unmanaged miss rate
                 </div>
               </div>
               <div
@@ -642,13 +941,31 @@
               </div>
             </div>
 
+            <div class="calc-metric-row highlight-calc-row">
+              <div>
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary-green)">
+                  Potential Generic Savings in ৳
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted)">
+                  Average 30% savings with generic alternatives
+                </div>
+              </div>
+              <div
+                class="calc-metric-val"
+                id="genericSavingsVal"
+                style="color: #5B8C5A; font-size: 1.4rem;"
+              >
+                ৳7,200 / year
+              </div>
+            </div>
+
             <div class="calc-metric-row">
               <div>
                 <div style="font-size: 0.85rem; color: var(--text-secondary)">
-                  Expected Adherence Rate
+                  Expected Adherence Score
                 </div>
                 <div style="font-size: 0.75rem; color: var(--text-muted)">
-                  With MediTrack active guidance
+                  With MediTrack smart guidance
                 </div>
               </div>
               <div class="calc-metric-val" id="adherenceScoreVal">98.5%</div>
@@ -659,7 +976,7 @@
     </section>
 
     <!-- =========================================================================
-       6. Testimonials & Reviews
+       7. Testimonials & Reviews
        ========================================================================= -->
     <section class="reviews-section" id="reviews">
       <div class="container">
@@ -672,9 +989,7 @@
           <div class="review-card">
             <div class="review-stars">★★★★★</div>
             <p class="review-quote">
-              "Managing 6 daily medications for hypertension and diabetes used
-              to feel overwhelming. MediTrack's prescription scanner and daily
-              streak counters kept me on schedule for 8 months straight."
+              "Managing blood pressure and diabetes medicines was stressful. Finding cheaper generic alternatives saved me over ৳1,400 every month, and the refill alarms ensure I never run out of strips."
             </p>
             <div class="review-user-info">
               <img
@@ -684,7 +999,7 @@
               />
               <div>
                 <div class="user-name">Elena Vance</div>
-                <div class="user-role">Patient • Verified User</div>
+                <div class="user-role">Chronic Care Patient • Dhaka</div>
               </div>
             </div>
           </div>
@@ -692,9 +1007,7 @@
           <div class="review-card">
             <div class="review-stars">★★★★★</div>
             <p class="review-quote">
-              "The caregiver SMS sync gives me complete peace of mind for my
-              elderly mother living in another state. When she logs her morning
-              meds, I get a gentle confirmation."
+              "The prescription scanner accurately parsed my mother's multi-medicine doctor's slip in seconds. The digital vault keeps all her doctor prescriptions safely organized in one place."
             </p>
             <div class="review-user-info">
               <img
@@ -704,7 +1017,7 @@
               />
               <div>
                 <div class="user-name">Marcus Thorne</div>
-                <div class="user-role">Family Caregiver</div>
+                <div class="user-role">Family Caregiver • Chittagong</div>
               </div>
             </div>
           </div>
@@ -712,9 +1025,7 @@
           <div class="review-card">
             <div class="review-stars">★★★★★</div>
             <p class="review-quote">
-              "As a primary care physician, medication compliance is my biggest
-              challenge. I routinely recommend MediTrack to my patients because
-              the AI interaction checker keeps them safe."
+              "I recommend MediTrack to my patients because the dual OCR and generic price database empower patients to understand their prescriptions, take full courses on time, and choose affordable generics."
             </p>
             <div class="review-user-info">
               <img
@@ -724,7 +1035,7 @@
               />
               <div>
                 <div class="user-name">Dr. Aris Thorne</div>
-                <div class="user-role">Internal Medicine Specialist</div>
+                <div class="user-role">General Physician • MBBS, FCPS</div>
               </div>
             </div>
           </div>
@@ -733,42 +1044,99 @@
     </section>
 
     <!-- =========================================================================
-       7. Call to Action Banner & Site Footer
+       8. Frequently Asked Questions (FAQ)
+       ========================================================================= -->
+    <section class="faq-section" id="faq">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Got Questions?</span>
+          <h2 class="section-title">Frequently Asked Questions</h2>
+        </div>
+
+        <div class="faq-accordion">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>How does the AI Prescription Scanner work?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                MediTrack uses Firebase AI Logic with <strong>Gemini 3.6 Flash</strong> to scan photos of handwritten or printed doctor prescriptions. It extracts medicine names, forms, dosages, frequencies (e.g. 1+0+1), and durations into structured line items with confidence ratings (High, Medium, Low). You review and confirm every item before anything is saved to your schedule.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Can I use MediTrack completely offline?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Yes! Core pill tracking, schedule alarms, refill countdowns, and on-device medicine box scanning (powered by Google ML Kit) work 100% offline. Cloud Firestore automatically caches your data locally so you never miss a dose during network outages.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>How does the medicine price and generic lookup work?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                MediTrack indexes over 25,000 Bangladeshi pharmaceutical products with authentic manufacturer MRP unit prices in Bangladeshi Taka (৳). When you search any brand (e.g., Napa), MediTrack identifies its active generic ingredient (Paracetamol) and shows all alternative brands sorted by price ascending, helping you find equal, cheaper options.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>How does the BD Apps carrier billing subscription work?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                If you choose the optional Premium tier (৳2.00/day), charges are billed directly to your Robi (018) or Airtel (016) mobile airtime balance via BD Apps. No credit card or bank account is required, and you can cancel anytime with a single tap or SMS.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Is my health data and prescription image private?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Strictly private. Every prescription image and dose log is securely stored with per-user authentication rules (<code>request.auth.uid == uid</code>). Your medical data is never sold, shared with third parties, or used for advertising.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+       9. Call to Action Banner & Site Footer
        ========================================================================= -->
     <section class="cta-banner-section" id="download">
       <div class="container">
         <div class="cta-banner-card">
           <h2 class="cta-title">Take Control of Your Health Routine Today</h2>
           <p class="cta-subtitle">
-            Download MediTrack free on iOS and Android. Empower your daily
-            wellness with intelligent AI support.
+            Download MediTrack free for Android. Experience effortless medicine management,
+            accurate prescription scanning, and authentic generic savings in Bangladesh.
           </p>
 
           <div class="cta-btn-group">
-            <!-- Left: App Store Badge Button (With Tooltip) -->
-            <div
-              class="has-tooltip"
-              data-tooltip="Will be available soon! Download the APK for now."
-            >
-              <a
-                href="#"
-                class="store-badge-btn store-unreleased"
-                aria-label="Download on iOS App Store"
-              >
-                <svg class="store-icon" viewBox="0 0 24 24">
-                  <path
-                    d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.66-.8 1.11-1.92.99-3.04-.95.04-2.11.64-2.79 1.44-.6.7-1.13 1.83-.99 2.93 1.07.08 2.14-.53 2.79-1.33z"
-                  />
-                </svg>
-                <div class="store-text-group">
-                  <span class="store-sub">Download on the</span>
-                  <span class="store-title">App Store</span>
-                </div>
-              </a>
-            </div>
-
             <!-- Center: Primary Highlighted Download APK Button -->
-            <a href="https://github.com/helix-77/MediTrack/releases/download/v-0.0.2b/app-release.apk" class="btn apk-highlight-btn cta-apk-btn" download aria-label="Download MediTrack APK">
+            <a
+              href="https://github.com/helix-77/MediTrack/releases/download/v-0.0.2b/app-release.apk"
+              class="btn apk-highlight-btn cta-apk-btn"
+              download
+              aria-label="Download MediTrack APK"
+            >
               <svg
                 width="20"
                 height="20"
@@ -781,11 +1149,11 @@
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              <span>Download APK</span>
-              <!-- <span class="apk-badge-tag">Direct Install</span> -->
+              <span>Download APK v0.0.2b</span>
+              <span class="apk-badge-tag">Direct Install</span>
             </a>
 
-            <!-- Right: Google Play Badge Button (With Tooltip) -->
+            <!-- Google Play Badge Button (With Tooltip) -->
             <div
               class="has-tooltip"
               data-tooltip="Will be available soon! Download the APK for now."
@@ -806,69 +1174,93 @@
                 </div>
               </a>
             </div>
+
+            <!-- App Store Badge Button (With Tooltip) -->
+            <div
+              class="has-tooltip"
+              data-tooltip="Will be available soon! Download the APK for now."
+            >
+              <a
+                href="#"
+                class="store-badge-btn store-unreleased"
+                aria-label="Download on iOS App Store"
+              >
+                <svg class="store-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.66-.8 1.11-1.92.99-3.04-.95.04-2.11.64-2.79 1.44-.6.7-1.13 1.83-.99 2.93 1.07.08 2.14-.53 2.79-1.33z"
+                  />
+                </svg>
+                <div class="store-text-group">
+                  <span class="store-sub">Download on the</span>
+                  <span class="store-title">App Store</span>
+                </div>
+              </a>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- =========================================================================
+       10. Modern Site Footer
+       ========================================================================= -->
     <footer class="site-footer">
       <div class="container">
         <div class="footer-grid">
           <div>
             <div class="footer-brand-title">MediTrack</div>
-            <p style="max-width: 320px; line-height: 1.6; opacity: 0.8">
-              Your personal AI medication manager and healthcare companion.
-              Designed with organic warmth and clinical precision.
+            <p style="max-width: 320px; line-height: 1.6; opacity: 0.8; margin-bottom: 1.2rem">
+              Your personal AI medication manager and healthcare companion for Bangladesh.
+              Designed with organic warmth, on-device privacy, and clinical precision.
             </p>
+            <div class="footer-tech-stack">
+              <span class="tech-pill">Flutter 3.44</span>
+              <span class="tech-pill">Firebase</span>
+              <span class="tech-pill">Gemini 3.6 Flash</span>
+              <span class="tech-pill">ML Kit</span>
+            </div>
           </div>
 
           <div>
             <div class="footer-heading">Features</div>
             <ul class="footer-links">
               <li class="footer-link"><a href="#demo">Routine Tracker</a></li>
-              <li class="footer-link">
-                <a href="#ai-assistant">AI Health Assistant</a>
-              </li>
-              <li class="footer-link">
-                <a href="#features">Prescription Scanner</a>
-              </li>
-              <li class="footer-link">
-                <a href="#features">Caregiver Sync</a>
-              </li>
+              <li class="footer-link"><a href="#ocr-tech">Dual OCR Scanning</a></li>
+              <li class="footer-link"><a href="#price-lookup">Generic Price Lookup</a></li>
+              <li class="footer-link"><a href="#ai-assistant">Gemini AI Assistant</a></li>
+              <li class="footer-link"><a href="#pricing">Pricing & BD Apps</a></li>
             </ul>
           </div>
 
           <div>
-            <div class="footer-heading">Company</div>
+            <div class="footer-heading">Product & Info</div>
             <ul class="footer-links">
-              <li class="footer-link"><a href="#">About Us</a></li>
-              <li class="footer-link"><a href="#">Privacy Policy</a></li>
-              <li class="footer-link"><a href="#">Terms of Service</a></li>
-              <li class="footer-link"><a href="#">Contact Support</a></li>
+              <li class="footer-link"><a href="#calculator">Adherence Calculator</a></li>
+              <li class="footer-link"><a href="#faq">FAQ</a></li>
+              <li class="footer-link"><a href="https://github.com/helix-77/MediTrack" target="_blank" rel="noopener">GitHub Repository</a></li>
+              <li class="footer-link"><a href="https://github.com/helix-77/MediTrack/releases" target="_blank" rel="noopener">Releases & Changelog</a></li>
             </ul>
           </div>
 
           <div>
-            <div class="footer-heading">Security</div>
-            <p style="font-size: 0.82rem; opacity: 0.8; margin-bottom: 1rem">
-              End-to-end encrypted medical vault with local device storage
-              protection.
+            <div class="footer-heading">Security & Clinical Note</div>
+            <p style="font-size: 0.82rem; opacity: 0.8; margin-bottom: 0.75rem; line-height: 1.5">
+              Encrypted per-user storage. Prescriptions and health data are never exposed or sold.
             </p>
-            <div style="font-weight: 700; color: var(--accent-pink)">
-              HIPAA & GDPR Compliant UI
-            </div>
+            <p style="font-size: 0.75rem; opacity: 0.65; line-height: 1.4">
+              <strong>Disclaimer:</strong> MediTrack is an adherence and management aid and does not provide clinical diagnosis. Always consult a registered physician or pharmacist.
+            </p>
           </div>
         </div>
 
         <div class="footer-bottom">
-          <div>© 2026 MediTrack App. All rights reserved.</div>
-          <div>Crafted with precision for wellness & peace of mind.</div>
+          <div>© 2026 MediTrack. Crafted for wellness & peace of mind in Bangladesh.</div>
+          <div>All Bangladesh pharmaceutical reference data sourced for general educational reference.</div>
         </div>
       </div>
     </footer>
 
     <!-- Script -->
     <script src="script.js"></script>
-  <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"6259b14db9ff4ff09bbe18d38c7bdcfb","r":1}' crossorigin="anonymous"></script>
-</body>
+  </body>
 </html>
