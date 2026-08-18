@@ -545,25 +545,13 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ongoing Routine',
-                  style: AppTypography.headingMedium.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "Today's 4 scheduled intake time slots",
-                  style: AppTypography.caption.copyWith(
-                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                  ),
-                ),
-              ],
+            Text(
+              'Ongoing Routine',
+              style: AppTypography.headingMedium.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -778,178 +766,272 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 6. "SMART HEALTH TOOLS" (Image 2 reference)
+  // 5. "SMART HEALTH TOOLS" (Smart Health Hub)
   // ---------------------------------------------------------------------------
   Widget _buildSmartHealthToolsCard(bool isDark) {
-    return SoftSurface(
-      padding: const EdgeInsets.all(20),
-      borderRadius: BorderRadius.circular(24),
-      color: isDark ? AppColors.darkSurface : Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Smart Health Tools',
+              style: AppTypography.headingMedium.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E2A44) : AppColors.primaryBlueLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_awesome, size: 12, color: AppColors.primaryBlue),
+                  const SizedBox(width: 4),
+                  Text(
+                    'AI Powered',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryBlue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Featured AI Prescription Scanner Hero Card
+        SoftSurface(
+          padding: const EdgeInsets.all(18),
+          borderRadius: BorderRadius.circular(24),
+          color: isDark ? const Color(0xFF162238) : const Color(0xFFEBF3FF),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ScanPrescriptionScreen(),
+              ),
+            );
+          },
+          child: Row(
             children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryBlue.withValues(alpha: isDark ? 0.25 : 0.15),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.document_scanner_rounded,
+                    color: AppColors.primaryBlue,
+                    size: 26,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Smart Health Tools',
-                      style: AppTypography.headingMedium.copyWith(
+                      'AI Prescription Scanner',
+                      style: AppTypography.headingSmall.copyWith(
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'AI prescription scanning, MRP generic search & 24/7 pharmacies',
+                      'Scan paper prescriptions to auto-extract medicines & dosage routines',
                       style: AppTypography.caption.copyWith(
                         color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                        height: 1.35,
+                        height: 1.3,
+                        fontSize: 11.5,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEFF6FF),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryBlue.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: const Icon(
-                  Icons.auto_awesome,
-                  color: AppColors.primaryBlue,
-                  size: 24,
+                  Icons.arrow_forward_rounded,
+                  color: Colors.white,
+                  size: 16,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Primary Actions Row (Scan Rx + Rx Vault)
-          Row(
-            children: [
-              Expanded(
-                child: SoftPrimaryButton(
-                  label: 'Scan Rx',
-                  icon: Icons.document_scanner_rounded,
-                  height: 44,
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ScanPrescriptionScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SoftSecondaryButton(
-                  label: 'Rx Vault',
-                  icon: Icons.folder_shared_outlined,
-                  height: 44,
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const PrescriptionVaultScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Secondary Quick Action Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildQuickActionChip(
-                  icon: Icons.search_rounded,
-                  label: 'Price & Generic Lookup',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const MedicineSearchScreen(),
-                      ),
-                    );
-                  },
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-                _buildQuickActionChip(
-                  icon: Icons.local_pharmacy_outlined,
-                  label: 'Nearby Pharmacies',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const NearbyPharmaciesScreen(),
-                      ),
-                    );
-                  },
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-                _buildQuickActionChip(
-                  icon: Icons.picture_as_pdf_outlined,
-                  label: 'Doctor Summary',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const DoctorSummaryScreen(),
-                      ),
-                    );
-                  },
-                  isDark: isDark,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionChip({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required bool isDark,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: AppShadows.subtle,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        const SizedBox(height: 14),
+
+        // 4 Quick Health Tools (2x2 Grid)
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: 1.28,
           children: [
-            Icon(icon, size: 14, color: AppColors.primaryBlue),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: AppTypography.caption.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
+            _buildHealthToolTile(
+              title: 'Rx Vault',
+              subtitle: 'Archived prescriptions',
+              icon: Icons.folder_shared_rounded,
+              iconColor: const Color(0xFF0D9488),
+              iconBgColor: const Color(0xFFE6FFFA),
+              isDark: isDark,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PrescriptionVaultScreen()),
+                );
+              },
+            ),
+            _buildHealthToolTile(
+              title: 'Generic & MRP',
+              subtitle: 'DGDA price check',
+              icon: Icons.medication_rounded,
+              iconColor: const Color(0xFFF59E0B),
+              iconBgColor: const Color(0xFFFEF3C7),
+              isDark: isDark,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MedicineSearchScreen()),
+                );
+              },
+            ),
+            _buildHealthToolTile(
+              title: '24/7 Pharmacies',
+              subtitle: 'Nearby store locator',
+              icon: Icons.local_pharmacy_rounded,
+              iconColor: const Color(0xFFEF4444),
+              iconBgColor: const Color(0xFFFEE2E2),
+              isDark: isDark,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NearbyPharmaciesScreen()),
+                );
+              },
+            ),
+            _buildHealthToolTile(
+              title: 'Doctor Report',
+              subtitle: 'Export visit summary',
+              icon: Icons.assignment_rounded,
+              iconColor: const Color(0xFF8B5CF6),
+              iconBgColor: const Color(0xFFEDE9FE),
+              isDark: isDark,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DoctorSummaryScreen()),
+                );
+              },
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildHealthToolTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return SoftSurface(
+      padding: const EdgeInsets.all(14),
+      borderRadius: BorderRadius.circular(22),
+      color: isDark ? AppColors.darkSurface : Colors.white,
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isDark ? iconColor.withValues(alpha: 0.18) : iconBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 16,
+                color: isDark ? AppColors.darkTextSecondary.withValues(alpha: 0.4) : const Color(0xFF94A3B8),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTypography.headingSmall.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: AppTypography.caption.copyWith(
+                  fontSize: 11,
+                  color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
