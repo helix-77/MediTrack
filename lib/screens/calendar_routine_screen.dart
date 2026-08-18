@@ -149,7 +149,6 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
         itemBuilder: (context, index) {
           final date = days[index];
           final isSelected = _isSameDay(date, _selectedDate);
-          final isCurrentDay = _isSameDay(date, today);
 
           return GestureDetector(
             onTap: () => setState(() => _selectedDate = date),
@@ -162,13 +161,13 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
                     ? AppColors.primaryBlue
                     : (isDark ? AppColors.darkSurface : AppColors.surface),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.primaryBlue
-                      : (isCurrentDay ? AppColors.accentPink : (isDark ? AppColors.darkDivider : AppColors.divider)),
-                  width: isCurrentDay && !isSelected ? 1.5 : 0.8,
-                ),
-                boxShadow: isSelected ? AppShadows.subtle : [],
+                boxShadow: isSelected ? AppShadows.subtle : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -210,7 +209,6 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
       padding: const EdgeInsets.all(20),
       borderRadius: AppRadii.cardRadius,
       color: isDark ? AppColors.darkSurface : AppColors.surface,
-      borderColor: AppColors.primaryBlue.withValues(alpha: 0.2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

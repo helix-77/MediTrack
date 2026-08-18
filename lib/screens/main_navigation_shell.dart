@@ -89,12 +89,6 @@ class MainNavigationShellState extends State<MainNavigationShell> {
         decoration: BoxDecoration(
           color: navBg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-          border: Border(
-            top: BorderSide(
-              color: isDark ? AppColors.darkDivider : const Color(0xFFE2E8F0),
-              width: 0.8,
-            ),
-          ),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF18233D).withValues(alpha: isDark ? 0.2 : 0.05),

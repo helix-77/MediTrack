@@ -94,17 +94,11 @@ class SoftTextField extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: AppRadii.standardRadius,
-              borderSide: BorderSide(
-                color: isDark ? AppColors.darkDivider : AppColors.divider,
-                width: 1,
-              ),
+              borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppRadii.standardRadius,
-              borderSide: BorderSide(
-                color: isDark ? AppColors.darkDivider : AppColors.divider,
-                width: 1,
-              ),
+              borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppRadii.standardRadius,

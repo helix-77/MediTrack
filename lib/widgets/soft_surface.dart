@@ -40,8 +40,9 @@ class SoftSurface extends StatelessWidget {
     final effectiveRadius = borderRadius ?? AppRadii.cardRadius;
     final effectiveBg = color ?? (isDark ? AppColors.darkSurface : AppColors.surface);
     final effectiveShadow = boxShadow ?? (isDark ? AppShadows.darkCard : AppShadows.softCard);
-    final effectiveBorderColor = borderColor ?? (isDark ? AppColors.darkDivider : AppColors.divider.withValues(alpha: 0.5));
-    final effectiveBorderWidth = borderWidth ?? 0.8;
+    final effectiveBorder = borderColor != null
+        ? Border.all(color: borderColor!, width: borderWidth ?? 0.8)
+        : null;
 
     Widget container = Container(
       width: width,
@@ -51,7 +52,7 @@ class SoftSurface extends StatelessWidget {
       decoration: BoxDecoration(
         color: effectiveBg,
         borderRadius: effectiveRadius,
-        border: Border.all(color: effectiveBorderColor, width: effectiveBorderWidth),
+        border: effectiveBorder,
         boxShadow: effectiveShadow,
       ),
       child: ClipRRect(

@@ -167,7 +167,6 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
                 padding: const EdgeInsets.all(20),
                 borderRadius: AppRadii.cardRadius,
                 color: isDark ? AppColors.darkSurface : AppColors.surface,
-                borderColor: AppColors.primaryBlue.withValues(alpha: 0.2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -221,7 +220,6 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
                 SoftSurface(
                   padding: const EdgeInsets.all(14),
                   color: isDark ? const Color(0xFF2B2215) : AppColors.warningLight,
-                  borderColor: AppColors.warning.withValues(alpha: 0.3),
                   child: Row(
                     children: [
                       const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 22),

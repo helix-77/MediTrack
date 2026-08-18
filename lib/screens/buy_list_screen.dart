@@ -192,7 +192,6 @@ class _BuyListScreenState extends State<BuyListScreen> {
     return SoftSurface(
       padding: const EdgeInsets.all(16),
       color: isDark ? const Color(0xFF2B2215) : AppColors.warningLight,
-      borderColor: AppColors.warning.withValues(alpha: 0.35),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -224,7 +223,7 @@ class _BuyListScreenState extends State<BuyListScreen> {
                     avatar: const Icon(Icons.add, size: 16, color: AppColors.primaryBlue),
                     label: Text('${m.name} (${m.quantityCurrent} left)'),
                     backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-                    side: BorderSide(color: AppColors.warning.withValues(alpha: 0.5)),
+                    side: BorderSide.none,
                     labelStyle: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
                     onPressed: () => _showAddBuyItemDialog(m),
                   ),

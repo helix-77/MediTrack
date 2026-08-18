@@ -147,9 +147,6 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1B2330) : AppColors.primaryBlueLight.withValues(alpha: 0.6),
               borderRadius: AppRadii.smallRadius,
-              border: Border.all(
-                color: isDark ? AppColors.darkDivider : AppColors.primaryBlue.withValues(alpha: 0.2),
-              ),
             ),
             child: Row(
               children: [

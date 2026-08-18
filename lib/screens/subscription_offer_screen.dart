@@ -181,7 +181,6 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
               padding: const EdgeInsets.all(22),
               borderRadius: AppRadii.cardRadius,
               color: isDark ? AppColors.darkSurface : AppColors.surface,
-              borderColor: AppColors.primaryBlue.withValues(alpha: 0.35),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

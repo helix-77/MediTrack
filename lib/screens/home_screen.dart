@@ -253,10 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF162032) : const Color(0xFFE8F1FF),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? AppColors.darkDivider : AppColors.primaryBlue.withValues(alpha: 0.2),
-          width: 1,
-        ),
         boxShadow: [
           BoxShadow(
             color: AppColors.primaryBlue.withValues(alpha: isDark ? 0.05 : 0.08),
@@ -623,7 +619,6 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       borderRadius: BorderRadius.circular(26),
       color: isDark ? AppColors.darkSurface : Colors.white,
-      borderColor: isDark ? AppColors.darkDivider : const Color(0xFFF1F5F9),
       onTap: () => _openTimeSlotDetailModal(slot),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -790,7 +785,6 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       borderRadius: BorderRadius.circular(24),
       color: isDark ? AppColors.darkSurface : Colors.white,
-      borderColor: isDark ? AppColors.darkDivider : AppColors.primaryBlue.withValues(alpha: 0.18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -938,12 +932,9 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF8FAFC),
+          color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDark ? AppColors.darkDivider : const Color(0xFFE2E8F0),
-            width: 0.8,
-          ),
+          boxShadow: AppShadows.subtle,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1033,13 +1024,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ? AppColors.primaryBlue
               : (isDark ? AppColors.darkSurface : Colors.white),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primaryBlue
-                : (isDark ? AppColors.darkDivider : AppColors.divider),
-            width: 0.8,
-          ),
-          boxShadow: isSelected ? AppShadows.subtle : [],
+          boxShadow: isSelected ? AppShadows.subtle : [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Text(
           label,

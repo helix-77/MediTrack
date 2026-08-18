@@ -85,7 +85,6 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
                         padding: const EdgeInsets.all(20),
                         borderRadius: AppRadii.cardRadius,
                         color: isDark ? AppColors.darkSurface : AppColors.surface,
-                        borderColor: AppColors.primaryBlue.withValues(alpha: 0.25),
                         child: Row(
                           children: [
                             Container(

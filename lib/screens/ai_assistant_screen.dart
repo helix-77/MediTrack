@@ -345,7 +345,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                       label: Text(_quickPrompts[index]),
                       backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
                       labelStyle: AppTypography.caption.copyWith(fontWeight: FontWeight.w500),
-                      side: BorderSide(color: isDark ? AppColors.darkDivider : AppColors.divider),
+                      side: BorderSide.none,
                       onPressed: () => _sendMessage(_quickPrompts[index]),
                     ),
                   );
@@ -420,12 +420,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                       bottomLeft: Radius.circular(isUser ? 18 : 4),
                       bottomRight: Radius.circular(isUser ? 4 : 18),
                     ),
-                    border: Border.all(
-                      color: isUser
-                          ? AppColors.primaryBlue
-                          : (isDark ? AppColors.darkDivider : AppColors.divider.withValues(alpha: 0.8)),
-                      width: 0.8,
-                    ),
                     boxShadow: AppShadows.subtle,
                   ),
                   child: Column(
@@ -455,7 +449,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   SoftSurface(
                     padding: const EdgeInsets.all(12),
                     color: isDark ? const Color(0xFF16253A) : AppColors.primaryBlueLight,
-                    borderColor: AppColors.primaryBlue.withValues(alpha: 0.4),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -496,12 +489,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       ),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.surface,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? AppColors.darkDivider : AppColors.divider,
-            width: 0.8,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF18233D).withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
           ),
-        ),
+        ],
       ),
       child: Row(
         children: [

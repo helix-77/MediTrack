@@ -71,7 +71,6 @@ class StatusPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: AppRadii.pillRadius,
-        border: Border.all(color: fg.withValues(alpha: 0.2), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

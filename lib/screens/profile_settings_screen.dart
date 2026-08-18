@@ -306,7 +306,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 color: isPro
                     ? (isDark ? const Color(0xFF152A1E) : AppColors.successLight)
                     : (isDark ? AppColors.darkSurface : AppColors.surface),
-                borderColor: isPro ? AppColors.success : AppColors.primaryBlue.withValues(alpha: 0.3),
                 child: Row(
                   children: [
                     Container(
@@ -651,7 +650,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 label: 'Sign Out',
                 icon: Icons.logout_rounded,
                 textColor: AppColors.danger,
-                borderColor: AppColors.danger.withValues(alpha: 0.5),
                 onPressed: _confirmSignOut,
               ),
               const SizedBox(height: 36),

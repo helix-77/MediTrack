@@ -140,7 +140,6 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
     return SoftSurface(
       padding: const EdgeInsets.all(16),
       color: isDark ? AppColors.darkSurface : AppColors.surface,
-      borderColor: AppColors.primaryBlue.withValues(alpha: 0.25),
       child: Row(
         children: [
           Container(
@@ -229,7 +228,6 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
     return SoftSurface(
       padding: const EdgeInsets.all(20),
       color: isDark ? AppColors.darkSurface : AppColors.surface,
-      borderColor: AppColors.primaryBlue.withValues(alpha: 0.3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

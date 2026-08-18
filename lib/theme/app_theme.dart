@@ -30,7 +30,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadii.cardRadius,
-          side: const BorderSide(color: AppColors.divider, width: 0.8),
+          side: BorderSide.none,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -50,7 +50,7 @@ class AppTheme {
           foregroundColor: AppColors.primaryBlue,
           backgroundColor: AppColors.surface,
           elevation: 0,
-          side: const BorderSide(color: AppColors.divider, width: 1.2),
+          side: BorderSide.none,
           shape: RoundedRectangleBorder(
             borderRadius: AppRadii.standardRadius,
           ),
@@ -76,11 +76,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: AppRadii.standardRadius,
-          borderSide: const BorderSide(color: AppColors.divider, width: 1),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadii.standardRadius,
-          borderSide: const BorderSide(color: AppColors.divider, width: 1),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadii.standardRadius,
@@ -96,7 +96,7 @@ class AppTheme {
         selectedColor: AppColors.primaryBlueLight,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadii.pillRadius,
-          side: const BorderSide(color: AppColors.divider, width: 0.8),
+          side: BorderSide.none,
         ),
         labelStyle: AppTypography.caption,
       ),
@@ -135,7 +135,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadii.cardRadius,
-          side: const BorderSide(color: AppColors.darkDivider, width: 0.8),
+          side: BorderSide.none,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -155,7 +155,7 @@ class AppTheme {
           foregroundColor: AppColors.primaryBlue,
           backgroundColor: AppColors.darkSurface,
           elevation: 0,
-          side: const BorderSide(color: AppColors.darkDivider, width: 1.2),
+          side: BorderSide.none,
           shape: RoundedRectangleBorder(
             borderRadius: AppRadii.standardRadius,
           ),
@@ -183,11 +183,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: AppRadii.standardRadius,
-          borderSide: const BorderSide(color: AppColors.darkDivider, width: 1),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadii.standardRadius,
-          borderSide: const BorderSide(color: AppColors.darkDivider, width: 1),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadii.standardRadius,
@@ -203,7 +203,7 @@ class AppTheme {
         selectedColor: AppColors.primaryBlue.withValues(alpha: 0.2),
         shape: RoundedRectangleBorder(
           borderRadius: AppRadii.pillRadius,
-          side: const BorderSide(color: AppColors.darkDivider, width: 0.8),
+          side: BorderSide.none,
         ),
         labelStyle: AppTypography.caption.copyWith(
           color: AppColors.darkTextPrimary,

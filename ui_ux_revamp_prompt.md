@@ -148,7 +148,8 @@ Use a cool, very pale blue-gray canvas.
 Approximate starting value:
 
 ```text
-#E8EFF2
+<!-- #E8EFF2 -->
+#EFF1F5
 ```
 
 The exact value may be adjusted after inspecting Figma.

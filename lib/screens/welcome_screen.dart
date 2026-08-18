@@ -28,10 +28,6 @@ class WelcomeScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurface : Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDark ? AppColors.darkDivider : AppColors.primaryBlue.withValues(alpha: 0.15),
-                    width: 2,
-                  ),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.primaryBlue.withValues(alpha: 0.18),

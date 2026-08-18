@@ -111,7 +111,6 @@ class SoftSecondaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final border = borderColor ?? (isDark ? AppColors.darkDivider : AppColors.divider);
     final text = textColor ?? AppColors.primaryBlue;
 
     return SizedBox(
@@ -121,7 +120,7 @@ class SoftSecondaryButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: text,
           backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
-          side: BorderSide(color: border, width: 1.2),
+          side: borderColor != null ? BorderSide(color: borderColor!, width: 1.2) : BorderSide.none,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: AppRadii.standardRadius,
@@ -183,10 +182,6 @@ class SoftIconButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(size * 0.32),
-        border: Border.all(
-          color: isDark ? AppColors.darkDivider : AppColors.divider.withValues(alpha: 0.6),
-          width: 0.8,
-        ),
         boxShadow: AppShadows.subtle,
       ),
       child: Stack(

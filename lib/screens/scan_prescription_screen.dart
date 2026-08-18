@@ -474,7 +474,6 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
     return SoftSurface(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
       borderRadius: AppRadii.cardRadius,
-      borderColor: AppColors.primaryBlue.withValues(alpha: 0.3),
       child: Center(
         child: Column(
           children: [
@@ -537,7 +536,6 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
     return SoftSurface(
       padding: const EdgeInsets.all(14),
       color: bg,
-      borderColor: border.withValues(alpha: 0.35),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
