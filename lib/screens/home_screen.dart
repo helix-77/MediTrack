@@ -514,31 +514,31 @@ class _HomeScreenState extends State<HomeScreen> {
         timeRange: '5:00 AM - 11:59 AM',
         icon: Icons.wb_sunny_rounded,
         accentColor: const Color(0xFFF97316),
-        bgColor: isDark ? const Color(0xFF261D15) : const Color(0xFFFFF7ED),
+        bgColor: isDark ? AppColors.darkSurface : Colors.white,
         doses: morningDoses,
       ),
       _TimeSlotData(
         title: 'Noon',
         timeRange: '12:00 PM - 4:59 PM',
-        icon: Icons.wb_sunny_outlined,
-        accentColor: AppColors.primaryBlue,
-        bgColor: isDark ? const Color(0xFF142032) : const Color(0xFFEFF6FF),
+        icon: Icons.wb_twilight_rounded,
+        accentColor: const Color(0xFFEC4899),
+        bgColor: isDark ? AppColors.darkSurface : Colors.white,
         doses: noonDoses,
       ),
       _TimeSlotData(
         title: 'Evening',
         timeRange: '5:00 PM - 8:59 PM',
-        icon: Icons.wb_twilight_rounded,
-        accentColor: const Color(0xFFEC4899),
-        bgColor: isDark ? const Color(0xFF2B1622) : const Color(0xFFFDF2F8),
+        icon: Icons.nights_stay_outlined,
+        accentColor: const Color(0xFFA855F7),
+        bgColor: isDark ? AppColors.darkSurface : Colors.white,
         doses: eveningDoses,
       ),
       _TimeSlotData(
         title: 'Night',
         timeRange: '9:00 PM - 4:59 AM',
         icon: Icons.nightlight_round,
-        accentColor: const Color(0xFF64748B),
-        bgColor: isDark ? const Color(0xFF1E242F) : const Color(0xFFF8FAFC),
+        accentColor: const Color(0xFF3B82F6),
+        bgColor: isDark ? AppColors.darkSurface : Colors.white,
         doses: nightDoses,
       ),
     ];
@@ -586,16 +586,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: 4,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.28,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            childAspectRatio: 0.88,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
           ),
           itemBuilder: (context, index) {
             return _buildTimeSlotGridCard(slots[index], isDark);
@@ -608,72 +608,89 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTimeSlotGridCard(_TimeSlotData slot, bool isDark) {
     final total = slot.doses.length;
     final taken = slot.doses.where((d) => d.log.status == DoseStatus.taken).length;
-    final progress = total == 0 ? 0.0 : taken / total;
 
-    String subtitleText = 'No doses scheduled';
-    if (total > 0) {
-      final names = slot.doses.map((d) => d.medicine.name).toSet().join(', ');
-      subtitleText = '$total dose(s) • $names';
+    String line1;
+    if (total == 0) {
+      line1 = 'No doses scheduled';
+    } else if (taken == total) {
+      line1 = 'All $total doses taken ✓';
+    } else {
+      line1 = '$taken of $total doses taken';
     }
+    final line2 = slot.timeRange;
 
     return SoftSurface(
-      padding: const EdgeInsets.all(14),
-      borderRadius: BorderRadius.circular(20),
-      color: slot.bgColor,
-      borderColor: slot.accentColor.withValues(alpha: 0.25),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      borderRadius: BorderRadius.circular(26),
+      color: isDark ? AppColors.darkSurface : Colors.white,
+      borderColor: isDark ? AppColors.darkDivider : const Color(0xFFF1F5F9),
       onTap: () => _openTimeSlotDetailModal(slot),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: slot.accentColor.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(slot.icon, color: slot.accentColor, size: 16),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    slot.title,
-                    style: AppTypography.headingSmall.copyWith(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                ],
+          // Circular Icon Container matching reference design
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: slot.accentColor.withValues(alpha: isDark ? 0.25 : 0.16),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: slot.accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  slot.icon,
+                  color: slot.accentColor,
+                  size: 22,
+                ),
               ),
-              StatusPill(
-                label: '$taken/$total',
-                customBgColor: slot.accentColor.withValues(alpha: 0.15),
-                customTextColor: slot.accentColor,
-              ),
-            ],
+            ),
           ),
+          const SizedBox(height: 12),
+
+          // Title
           Text(
-            subtitleText,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.caption.copyWith(
-              color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-              fontSize: 11,
+            slot.title,
+            style: AppTypography.headingMedium.copyWith(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
+            textAlign: TextAlign.center,
           ),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 5,
-              backgroundColor: slot.accentColor.withValues(alpha: 0.15),
-              valueColor: AlwaysStoppedAnimation<Color>(slot.accentColor),
+          const SizedBox(height: 5),
+
+          // Subtitle
+          Text(
+            '$line1\n$line2',
+            style: AppTypography.caption.copyWith(
+              fontSize: 11,
+              height: 1.35,
+              fontWeight: FontWeight.w500,
+              color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
             ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
