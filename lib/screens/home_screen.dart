@@ -11,11 +11,9 @@ import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../utils/time_formatter.dart';
-import '../widgets/empty_state_view.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/status_pill.dart';
-import 'medicine_detail_screen.dart';
 import 'prescription_vault_screen.dart';
 import 'scan_prescription_screen.dart';
 import 'calendar_routine_screen.dart';
@@ -88,7 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     final completedTodayDoses = doseItems
                         .where((d) => d.log.status == DoseStatus.taken)
                         .length;
-                    final pendingTodayDoses = totalTodayDoses - completedTodayDoses;
                     final todayProgressPercent = totalTodayDoses > 0
                         ? (completedTodayDoses / totalTodayDoses)
                         : 0.0;
@@ -133,22 +130,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // 4. "Today" Scheduled Doses Section
-                        _buildTodayDosesSection(
-                          doseItems: doseItems,
-                          pendingCount: pendingTodayDoses,
-                          isDark: isDark,
-                        ),
-                        const SizedBox(height: 28),
-
-                        // 5. "Ongoing Routine" (4 Time Slot Cards Grid - Image 2 reference)
+                        // 4. "Ongoing Routine" (4 Time Slot Cards Grid - Image 2 reference)
                         _buildOngoingRoutineSection(
                           doseItems: doseItems,
                           isDark: isDark,
                         ),
                         const SizedBox(height: 28),
 
-                        // 6. "Smart Health Tools" (Image 2 reference)
+                        // 5. "Smart Health Tools" (Image 2 reference)
                         _buildSmartHealthToolsCard(isDark),
                         const SizedBox(height: 36),
                       ],
@@ -470,233 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // 4. "TODAY" DOSE LIST SECTION
-  // ---------------------------------------------------------------------------
-  Widget _buildTodayDosesSection({
-    required List<_DoseItem> doseItems,
-    required int pendingCount,
-    required bool isDark,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Today',
-              style: AppTypography.headingMedium.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
-            ),
-            if (doseItems.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: pendingCount > 0 ? const Color(0xFFFCE7F3) : const Color(0xFFDCFCE7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  pendingCount > 0 ? '$pendingCount left' : 'All completed',
-                  style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: pendingCount > 0 ? const Color(0xFFDB2777) : const Color(0xFF16A34A),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (doseItems.isEmpty)
-          EmptyStateView(
-            icon: Icons.check_circle_outline_rounded,
-            title: 'No Doses for Today',
-            description: 'Tap the + button to add medications to your daily schedule.',
-          )
-        else
-          Column(
-            children: doseItems.map((item) => _buildDoseItemCard(item, isDark)).toList(),
-          ),
-      ],
-    );
-  }
 
-  Widget _buildDoseItemCard(_DoseItem item, bool isDark) {
-    final isTaken = item.log.status == DoseStatus.taken;
-    final isSkipped = item.log.status == DoseStatus.skipped;
-
-    // Check if the scheduled time is past or upcoming
-    final now = DateTime.now();
-    final parts = item.timeString.split(':');
-    final hour = int.tryParse(parts[0]) ?? 8;
-    final min = int.tryParse(parts[1]) ?? 0;
-    final scheduledDate = DateTime(now.year, now.month, now.day, hour, min);
-    final isUpcoming = scheduledDate.isAfter(now) && !isTaken && !isSkipped;
-
-    // Soft Icon Tint based on status / time
-    Color iconBg = const Color(0xFFFCE7F3);
-    Color iconColor = const Color(0xFFEC4899);
-
-    if (isTaken) {
-      iconBg = const Color(0xFFDCFCE7);
-      iconColor = const Color(0xFF10B981);
-    } else if (isUpcoming) {
-      iconBg = const Color(0xFFE6FFFA);
-      iconColor = const Color(0xFF0D9488);
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: SoftSurface(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        borderRadius: BorderRadius.circular(20),
-        color: isDark ? AppColors.darkSurface : Colors.white,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => MedicineDetailScreen(medicineId: item.medicine.id),
-            ),
-          );
-        },
-        child: Row(
-          children: [
-            // Left Pill Icon Bubble
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: iconBg,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isTaken ? Icons.check_circle_rounded : Icons.medication_rounded,
-                color: iconColor,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-
-            // Medicine Name, Strength & Time/Instruction
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${item.medicine.name} ${item.medicine.strength ?? ""}'.trim(),
-                    style: AppTypography.headingSmall.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
-                    style: AppTypography.caption.copyWith(
-                      color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-
-            // Right Action Pill
-            if (isTaken)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Taken ✓',
-                  style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF15803D),
-                  ),
-                ),
-              )
-            else if (isSkipped)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Skipped',
-                  style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              )
-            else if (isUpcoming)
-              InkWell(
-                onTap: () => _handleTakeDose(item),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE6FFFA),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFF99F6E4), width: 0.8),
-                  ),
-                  child: const Text(
-                    'Upcoming',
-                    style: TextStyle(
-                      fontFamily: 'PlusJakartaSans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F766E),
-                    ),
-                  ),
-                ),
-              )
-            else
-              InkWell(
-                onTap: () => _handleTakeDose(item),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFCE7F3),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFF45BA5).withValues(alpha: 0.2),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Text(
-                    'Take now',
-                    style: TextStyle(
-                      fontFamily: 'PlusJakartaSans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFDB2777),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _handleTakeDose(_DoseItem item) async {
     await _medicineService.updateDoseStatus(
