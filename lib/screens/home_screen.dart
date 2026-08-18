@@ -580,7 +580,7 @@ class _HomeScreenState extends State<HomeScreen> {
           itemCount: 4,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.88,
+            childAspectRatio: 1.22,
             crossAxisSpacing: 14,
             mainAxisSpacing: 14,
           ),
@@ -595,88 +595,108 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTimeSlotGridCard(_TimeSlotData slot, bool isDark) {
     final total = slot.doses.length;
     final taken = slot.doses.where((d) => d.log.status == DoseStatus.taken).length;
+    final countText = '$taken/$total';
 
-    String line1;
-    if (total == 0) {
-      line1 = 'No doses scheduled';
-    } else if (taken == total) {
-      line1 = 'All $total doses taken ✓';
-    } else {
-      line1 = '$taken of $total doses taken';
-    }
-    final line2 = slot.timeRange;
-
-    return SoftSurface(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      borderRadius: BorderRadius.circular(26),
-      color: isDark ? AppColors.darkSurface : Colors.white,
+    return GestureDetector(
       onTap: () => _openTimeSlotDetailModal(slot),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // Circular Icon Container matching reference design
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: slot.accentColor.withValues(alpha: isDark ? 0.25 : 0.16),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
+          // Main Card Body (Compact height, top gradient blends invisibly with canvas bg)
+          Positioned.fill(
+            top: 20,
+            child: Container(
+              padding: const EdgeInsets.only(top: 32, bottom: 14, left: 10, right: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    (isDark ? AppColors.darkCanvas : AppColors.canvas).withValues(alpha: 0.0),
+                    isDark ? AppColors.darkSurface : Colors.white,
+                  ],
+                  stops: const [0.0, 0.40],
                 ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: slot.accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  slot.icon,
-                  color: slot.accentColor,
-                  size: 22,
-                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Title
+                  Text(
+                    slot.title,
+                    style: AppTypography.headingMedium.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1E293B),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 3),
+                  // Dose Count (e.g. 10/14)
+                  Text(
+                    countText,
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 12),
 
-          // Title
-          Text(
-            slot.title,
-            style: AppTypography.headingMedium.copyWith(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          // Floating Circular Icon in Top Middle
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: slot.accentColor.withValues(alpha: isDark ? 0.25 : 0.16),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: slot.accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      slot.icon,
+                      color: slot.accentColor,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 5),
-
-          // Subtitle
-          Text(
-            '$line1\n$line2',
-            style: AppTypography.caption.copyWith(
-              fontSize: 11,
-              height: 1.35,
-              fontWeight: FontWeight.w500,
-              color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
