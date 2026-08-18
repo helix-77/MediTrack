@@ -63,4 +63,19 @@ class UserProfileService {
         .doc('main');
     await docRef.set({'bdMobile': bdMobile}, SetOptions(merge: true));
   }
+
+  // Update only subscriptionStatus field
+  Future<void> updateSubscriptionStatus(String subscriptionStatus) async {
+    final user = _authenticatedUser();
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('profile')
+        .doc('main');
+    await docRef.set({
+      'subscriptionStatus': subscriptionStatus,
+      'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
 }

@@ -150,12 +150,14 @@ class BdAppsApiClient {
         success: false,
         statusCode: e.response?.statusCode?.toString() ?? 'E1000',
         statusDetail: e.message ?? 'Network error unregistering',
+        error: e.message ?? 'Network error unregistering',
       );
     } catch (e) {
       return UnsubscribeResponse(
         success: false,
         statusCode: 'E1000',
         statusDetail: e.toString(),
+        error: e.toString(),
       );
     }
   }

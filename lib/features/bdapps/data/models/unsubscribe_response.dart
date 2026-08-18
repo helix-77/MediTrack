@@ -12,6 +12,7 @@ class UnsubscribeResponse {
     this.statusDetail,
     this.subscriptionStatus,
     this.rawResponse,
+    this.error,
   });
 
   /// Whether the server accepted the unsubscribe request. Parsed
@@ -45,10 +46,14 @@ class UnsubscribeResponse {
   /// Server's raw response string (often a nested JSON blob as a string).
   final String? rawResponse;
 
-  /// `true` only when the backend reports `statusCode == "S1000"`. Single
-  /// source of truth for "unsubscribe succeeded" — call sites should not
-  /// check the field directly. Use the getter, not the raw field.
-  bool get isSuccess => statusCode == 'S1000';
+  /// Error message if the request failed.
+  final String? error;
+
+  /// `true` only when the backend reports `statusCode == "S1000"` or `success == true`.
+  bool get isSuccess => statusCode == 'S1000' || success == true;
+
+  /// Helper: whether the user is confirmed unregistered / cancelled.
+  bool get isUnregistered => subscriptionStatus?.toUpperCase() == 'UNREGISTERED';
 
   factory UnsubscribeResponse.fromJson(Map<String, dynamic> json) {
     return UnsubscribeResponse(
@@ -60,6 +65,7 @@ class UnsubscribeResponse {
       statusDetail: json['statusDetail'] as String?,
       subscriptionStatus: json['subscriptionStatus'] as String?,
       rawResponse: json['rawResponse'] as String?,
+      error: json['error'] as String?,
     );
   }
 
@@ -74,3 +80,4 @@ class UnsubscribeResponse {
     return null;
   }
 }
+

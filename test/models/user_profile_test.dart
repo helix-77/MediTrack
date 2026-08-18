@@ -48,5 +48,26 @@ void main() {
       expect(profile.subscriptionConsentVersion, isNull);
       expect(profile.subscriptionConsentAt, isNull);
     });
+
+    test('copyWith preserves bdMobile and subscriptionStatus when modifying other fields', () {
+      final profile = UserProfile(
+        uid: 'user-789',
+        displayName: 'Test User',
+        email: 'test@example.com',
+        bdMobile: '01812345678',
+        subscriptionStatus: 'REGISTERED',
+        enableDoseReminders: true,
+      );
+
+      final updated = profile.copyWith(
+        displayName: 'Updated Name',
+        enableDoseReminders: false,
+      );
+
+      expect(updated.displayName, 'Updated Name');
+      expect(updated.enableDoseReminders, isFalse);
+      expect(updated.bdMobile, '01812345678');
+      expect(updated.subscriptionStatus, 'REGISTERED');
+    });
   });
 }

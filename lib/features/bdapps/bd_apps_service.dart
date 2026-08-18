@@ -280,10 +280,14 @@ class BdAppsService extends ChangeNotifier {
     }
   }
 
-  /// Manually unregisters the linked mobile.
-  Future<void> unsubscribe() async {
+  /// Manually unregisters the linked mobile. Returns `true` if BD Apps confirms cancellation.
+  Future<bool> unsubscribe() async {
     final mobile = _bdMobile;
-    if (mobile == null || mobile.isEmpty) return;
+    if (mobile == null || mobile.isEmpty) {
+      errorMessage = 'No linked BD mobile number found.';
+      notifyListeners();
+      return false;
+    }
 
     isUnsubscribing = true;
     errorMessage = null;
@@ -292,17 +296,21 @@ class BdAppsService extends ChangeNotifier {
     try {
       final response = await _apiClient.unsubscribe(userMobile: mobile);
       lastUnsubscribeResponse = response;
-      final status = response.subscriptionStatus;
-      if (status != null && status.isNotEmpty) {
-        subscriptionStatus = status;
-      } else {
-        subscriptionStatus = 'UNREGISTERED';
+      if (response.isSuccess) {
+        subscriptionStatus = response.subscriptionStatus ?? 'UNREGISTERED';
+        subscriptionState = SubscriptionState.idle;
+        return true;
       }
-      subscriptionState = SubscriptionState.idle;
+      errorMessage = response.statusDetail ??
+          response.error ??
+          'Failed to cancel subscription via BD Apps (status: ${response.statusCode ?? 'unknown'}).';
+      return false;
     } on DioException catch (e) {
       errorMessage = _messageForDioException(e);
+      return false;
     } catch (_) {
       errorMessage = 'Something went wrong. Please try again.';
+      return false;
     } finally {
       isUnsubscribing = false;
       notifyListeners();

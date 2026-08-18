@@ -66,12 +66,28 @@ if ($responseJson === false) {
 }
 
 $response = json_decode($responseJson, true);
+if (!is_array($response)) {
+    echo json_encode([
+        'success'            => false,
+        'error'              => 'Invalid response from BD Apps server.',
+        'subscriberId'       => $subscriberId,
+        'subscriptionStatus' => 'UNKNOWN',
+    ]);
+    exit;
+}
+
 $statusCode = $response['statusCode'] ?? null;
+$statusDetail = $response['statusDetail'] ?? null;
+$isSuccess = ($statusCode === 'S1000');
+$subscriptionStatus = $response['subscriptionStatus'] ?? ($isSuccess ? 'UNREGISTERED' : 'UNKNOWN');
 
 echo json_encode([
-    'success'            => $statusCode === 'S1000',
+    'success'            => $isSuccess,
     'subscriberId'       => $subscriberId,
     'statusCode'         => $statusCode,
-    'statusDetail'       => $response['statusDetail'] ?? null,
-    'subscriptionStatus' => $response['subscriptionStatus'] ?? 'UNREGISTERED',
+    'statusDetail'       => $statusDetail,
+    'subscriptionStatus' => $subscriptionStatus,
+    'version'            => $response['version'] ?? '1.0',
+    'action'             => $response['action'] ?? '1',
+    'error'              => $isSuccess ? null : ($statusDetail ?? 'Unsubscription failed.'),
 ]);

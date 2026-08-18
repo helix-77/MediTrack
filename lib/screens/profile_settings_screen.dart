@@ -172,10 +172,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final updated = UserProfile(
-                uid: currentProfile.uid,
+              final updated = currentProfile.copyWith(
                 displayName: nameController.text.trim(),
-                email: currentProfile.email,
                 bloodGroup: bloodController.text.trim().isEmpty
                     ? null
                     : bloodController.text.trim(),
@@ -196,12 +194,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     emergencyPhoneController.text.trim().isEmpty
                     ? null
                     : emergencyPhoneController.text.trim(),
-                enableDoseReminders: currentProfile.enableDoseReminders,
-                enableExpiryAlerts: currentProfile.enableExpiryAlerts,
-                enableLowStockAlerts: currentProfile.enableLowStockAlerts,
-                refillAlertDaysBefore: currentProfile.refillAlertDaysBefore,
-                expiryAlertDaysBefore: currentProfile.expiryAlertDaysBefore,
-                lowStockThreshold: currentProfile.lowStockThreshold,
                 bdMobile: _normalisedBdMobile(bdMobileController.text),
               );
 
@@ -740,24 +732,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               value: profile.enableDoseReminders,
               activeThumbColor: AppColors.primaryGreen,
               onChanged: (val) async {
-                final updated = UserProfile(
-                  uid: profile.uid,
-                  displayName: profile.displayName,
-                  email: profile.email,
-                  bloodGroup: profile.bloodGroup,
-                  allergies: profile.allergies,
-                  doctorName: profile.doctorName,
-                  doctorPhone: profile.doctorPhone,
-                  emergencyContactName: profile.emergencyContactName,
-                  emergencyContactPhone: profile.emergencyContactPhone,
-                  enableDoseReminders: val,
-                  enableExpiryAlerts: profile.enableExpiryAlerts,
-                  enableLowStockAlerts: profile.enableLowStockAlerts,
-                  refillAlertDaysBefore: profile.refillAlertDaysBefore,
-                  expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
-                  lowStockThreshold: profile.lowStockThreshold,
-                  bdMobile: profile.bdMobile,
-                );
+                final updated = profile.copyWith(enableDoseReminders: val);
                 await _profileService.saveProfile(updated);
                 await _rescheduleMedicines(updated);
               },
@@ -770,24 +745,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               value: profile.enableExpiryAlerts,
               activeThumbColor: AppColors.primaryGreen,
               onChanged: (val) async {
-                final updated = UserProfile(
-                  uid: profile.uid,
-                  displayName: profile.displayName,
-                  email: profile.email,
-                  bloodGroup: profile.bloodGroup,
-                  allergies: profile.allergies,
-                  doctorName: profile.doctorName,
-                  doctorPhone: profile.doctorPhone,
-                  emergencyContactName: profile.emergencyContactName,
-                  emergencyContactPhone: profile.emergencyContactPhone,
-                  enableDoseReminders: profile.enableDoseReminders,
-                  enableExpiryAlerts: val,
-                  enableLowStockAlerts: profile.enableLowStockAlerts,
-                  refillAlertDaysBefore: profile.refillAlertDaysBefore,
-                  expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
-                  lowStockThreshold: profile.lowStockThreshold,
-                  bdMobile: profile.bdMobile,
-                );
+                final updated = profile.copyWith(enableExpiryAlerts: val);
                 await _profileService.saveProfile(updated);
                 await _rescheduleMedicines(updated);
               },
@@ -800,24 +758,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               value: profile.enableLowStockAlerts,
               activeThumbColor: AppColors.primaryGreen,
               onChanged: (val) async {
-                final updated = UserProfile(
-                  uid: profile.uid,
-                  displayName: profile.displayName,
-                  email: profile.email,
-                  bloodGroup: profile.bloodGroup,
-                  allergies: profile.allergies,
-                  doctorName: profile.doctorName,
-                  doctorPhone: profile.doctorPhone,
-                  emergencyContactName: profile.emergencyContactName,
-                  emergencyContactPhone: profile.emergencyContactPhone,
-                  enableDoseReminders: profile.enableDoseReminders,
-                  enableExpiryAlerts: profile.enableExpiryAlerts,
-                  enableLowStockAlerts: val,
-                  refillAlertDaysBefore: profile.refillAlertDaysBefore,
-                  expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
-                  lowStockThreshold: profile.lowStockThreshold,
-                  bdMobile: profile.bdMobile,
-                );
+                final updated = profile.copyWith(enableLowStockAlerts: val);
                 await _profileService.saveProfile(updated);
                 await _rescheduleMedicines(updated);
               },
@@ -841,24 +782,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     .toList(),
                 onChanged: (newVal) async {
                   if (newVal == null) return;
-                  final updated = UserProfile(
-                    uid: profile.uid,
-                    displayName: profile.displayName,
-                    email: profile.email,
-                    bloodGroup: profile.bloodGroup,
-                    allergies: profile.allergies,
-                    doctorName: profile.doctorName,
-                    doctorPhone: profile.doctorPhone,
-                    emergencyContactName: profile.emergencyContactName,
-                    emergencyContactPhone: profile.emergencyContactPhone,
-                    enableDoseReminders: profile.enableDoseReminders,
-                    enableExpiryAlerts: profile.enableExpiryAlerts,
-                    enableLowStockAlerts: profile.enableLowStockAlerts,
-                    refillAlertDaysBefore: newVal,
-                    expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
-                    lowStockThreshold: profile.lowStockThreshold,
-                    bdMobile: profile.bdMobile,
-                  );
+                  final updated = profile.copyWith(refillAlertDaysBefore: newVal);
                   await _profileService.saveProfile(updated);
                 },
               ),
@@ -874,24 +798,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     .toList(),
                 onChanged: (newVal) async {
                   if (newVal == null) return;
-                  final updated = UserProfile(
-                    uid: profile.uid,
-                    displayName: profile.displayName,
-                    email: profile.email,
-                    bloodGroup: profile.bloodGroup,
-                    allergies: profile.allergies,
-                    doctorName: profile.doctorName,
-                    doctorPhone: profile.doctorPhone,
-                    emergencyContactName: profile.emergencyContactName,
-                    emergencyContactPhone: profile.emergencyContactPhone,
-                    enableDoseReminders: profile.enableDoseReminders,
-                    enableExpiryAlerts: profile.enableExpiryAlerts,
-                    enableLowStockAlerts: profile.enableLowStockAlerts,
-                    refillAlertDaysBefore: profile.refillAlertDaysBefore,
-                    expiryAlertDaysBefore: newVal,
-                    lowStockThreshold: profile.lowStockThreshold,
-                    bdMobile: profile.bdMobile,
-                  );
+                  final updated = profile.copyWith(expiryAlertDaysBefore: newVal);
                   await _profileService.saveProfile(updated);
                 },
               ),
@@ -907,24 +814,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     .toList(),
                 onChanged: (newVal) async {
                   if (newVal == null) return;
-                  final updated = UserProfile(
-                    uid: profile.uid,
-                    displayName: profile.displayName,
-                    email: profile.email,
-                    bloodGroup: profile.bloodGroup,
-                    allergies: profile.allergies,
-                    doctorName: profile.doctorName,
-                    doctorPhone: profile.doctorPhone,
-                    emergencyContactName: profile.emergencyContactName,
-                    emergencyContactPhone: profile.emergencyContactPhone,
-                    enableDoseReminders: profile.enableDoseReminders,
-                    enableExpiryAlerts: profile.enableExpiryAlerts,
-                    enableLowStockAlerts: profile.enableLowStockAlerts,
-                    refillAlertDaysBefore: profile.refillAlertDaysBefore,
-                    expiryAlertDaysBefore: profile.expiryAlertDaysBefore,
-                    lowStockThreshold: newVal,
-                    bdMobile: profile.bdMobile,
-                  );
+                  final updated = profile.copyWith(lowStockThreshold: newVal);
                   await _profileService.saveProfile(updated);
                 },
               ),
@@ -1071,8 +961,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 const SizedBox(height: 6),
                 Text(
                   isSubscribed
-                      ? 'Active subscription via Robi / Airtel (৳2.78/day). AI Assistant, Prescription OCR, Price Lookup, and Nearby Pharmacies enabled.'
-                      : 'Subscribe via Robi / Airtel (৳2.78/day) to unlock AI Prescription OCR, Gemini Assistant, Medicine Price Lookup, and Nearby Pharmacies.',
+                      ? 'Active subscription via Robi / Airtel (৳2.00/day). AI Assistant, Prescription OCR, Price Lookup, and Nearby Pharmacies enabled.'
+                      : 'Subscribe via Robi / Airtel (৳2.00/day) to unlock AI Prescription OCR, Gemini Assistant, Medicine Price Lookup, and Nearby Pharmacies.',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.4,
@@ -1157,7 +1047,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         foregroundColor: Colors.white,
                       ),
                       icon: const Icon(Icons.stars, size: 18),
-                      label: const Text('Upgrade to Premium (৳2.78/day)'),
+                      label: const Text('Upgrade to Premium (৳2.00/day)'),
                       onPressed: () async {
                         final result = await Navigator.push<bool>(
                           context,
@@ -1219,30 +1109,40 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     if (confirmed != true) return;
     if (!mounted) return;
 
-    await service.unsubscribe();
-    entitlement.updateSubscribedState(false);
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        await _profileService.saveProfile(
-          UserProfile(
-            uid: user.uid,
-            displayName: user.displayName ?? 'User',
-            email: user.email ?? '',
-            subscriptionStatus: 'UNREGISTERED',
-          ),
-        );
-      } catch (_) {}
-    }
-
+    final success = await service.unsubscribe();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Unsubscribed successfully.'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+
+    if (success) {
+      entitlement.updateSubscribedState(false);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          await _profileService.updateSubscriptionStatus('UNREGISTERED');
+        } catch (_) {}
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Subscription canceled successfully.\nBD Apps confirmed status: ${service.subscriptionStatus ?? 'UNREGISTERED'}',
+          ),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } else {
+      final errorDetail = service.errorMessage ??
+          service.lastUnsubscribeResponse?.statusDetail ??
+          'Failed to cancel subscription via BD Apps. Please try again or dial *213# on your SIM.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorDetail),
+          backgroundColor: AppColors.danger,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   Future<void> _showSendTestSmsDialog(String phone) async {
@@ -1491,7 +1391,7 @@ class _UnsubscribeResponseSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: (ok ? AppColors.success : AppColors.warning).withValues(
+        color: (ok ? AppColors.success : AppColors.danger).withValues(
           alpha: 0.08,
         ),
         borderRadius: BorderRadius.circular(8),
@@ -1502,18 +1402,20 @@ class _UnsubscribeResponseSummary extends StatelessWidget {
           Row(
             children: [
               Icon(
-                ok ? Icons.check_circle_outline : Icons.help_outline,
+                ok ? Icons.check_circle_outline : Icons.error_outline,
                 size: 18,
-                color: ok ? AppColors.success : AppColors.warning,
+                color: ok ? AppColors.success : AppColors.danger,
               ),
               const SizedBox(width: 6),
-              Text(
-                ok
-                    ? 'Unsubscribe acknowledged'
-                    : 'Unsubscribe attempt unclear — see status',
-                style: AppTypography.bodySmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: ok ? AppColors.success : AppColors.warning,
+              Expanded(
+                child: Text(
+                  ok
+                      ? 'BD Apps Unsubscribe Confirmed'
+                      : 'BD Apps Unsubscribe Failed',
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: ok ? AppColors.success : AppColors.danger,
+                  ),
                 ),
               ),
             ],
@@ -1521,15 +1423,22 @@ class _UnsubscribeResponseSummary extends StatelessWidget {
           if (response.subscriptionStatus != null) ...[
             const SizedBox(height: 4),
             Text(
-              'subscriptionStatus: ${response.subscriptionStatus}',
+              'Status: ${response.subscriptionStatus}',
               style: AppTypography.bodySmall,
             ),
           ],
           if (response.statusCode != null || response.statusDetail != null) ...[
             const SizedBox(height: 2),
             Text(
-              'statusCode: ${response.statusCode ?? '-'}${response.statusDetail != null ? ' · ${response.statusDetail}' : ''}',
+              'Details: ${response.statusCode ?? '-'}${response.statusDetail != null ? ' · ${response.statusDetail}' : ''}',
               style: AppTypography.bodySmall,
+            ),
+          ],
+          if (!ok && response.error != null && response.error != response.statusDetail) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Error: ${response.error}',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.danger),
             ),
           ],
         ],
