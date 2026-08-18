@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/medicine_service.dart';
-import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import 'home_screen.dart';
-import 'buy_list_screen.dart';
+import 'calendar_routine_screen.dart';
+import 'ai_assistant_screen.dart';
 import 'profile_settings_screen.dart';
 import 'add_edit_medicine_screen.dart';
-import 'ai_assistant_screen.dart';
 
 class MainNavigationShell extends StatefulWidget {
   final int initialTab;
@@ -44,27 +43,33 @@ class MainNavigationShellState extends State<MainNavigationShell> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
+    CalendarRoutineScreen(),
     AiAssistantScreen(),
-    BuyListScreen(),
     ProfileSettingsScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final navBg = isDark ? AppColors.darkSurface : AppColors.surface;
+    final navBg = isDark ? AppColors.darkSurface : Colors.white;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       body: IndexedStack(index: _currentIndex, children: _screens),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Container(
-        height: 56,
-        width: 56,
-        margin: const EdgeInsets.only(top: 10),
+        height: 54,
+        width: 54,
+        margin: const EdgeInsets.only(top: 8),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          boxShadow: AppShadows.floating,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryBlue.withValues(alpha: 0.35),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: FloatingActionButton(
           elevation: 0,
@@ -77,22 +82,22 @@ class MainNavigationShellState extends State<MainNavigationShell> {
               MaterialPageRoute(builder: (_) => const AddEditMedicineScreen()),
             );
           },
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
+          child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
         ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: navBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
           border: Border(
             top: BorderSide(
-              color: isDark ? AppColors.darkDivider : AppColors.divider.withValues(alpha: 0.7),
+              color: isDark ? AppColors.darkDivider : const Color(0xFFE2E8F0),
               width: 0.8,
             ),
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF18233D).withValues(alpha: 0.06),
+              color: const Color(0xFF18233D).withValues(alpha: isDark ? 0.2 : 0.05),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -104,7 +109,7 @@ class MainNavigationShellState extends State<MainNavigationShell> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                // Left Group: Home & AI Assistant
+                // Left Group: Home & Schedule
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -118,26 +123,26 @@ class MainNavigationShellState extends State<MainNavigationShell> {
                       ),
                       _buildNavItem(
                         index: 1,
-                        icon: Icons.auto_awesome_outlined,
-                        activeIcon: Icons.auto_awesome_rounded,
-                        label: 'AI Chat',
+                        icon: Icons.calendar_month_outlined,
+                        activeIcon: Icons.calendar_month_rounded,
+                        label: 'Schedule',
                         isDark: isDark,
                       ),
                     ],
                   ),
                 ),
                 // Center Gap for FAB
-                const SizedBox(width: 64),
-                // Right Group: Buy List & Profile
+                const SizedBox(width: 58),
+                // Right Group: AI Chat & Profile
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _buildNavItem(
                         index: 2,
-                        icon: Icons.shopping_bag_outlined,
-                        activeIcon: Icons.shopping_bag_rounded,
-                        label: 'Buy List',
+                        icon: Icons.auto_awesome_outlined,
+                        activeIcon: Icons.auto_awesome_rounded,
+                        label: 'AI Chat',
                         isDark: isDark,
                       ),
                       _buildNavItem(
@@ -169,15 +174,15 @@ class MainNavigationShellState extends State<MainNavigationShell> {
 
     return InkWell(
       onTap: () => setState(() => _currentIndex = index),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppColors.primaryBlue.withValues(alpha: 0.15) : AppColors.primaryBlueLight)
+              ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFE0EDFE))
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -187,7 +192,7 @@ class MainNavigationShellState extends State<MainNavigationShell> {
               isSelected ? activeIcon : icon,
               color: isSelected
                   ? AppColors.primaryBlue
-                  : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                  : (isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B)),
               size: 22,
             ),
             const SizedBox(height: 2),
@@ -198,7 +203,7 @@ class MainNavigationShellState extends State<MainNavigationShell> {
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
                     ? AppColors.primaryBlue
-                    : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                    : (isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B)),
               ),
             ),
           ],

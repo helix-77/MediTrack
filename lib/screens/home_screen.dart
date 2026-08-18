@@ -7,17 +7,14 @@ import '../models/family_member.dart';
 import '../services/medicine_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/family_service.dart';
-import '../logic/refill_calculator.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../utils/time_formatter.dart';
 import '../widgets/empty_state_view.dart';
-import '../widgets/section_header.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/status_pill.dart';
-import 'add_edit_medicine_screen.dart';
 import 'medicine_detail_screen.dart';
 import 'prescription_vault_screen.dart';
 import 'scan_prescription_screen.dart';
@@ -25,6 +22,7 @@ import 'calendar_routine_screen.dart';
 import 'medicine_search_screen.dart';
 import 'nearby_pharmacies_screen.dart';
 import 'doctor_summary_screen.dart';
+import 'profile_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -37,21 +35,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final MedicineService _medicineService = MedicineService();
   final UserProfileService _profileService = UserProfileService();
   final FamilyService _familyService = FamilyService();
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  String? _selectedFamilyMemberId; // null = all, 'self' = self, or member.id
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  String? _selectedFamilyMemberId; // null = all, 'self' = self, or member.id
 
   String _getGreetingSubtitle() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
   }
 
   @override
@@ -65,7 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
           stream: _profileService.streamProfile(),
           builder: (context, profileSnapshot) {
             final profile = profileSnapshot.data;
-            final displayName = profile?.displayName ?? 'User';
+            final fullName = profile?.displayName.trim() ?? 'User';
+            final firstName = fullName.split(' ').first;
+            final userInitial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
 
             return StreamBuilder<List<Medicine>>(
               stream: _medicineService.streamMedicines(),
@@ -81,27 +74,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       .where((m) => m.familyMemberId == _selectedFamilyMemberId)
                       .toList();
                 }
-                if (_searchQuery.isNotEmpty) {
-                  filteredMedicines = filteredMedicines
-                      .where(
-                        (m) => m.name.toLowerCase().contains(
-                          _searchQuery.toLowerCase(),
-                        ),
-                      )
-                      .toList();
-                }
-
-                final lowStockMedicines = allMedicines
-                    .where(
-                      (m) => RefillCalculator.isLowStock(
-                        m.quantityCurrent,
-                        m.lowStockThreshold,
-                      ),
-                    )
-                    .toList();
-                final expiringMedicines = allMedicines
-                    .where((m) => RefillCalculator.isExpiringSoon(m.expiryDate))
-                    .toList();
 
                 return StreamBuilder<List<DoseLog>>(
                   stream: _medicineService.streamTodayDoseLogs(),
@@ -112,87 +84,73 @@ class _HomeScreenState extends State<HomeScreen> {
                       todayLogs,
                     );
 
+                    final totalTodayDoses = doseItems.length;
+                    final completedTodayDoses = doseItems
+                        .where((d) => d.log.status == DoseStatus.taken)
+                        .length;
+                    final pendingTodayDoses = totalTodayDoses - completedTodayDoses;
+                    final todayProgressPercent = totalTodayDoses > 0
+                        ? (completedTodayDoses / totalTodayDoses)
+                        : 0.0;
+
+                    // Adherence calculation (based on today's logs + active schedule)
+                    final adherenceRate = totalTodayDoses > 0
+                        ? ((completedTodayDoses / totalTodayDoses) * 100).round()
+                        : 100;
+
                     return ListView(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 14,
+                        vertical: 16,
                       ),
                       children: [
-                        // Top Header Bar
-                        _buildTopHeaderBar(displayName, isDark),
-                        const SizedBox(height: 16),
-
-                        // Greeting Header
-                        _buildGreetingHeader(displayName, isDark),
-                        const SizedBox(height: 16),
-
-                        // Search Bar
-                        _buildSearchBar(isDark),
-                        const SizedBox(height: 20),
-
-                        // Welcome Hero Card Banner
-                        _buildWelcomeHeroBanner(isDark),
+                        // 1. Top Header: Greeting + Headline + Avatar
+                        _buildTopHeader(
+                          greeting: _getGreetingSubtitle(),
+                          name: firstName,
+                          initial: userInitial,
+                          isDark: isDark,
+                        ),
                         const SizedBox(height: 18),
 
-                        // Family Filter Chips
+                        // Optional: Family Member Filters (if members exist)
                         _buildFamilyFilterChips(isDark),
-                        const SizedBox(height: 20),
 
-                        // Ongoing Routine Section
-                        SectionHeader(
-                          title: 'Ongoing Routine',
-                          subtitle: 'Today\'s 4 scheduled intake time slots',
-                          actionLabel: 'Calendar View →',
-                          onActionTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const CalendarRoutineScreen(),
-                              ),
-                            );
-                          },
+                        // 2. Hero Progress Card: "Today's Health" (Image 1 reference)
+                        _buildTodaysHealthCard(
+                          completed: completedTodayDoses,
+                          total: totalTodayDoses,
+                          progress: todayProgressPercent,
+                          isDark: isDark,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 22),
 
-                        // 2-Column Grid for Dose Cards
-                        if (doseItems.isEmpty)
-                          const EmptyStateView(
-                            icon: Icons.check_circle_outline_rounded,
-                            title: 'No Doses Scheduled Today',
-                            description: 'Tap the + button at the bottom to add a medicine to your daily schedule.',
-                          )
-                        else
-                          _buildDoseGrid(doseItems, isDark),
+                        // 3. "Your health at a glance" (2 Stats Cards: Adherence & Active Medicines)
+                        _buildHealthAtAGlanceSection(
+                          adherenceRate: adherenceRate,
+                          activeMedicinesCount: filteredMedicines.length,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 24),
 
+                        // 4. "Today" Scheduled Doses Section
+                        _buildTodayDosesSection(
+                          doseItems: doseItems,
+                          pendingCount: pendingTodayDoses,
+                          isDark: isDark,
+                        ),
                         const SizedBox(height: 28),
 
-                        // Low Stock Alert Section
-                        if (lowStockMedicines.isNotEmpty) ...[
-                          const SectionHeader(
-                            title: 'Low Stock Alerts',
-                            subtitle: 'Medicines nearing depletion threshold',
-                          ),
-                          _buildLowStockList(lowStockMedicines, isDark),
-                          const SizedBox(height: 24),
-                        ],
-
-                        // Expiring Soon Section
-                        if (expiringMedicines.isNotEmpty) ...[
-                          const SectionHeader(
-                            title: 'Expiring Soon',
-                            subtitle: 'Medicines approaching expiration date',
-                          ),
-                          _buildExpiringSoonList(expiringMedicines, isDark),
-                          const SizedBox(height: 24),
-                        ],
-
-                        // All Prescriptions / Inventory Section
-                        SectionHeader(
-                          title: 'My Inventory',
-                          subtitle: '${allMedicines.length} active medicines tracked',
+                        // 5. "Ongoing Routine" (4 Time Slot Cards Grid - Image 2 reference)
+                        _buildOngoingRoutineSection(
+                          doseItems: doseItems,
+                          isDark: isDark,
                         ),
-                        _buildAllPrescriptionsSection(allMedicines, isDark),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 28),
+
+                        // 6. "Smart Health Tools" (Image 2 reference)
+                        _buildSmartHealthToolsCard(isDark),
+                        const SizedBox(height: 36),
                       ],
                     );
                   },
@@ -205,100 +163,853 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopHeaderBar(String displayName, bool isDark) {
+  // ---------------------------------------------------------------------------
+  // 1. TOP HEADER
+  // ---------------------------------------------------------------------------
+  Widget _buildTopHeader({
+    required String greeting,
+    required String name,
+    required String initial,
+    required bool isDark,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SoftIconButton(
-          icon: Icons.grid_view_rounded,
-          size: 42,
-          iconColor: AppColors.primaryBlue,
-          onPressed: () {},
-        ),
-        Text(
-          'MediTrack',
-          style: AppTypography.headingSmall.copyWith(
-            fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$greeting, $name',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Stay on top of your\nhealth',
+                style: AppTypography.displayLarge.copyWith(
+                  fontSize: 28,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
         ),
-        SoftIconButton(
-          icon: Icons.notifications_none_rounded,
-          size: 42,
-          hasBadge: true,
-          iconColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-          onPressed: () {},
+        const SizedBox(width: 12),
+        // User Profile Avatar Bubble
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileSettingsScreen()),
+            );
+          },
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0EDFE),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryBlue.withValues(alpha: 0.12),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                initial,
+                style: AppTypography.headingMedium.copyWith(
+                  color: AppColors.primaryBlue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildGreetingHeader(String displayName, bool isDark) {
+  // ---------------------------------------------------------------------------
+  // 2. HERO PROGRESS CARD ("Today's Health")
+  // ---------------------------------------------------------------------------
+  Widget _buildTodaysHealthCard({
+    required int completed,
+    required int total,
+    required double progress,
+    required bool isDark,
+  }) {
+    final percentInt = (progress * 100).round();
+    final encouragingText = total == 0
+        ? 'No doses scheduled for today.'
+        : (percentInt == 100
+            ? 'All caught up! Fantastic job.'
+            : (percentInt >= 50 ? 'You are doing great.' : 'Keep up the healthy habit.'));
+
+    final subtext = total == 0
+        ? 'Add your active medications below'
+        : '$completed of $total doses completed today';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF162032) : const Color(0xFFE8F1FF),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? AppColors.darkDivider : AppColors.primaryBlue.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withValues(alpha: isDark ? 0.05 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "TODAY'S HEALTH",
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      encouragingText,
+                      style: AppTypography.headingMedium.copyWith(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtext,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Circular Percentage Badge
+              Container(
+                width: 58,
+                height: 58,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    '$percentInt%',
+                    style: const TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          // Clean Linear Progress Bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: total == 0 ? 0.0 : progress,
+              minHeight: 7,
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white.withValues(alpha: 0.8),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 3. "YOUR HEALTH AT A GLANCE"
+  // ---------------------------------------------------------------------------
+  Widget _buildHealthAtAGlanceSection({
+    required int adherenceRate,
+    required int activeMedicinesCount,
+    required bool isDark,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Hi, $displayName 👋',
-          style: AppTypography.displayLarge.copyWith(
-            fontSize: 26,
+          'Your health at a glance',
+          style: AppTypography.headingMedium.copyWith(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 3),
-        Text(
-          '${_getGreetingSubtitle()} • Let\'s stay on top of your health today.',
-          style: AppTypography.bodySmall.copyWith(
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-          ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            // Left Stat Card: Adherence
+            Expanded(
+              child: SoftSurface(
+                padding: const EdgeInsets.all(18),
+                borderRadius: BorderRadius.circular(22),
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE0EDFE),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.access_time_rounded,
+                        color: AppColors.primaryBlue,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Adherence',
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$adherenceRate%',
+                      style: AppTypography.displayLarge.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Right Stat Card: Active Medicines
+            Expanded(
+              child: SoftSurface(
+                padding: const EdgeInsets.all(18),
+                borderRadius: BorderRadius.circular(22),
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFEF3C7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.medication_rounded,
+                        color: Color(0xFFF59E0B),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Medicines',
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$activeMedicinesCount active',
+                      style: AppTypography.displayLarge.copyWith(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildSearchBar(bool isDark) {
-    return SoftSurface(
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.circular(30),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (val) => setState(() => _searchQuery = val),
-        style: AppTypography.bodyMedium,
-        decoration: InputDecoration(
-          hintText: 'Search medicines or prescriptions...',
-          hintStyle: AppTypography.bodySmall.copyWith(
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+  // ---------------------------------------------------------------------------
+  // 4. "TODAY" DOSE LIST SECTION
+  // ---------------------------------------------------------------------------
+  Widget _buildTodayDosesSection({
+    required List<_DoseItem> doseItems,
+    required int pendingCount,
+    required bool isDark,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Today',
+              style: AppTypography.headingMedium.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            ),
+            if (doseItems.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: pendingCount > 0 ? const Color(0xFFFCE7F3) : const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  pendingCount > 0 ? '$pendingCount left' : 'All completed',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: pendingCount > 0 ? const Color(0xFFDB2777) : const Color(0xFF16A34A),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (doseItems.isEmpty)
+          EmptyStateView(
+            icon: Icons.check_circle_outline_rounded,
+            title: 'No Doses for Today',
+            description: 'Tap the + button to add medications to your daily schedule.',
+          )
+        else
+          Column(
+            children: doseItems.map((item) => _buildDoseItemCard(item, isDark)).toList(),
           ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: AppColors.primaryBlue,
-            size: 22,
-          ),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                )
-              : null,
-          filled: false,
-          border: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 14,
-          ),
+      ],
+    );
+  }
+
+  Widget _buildDoseItemCard(_DoseItem item, bool isDark) {
+    final isTaken = item.log.status == DoseStatus.taken;
+    final isSkipped = item.log.status == DoseStatus.skipped;
+
+    // Check if the scheduled time is past or upcoming
+    final now = DateTime.now();
+    final parts = item.timeString.split(':');
+    final hour = int.tryParse(parts[0]) ?? 8;
+    final min = int.tryParse(parts[1]) ?? 0;
+    final scheduledDate = DateTime(now.year, now.month, now.day, hour, min);
+    final isUpcoming = scheduledDate.isAfter(now) && !isTaken && !isSkipped;
+
+    // Soft Icon Tint based on status / time
+    Color iconBg = const Color(0xFFFCE7F3);
+    Color iconColor = const Color(0xFFEC4899);
+
+    if (isTaken) {
+      iconBg = const Color(0xFFDCFCE7);
+      iconColor = const Color(0xFF10B981);
+    } else if (isUpcoming) {
+      iconBg = const Color(0xFFE6FFFA);
+      iconColor = const Color(0xFF0D9488);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: SoftSurface(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        borderRadius: BorderRadius.circular(20),
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MedicineDetailScreen(medicineId: item.medicine.id),
+            ),
+          );
+        },
+        child: Row(
+          children: [
+            // Left Pill Icon Bubble
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: iconBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isTaken ? Icons.check_circle_rounded : Icons.medication_rounded,
+                color: iconColor,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+
+            // Medicine Name, Strength & Time/Instruction
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${item.medicine.name} ${item.medicine.strength ?? ""}'.trim(),
+                    style: AppTypography.headingSmall.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
+                    style: AppTypography.caption.copyWith(
+                      color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+
+            // Right Action Pill
+            if (isTaken)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Taken ✓',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF15803D),
+                  ),
+                ),
+              )
+            else if (isSkipped)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Skipped',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              )
+            else if (isUpcoming)
+              InkWell(
+                onTap: () => _handleTakeDose(item),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE6FFFA),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF99F6E4), width: 0.8),
+                  ),
+                  child: const Text(
+                    'Upcoming',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F766E),
+                    ),
+                  ),
+                ),
+              )
+            else
+              InkWell(
+                onTap: () => _handleTakeDose(item),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFCE7F3),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF45BA5).withValues(alpha: 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    'Take now',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFDB2777),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildWelcomeHeroBanner(bool isDark) {
+  void _handleTakeDose(_DoseItem item) async {
+    await _medicineService.updateDoseStatus(
+      logId: item.log.id,
+      medicineId: item.medicine.id,
+      medicineName: item.medicine.name,
+      status: DoseStatus.taken,
+      doseAmount: item.medicine.schedule.doseAmount,
+      scheduledAt: item.log.scheduledAt,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Recorded ${item.medicine.name} as taken!'),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 5. "ONGOING ROUTINE" (2x2 Time Slots Grid - Image 2 reference)
+  // ---------------------------------------------------------------------------
+  Widget _buildOngoingRoutineSection({
+    required List<_DoseItem> doseItems,
+    required bool isDark,
+  }) {
+    final morningDoses = <_DoseItem>[];
+    final noonDoses = <_DoseItem>[];
+    final eveningDoses = <_DoseItem>[];
+    final nightDoses = <_DoseItem>[];
+
+    for (var item in doseItems) {
+      final parts = item.timeString.split(':');
+      final hour = int.tryParse(parts[0]) ?? 8;
+      if (hour >= 5 && hour < 12) {
+        morningDoses.add(item);
+      } else if (hour >= 12 && hour < 17) {
+        noonDoses.add(item);
+      } else if (hour >= 17 && hour < 21) {
+        eveningDoses.add(item);
+      } else {
+        nightDoses.add(item);
+      }
+    }
+
+    final slots = [
+      _TimeSlotData(
+        title: 'Morning',
+        timeRange: '5:00 AM - 11:59 AM',
+        icon: Icons.wb_sunny_rounded,
+        accentColor: const Color(0xFFF97316),
+        bgColor: isDark ? const Color(0xFF261D15) : const Color(0xFFFFF7ED),
+        doses: morningDoses,
+      ),
+      _TimeSlotData(
+        title: 'Noon',
+        timeRange: '12:00 PM - 4:59 PM',
+        icon: Icons.wb_sunny_outlined,
+        accentColor: AppColors.primaryBlue,
+        bgColor: isDark ? const Color(0xFF142032) : const Color(0xFFEFF6FF),
+        doses: noonDoses,
+      ),
+      _TimeSlotData(
+        title: 'Evening',
+        timeRange: '5:00 PM - 8:59 PM',
+        icon: Icons.wb_twilight_rounded,
+        accentColor: const Color(0xFFEC4899),
+        bgColor: isDark ? const Color(0xFF2B1622) : const Color(0xFFFDF2F8),
+        doses: eveningDoses,
+      ),
+      _TimeSlotData(
+        title: 'Night',
+        timeRange: '9:00 PM - 4:59 AM',
+        icon: Icons.nightlight_round,
+        accentColor: const Color(0xFF64748B),
+        bgColor: isDark ? const Color(0xFF1E242F) : const Color(0xFFF8FAFC),
+        doses: nightDoses,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ongoing Routine',
+                  style: AppTypography.headingMedium.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Today's 4 scheduled intake time slots",
+                  style: AppTypography.caption.copyWith(
+                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CalendarRoutineScreen()),
+                );
+              },
+              child: Text(
+                'Calendar View →',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.primaryBlue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 4,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 1.28,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemBuilder: (context, index) {
+            return _buildTimeSlotGridCard(slots[index], isDark);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeSlotGridCard(_TimeSlotData slot, bool isDark) {
+    final total = slot.doses.length;
+    final taken = slot.doses.where((d) => d.log.status == DoseStatus.taken).length;
+    final progress = total == 0 ? 0.0 : taken / total;
+
+    String subtitleText = 'No doses scheduled';
+    if (total > 0) {
+      final names = slot.doses.map((d) => d.medicine.name).toSet().join(', ');
+      subtitleText = '$total dose(s) • $names';
+    }
+
+    return SoftSurface(
+      padding: const EdgeInsets.all(14),
+      borderRadius: BorderRadius.circular(20),
+      color: slot.bgColor,
+      borderColor: slot.accentColor.withValues(alpha: 0.25),
+      onTap: () => _openTimeSlotDetailModal(slot),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: slot.accentColor.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(slot.icon, color: slot.accentColor, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    slot.title,
+                    style: AppTypography.headingSmall.copyWith(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              StatusPill(
+                label: '$taken/$total',
+                customBgColor: slot.accentColor.withValues(alpha: 0.15),
+                customTextColor: slot.accentColor,
+              ),
+            ],
+          ),
+          Text(
+            subtitleText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.caption.copyWith(
+              color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+              fontSize: 11,
+            ),
+          ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 5,
+              backgroundColor: slot.accentColor.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(slot.accentColor),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openTimeSlotDetailModal(_TimeSlotData slot) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.darkSurface
+              : AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(slot.icon, color: slot.accentColor, size: 22),
+                const SizedBox(width: 8),
+                Text('${slot.title} Routine', style: AppTypography.headingMedium),
+                const Spacer(),
+                Text(slot.timeRange, style: AppTypography.caption),
+              ],
+            ),
+            const Divider(height: 24),
+            if (slot.doses.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0),
+                child: Center(
+                  child: Text(
+                    'No doses scheduled for ${slot.title.toLowerCase()}',
+                    style: AppTypography.bodySmall,
+                  ),
+                ),
+              )
+            else
+              ...slot.doses.map(
+                (item) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    item.log.status == DoseStatus.taken
+                        ? Icons.check_circle_rounded
+                        : Icons.medication_rounded,
+                    color: item.log.status == DoseStatus.taken
+                        ? AppColors.success
+                        : slot.accentColor,
+                  ),
+                  title: Text(item.medicine.name, style: AppTypography.headingSmall),
+                  subtitle: Text(
+                    '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
+                    style: AppTypography.caption,
+                  ),
+                  trailing: item.log.status == DoseStatus.taken
+                      ? const StatusPill(label: 'Taken', type: PillType.success)
+                      : SoftPrimaryButton(
+                          label: 'Take',
+                          height: 36,
+                          width: 80,
+                          backgroundColor: slot.accentColor,
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            _handleTakeDose(item);
+                          },
+                        ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 6. "SMART HEALTH TOOLS" (Image 2 reference)
+  // ---------------------------------------------------------------------------
+  Widget _buildSmartHealthToolsCard(bool isDark) {
     return SoftSurface(
       padding: const EdgeInsets.all(20),
-      borderRadius: AppRadii.cardRadius,
+      borderRadius: BorderRadius.circular(24),
+      color: isDark ? AppColors.darkSurface : Colors.white,
       borderColor: isDark ? AppColors.darkDivider : AppColors.primaryBlue.withValues(alpha: 0.18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,11 +1027,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       'AI prescription scanning, MRP generic search & 24/7 pharmacies',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
                         height: 1.35,
                       ),
                     ),
@@ -329,21 +1040,22 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(width: 12),
               Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryBlueLight,
-                  borderRadius: BorderRadius.circular(16),
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEFF6FF),
+                  shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.auto_awesome,
                   color: AppColors.primaryBlue,
-                  size: 26,
+                  size: 24,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
+          // Primary Actions Row (Scan Rx + Rx Vault)
           Row(
             children: [
               Expanded(
@@ -379,7 +1091,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          // Secondary Quick Action Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -441,14 +1154,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isDark ? AppColors.darkDivider : AppColors.divider,
+            color: isDark ? AppColors.darkDivider : const Color(0xFFE2E8F0),
             width: 0.8,
           ),
         ),
@@ -470,6 +1183,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // FAMILY FILTER CHIPS
+  // ---------------------------------------------------------------------------
   Widget _buildFamilyFilterChips(bool isDark) {
     return StreamBuilder<List<FamilyMember>>(
       stream: _familyService.streamFamilyMembers(),
@@ -477,40 +1193,43 @@ class _HomeScreenState extends State<HomeScreen> {
         final members = snapshot.data ?? [];
         if (members.isEmpty) return const SizedBox.shrink();
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildFilterChipItem(
-                label: 'All Medicines',
-                isSelected: _selectedFamilyMemberId == null,
-                onSelected: () => setState(() => _selectedFamilyMemberId = null),
-                isDark: isDark,
-              ),
-              const SizedBox(width: 8),
-              _buildFilterChipItem(
-                label: 'Myself',
-                isSelected: _selectedFamilyMemberId == 'self',
-                onSelected: () => setState(() => _selectedFamilyMemberId = 'self'),
-                isDark: isDark,
-              ),
-              const SizedBox(width: 8),
-              ...members.map(
-                (m) => Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: _buildFilterChipItem(
-                    label: m.displayName,
-                    isSelected: _selectedFamilyMemberId == m.id,
-                    onSelected: () {
-                      setState(() {
-                        _selectedFamilyMemberId = _selectedFamilyMemberId == m.id ? null : m.id;
-                      });
-                    },
-                    isDark: isDark,
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChipItem(
+                  label: 'All Medicines',
+                  isSelected: _selectedFamilyMemberId == null,
+                  onSelected: () => setState(() => _selectedFamilyMemberId = null),
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 8),
+                _buildFilterChipItem(
+                  label: 'Myself',
+                  isSelected: _selectedFamilyMemberId == 'self',
+                  onSelected: () => setState(() => _selectedFamilyMemberId = 'self'),
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 8),
+                ...members.map(
+                  (m) => Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: _buildFilterChipItem(
+                      label: m.displayName,
+                      isSelected: _selectedFamilyMemberId == m.id,
+                      onSelected: () {
+                        setState(() {
+                          _selectedFamilyMemberId = _selectedFamilyMemberId == m.id ? null : m.id;
+                        });
+                      },
+                      isDark: isDark,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -532,7 +1251,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primaryBlue
-              : (isDark ? AppColors.darkSurface : AppColors.surface),
+              : (isDark ? AppColors.darkSurface : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
@@ -555,462 +1274,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDoseGrid(List<_DoseItem> doseItems, bool isDark) {
-    final morningDoses = <_DoseItem>[];
-    final noonDoses = <_DoseItem>[];
-    final eveningDoses = <_DoseItem>[];
-    final nightDoses = <_DoseItem>[];
-
-    for (var item in doseItems) {
-      final parts = item.timeString.split(':');
-      final hour = int.tryParse(parts[0]) ?? 8;
-      if (hour >= 5 && hour < 12) {
-        morningDoses.add(item);
-      } else if (hour >= 12 && hour < 17) {
-        noonDoses.add(item);
-      } else if (hour >= 17 && hour < 21) {
-        eveningDoses.add(item);
-      } else {
-        nightDoses.add(item);
-      }
-    }
-
-    final slots = [
-      _TimeSlotData(
-        title: 'Morning',
-        timeRange: '5:00 AM - 11:59 AM',
-        icon: Icons.wb_sunny_rounded,
-        accentColor: AppColors.accentOrange,
-        bgColor: isDark ? const Color(0xFF242017) : AppColors.accentOrangeLight,
-        doses: morningDoses,
-      ),
-      _TimeSlotData(
-        title: 'Noon',
-        timeRange: '12:00 PM - 4:59 PM',
-        icon: Icons.wb_sunny_outlined,
-        accentColor: AppColors.primaryBlue,
-        bgColor: isDark ? const Color(0xFF17202B) : AppColors.primaryBlueLight,
-        doses: noonDoses,
-      ),
-      _TimeSlotData(
-        title: 'Evening',
-        timeRange: '5:00 PM - 8:59 PM',
-        icon: Icons.wb_twilight_rounded,
-        accentColor: AppColors.accentPink,
-        bgColor: isDark ? const Color(0xFF2B1824) : AppColors.accentPinkLight,
-        doses: eveningDoses,
-      ),
-      _TimeSlotData(
-        title: 'Night',
-        timeRange: '9:00 PM - 4:59 AM',
-        icon: Icons.bedtime_rounded,
-        accentColor: const Color(0xFF64748B),
-        bgColor: isDark ? const Color(0xFF1E242F) : const Color(0xFFF1F5F9),
-        doses: nightDoses,
-      ),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: 4,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.36,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemBuilder: (context, index) {
-        return _buildTimeSlotGridCard(slots[index], isDark);
-      },
-    );
-  }
-
-  Widget _buildTimeSlotGridCard(_TimeSlotData slot, bool isDark) {
-    final total = slot.doses.length;
-    final taken = slot.doses
-        .where((d) => d.log.status == DoseStatus.taken)
-        .length;
-    final progress = total == 0 ? 0.0 : taken / total;
-
-    String subtitleText = 'No doses scheduled';
-    if (total > 0) {
-      final names = slot.doses.map((d) => d.medicine.name).toSet().join(', ');
-      subtitleText = '$total dose(s) • $names';
-    }
-
-    return SoftSurface(
-      padding: const EdgeInsets.all(14),
-      borderRadius: AppRadii.cardRadius,
-      color: slot.bgColor,
-      borderColor: slot.accentColor.withValues(alpha: 0.25),
-      onTap: () => _openTimeSlotDetailModal(slot),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: slot.accentColor.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(slot.icon, color: slot.accentColor, size: 16),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    slot.title,
-                    style: AppTypography.headingSmall.copyWith(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              StatusPill(
-                label: '$taken/$total',
-                customBgColor: slot.accentColor.withValues(alpha: 0.15),
-                customTextColor: slot.accentColor,
-              ),
-            ],
-          ),
-          Text(
-            subtitleText,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.caption.copyWith(
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              fontSize: 11,
-            ),
-          ),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 5,
-              backgroundColor: slot.accentColor.withValues(alpha: 0.15),
-              valueColor: AlwaysStoppedAnimation<Color>(slot.accentColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _openTimeSlotDetailModal(_TimeSlotData slot) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? AppColors.darkSurface
-              : AppColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.divider,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Icon(slot.icon, color: slot.accentColor, size: 22),
-                const SizedBox(width: 8),
-                Text(
-                  '${slot.title} Routine',
-                  style: AppTypography.headingMedium,
-                ),
-                const Spacer(),
-                Text(
-                  slot.timeRange,
-                  style: AppTypography.caption,
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            if (slot.doses.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24.0),
-                child: Center(
-                  child: Text(
-                    'No doses scheduled for ${slot.title.toLowerCase()}',
-                    style: AppTypography.bodySmall,
-                  ),
-                ),
-              )
-            else
-              ...slot.doses.map(
-                (item) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    item.log.status == DoseStatus.taken
-                        ? Icons.check_circle_rounded
-                        : Icons.medication_rounded,
-                    color: item.log.status == DoseStatus.taken
-                        ? AppColors.success
-                        : slot.accentColor,
-                  ),
-                  title: Text(
-                    item.medicine.name,
-                    style: AppTypography.headingSmall,
-                  ),
-                  subtitle: Text(
-                    '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
-                    style: AppTypography.caption,
-                  ),
-                  trailing: item.log.status == DoseStatus.taken
-                      ? const StatusPill(
-                          label: 'Taken',
-                          type: PillType.success,
-                        )
-                      : SoftPrimaryButton(
-                          label: 'Take',
-                          height: 36,
-                          width: 80,
-                          backgroundColor: slot.accentColor,
-                          onPressed: () async {
-                            Navigator.pop(context);
-                            await _medicineService.updateDoseStatus(
-                              logId: item.log.id,
-                              medicineId: item.medicine.id,
-                              medicineName: item.medicine.name,
-                              status: DoseStatus.taken,
-                              doseAmount: item.medicine.schedule.doseAmount,
-                              scheduledAt: item.log.scheduledAt,
-                            );
-                          },
-                        ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteConfirmationDialog(Medicine medicine) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
-        title: Text('Delete Medicine', style: AppTypography.headingMedium),
-        content: Text(
-          'Are you sure you want to delete "${medicine.name}"? This will delete the entire prescription and all scheduled doses.',
-          style: AppTypography.bodySmall,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              await _medicineService.deleteMedicine(medicine.id);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLowStockList(List<Medicine> medicines, bool isDark) {
-    return Column(
-      children: medicines
-          .map(
-            (m) => Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: SoftSurface(
-                padding: const EdgeInsets.all(14),
-                color: isDark ? const Color(0xFF2B2215) : AppColors.warningLight,
-                borderColor: AppColors.warning.withValues(alpha: 0.3),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.warning_amber_rounded,
-                      color: AppColors.warning,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(m.name, style: AppTypography.headingSmall),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Stock: ${m.quantityCurrent} left (Threshold: ${m.lowStockThreshold})',
-                            style: AppTypography.caption,
-                          ),
-                        ],
-                      ),
-                    ),
-                    SoftPrimaryButton(
-                      label: 'Refill',
-                      height: 34,
-                      width: 76,
-                      backgroundColor: AppColors.warning,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AddEditMedicineScreen(medicine: m),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _buildExpiringSoonList(List<Medicine> medicines, bool isDark) {
-    return Column(
-      children: medicines
-          .map(
-            (m) => Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: SoftSurface(
-                padding: const EdgeInsets.all(14),
-                color: isDark ? const Color(0xFF2D1818) : AppColors.dangerLight,
-                borderColor: AppColors.danger.withValues(alpha: 0.3),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      color: AppColors.danger,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(m.name, style: AppTypography.headingSmall),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Expires: ${m.expiryDate != null ? DateFormat('yyyy-MM-dd').format(m.expiryDate!) : "N/A"}',
-                            style: AppTypography.caption,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _buildAllPrescriptionsSection(List<Medicine> medicines, bool isDark) {
-    if (medicines.isEmpty) {
-      return const EmptyStateView(
-        icon: Icons.medication_liquid_outlined,
-        title: 'No Medicines Added Yet',
-        description: 'Keep your health organized by tracking dosages, times, and stock.',
-      );
-    }
-
-    return Column(
-      children: medicines
-          .map(
-            (m) => Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: SoftSurface(
-                padding: const EdgeInsets.all(14),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MedicineDetailScreen(medicineId: m.id),
-                    ),
-                  );
-                },
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryBlueLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.medication_liquid_rounded,
-                        color: AppColors.primaryBlue,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(m.name, style: AppTypography.headingSmall),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${m.schedule.doseTimes.length} dose(s)/day (${m.schedule.doseTimes.map(TimeFormatter.format24To12Hour).join(', ')})',
-                            style: AppTypography.caption,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        StatusPill(
-                          label: '${m.quantityCurrent} left',
-                          type: PillType.primary,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: AppColors.danger,
-                      ),
-                      onPressed: () => _showDeleteConfirmationDialog(m),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
+  // ---------------------------------------------------------------------------
+  // LOGIC HELPERS
+  // ---------------------------------------------------------------------------
   List<_DoseItem> _generateTodayDoseItems(
     List<Medicine> medicines,
     List<DoseLog> todayLogs,
