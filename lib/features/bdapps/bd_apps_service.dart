@@ -300,7 +300,12 @@ class BdAppsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.unsubscribe(userMobile: mobile);
+      final response = await _apiClient.unsubscribe(
+        userMobile: mobile,
+        subscriberId: lastSendOtpResponse?.subscriberId ??
+            lastCheckSubscriptionResponse?.subscriberId,
+        referenceNo: pendingReferenceNo ?? lastSendOtpResponse?.referenceNo,
+      );
       lastUnsubscribeResponse = response;
       if (response.isSuccess) {
         subscriptionStatus = response.subscriptionStatus ?? 'UNREGISTERED';

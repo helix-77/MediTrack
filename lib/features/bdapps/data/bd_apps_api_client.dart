@@ -136,11 +136,23 @@ class BdAppsApiClient {
   }
 
   /// Tells the backend to unregister the given mobile number.
-  Future<UnsubscribeResponse> unsubscribe({required String userMobile}) async {
+  Future<UnsubscribeResponse> unsubscribe({
+    required String userMobile,
+    String? subscriberId,
+    String? referenceNo,
+  }) async {
     try {
+      final map = <String, dynamic>{'user_mobile': userMobile};
+      if (subscriberId != null && subscriberId.isNotEmpty) {
+        map['subscriberId'] = subscriberId;
+      }
+      if (referenceNo != null && referenceNo.isNotEmpty) {
+        map['referenceNo'] = referenceNo;
+      }
+
       final response = await _dio.post<Map<String, dynamic>>(
         '/unsubscribe.php',
-        data: {'user_mobile': userMobile},
+        data: map,
         options: _formEncoded,
       );
 
