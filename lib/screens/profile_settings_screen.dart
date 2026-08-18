@@ -255,6 +255,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               _buildProfileHeaderCard(profile, user),
               const SizedBox(height: 20),
 
+              // Subscribe Service — manage BD Apps subscription lifecycle (MediTrack Premium)
+              _buildSubscribeServiceCard(),
+              const SizedBox(height: 20),
+
               // Language Selector Card
               _buildLanguageSettingsCard(),
               const SizedBox(height: 20),
@@ -277,10 +281,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
               // SMS Service — fire test SMS through BD Apps gateway
               _buildSmsServiceCard(),
-              const SizedBox(height: 20),
-
-              // Subscribe Service — manage BD Apps subscription lifecycle
-              _buildSubscribeServiceCard(),
               const SizedBox(height: 20),
 
               // Notification & Preference Settings
