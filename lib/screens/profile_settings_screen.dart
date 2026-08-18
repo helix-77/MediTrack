@@ -1026,6 +1026,28 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
+                    leading: const Icon(
+                      Icons.card_membership_outlined,
+                      color: AppColors.primaryGreen,
+                    ),
+                    title: const Text('View Premium Plans & Benefits'),
+                    subtitle: Text(
+                      'Explore all features and pricing details',
+                      style: AppTypography.bodySmall,
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.primaryGreen,
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SubscriptionOfferScreen(),
+                      ),
+                    ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
                     enabled: !isUnsubscribing,
                     leading: const Icon(
                       Icons.unsubscribe,
