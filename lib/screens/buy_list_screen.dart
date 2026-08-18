@@ -4,8 +4,15 @@ import '../models/medicine.dart';
 import '../services/buy_list_service.dart';
 import '../services/medicine_service.dart';
 import '../logic/refill_calculator.dart';
+import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/empty_state_view.dart';
+import '../widgets/section_header.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_surface.dart';
+import '../widgets/soft_text_field.dart';
+import '../widgets/status_pill.dart';
 
 class BuyListScreen extends StatefulWidget {
   const BuyListScreen({super.key});
@@ -26,33 +33,44 @@ class _BuyListScreenState extends State<BuyListScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(suggestedMed != null ? 'Add Refill to Buy List' : 'Add Item to Buy List'),
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+        title: Text(
+          suggestedMed != null ? 'Add Refill to Buy List' : 'Add Item to Buy List',
+          style: AppTypography.headingMedium,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            SoftTextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Item / Medicine Name'),
+              labelText: 'Medicine / Item Name',
+              hintText: 'e.g. Napa 500mg, Bandages',
             ),
             const SizedBox(height: 12),
-            TextField(
+            SoftTextField(
               controller: qtyController,
+              labelText: 'Packs / Quantity to Buy',
+              hintText: '1',
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Packs / Quantity to Buy'),
             ),
             const SizedBox(height: 12),
-            TextField(
+            SoftTextField(
               controller: notesController,
-              decoration: const InputDecoration(labelText: 'Notes (optional)'),
+              labelText: 'Notes (optional)',
+              hintText: 'e.g. Pharmacy preference',
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              shape: RoundedRectangleBorder(borderRadius: AppRadii.standardRadius),
+            ),
             onPressed: () async {
               final name = nameController.text.trim();
               if (name.isEmpty) return;
@@ -69,7 +87,7 @@ class _BuyListScreenState extends State<BuyListScreen> {
               Navigator.pop(dialogContext);
               await _buyListService.saveBuyItem(item);
             },
-            child: const Text('Add Item'),
+            child: const Text('Add Item', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -78,14 +96,29 @@ class _BuyListScreenState extends State<BuyListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
-        title: Text('Medicine Buy List', style: AppTypography.headingLarge.copyWith(color: AppColors.primaryGreen)),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddBuyItemDialog(),
-        icon: const Icon(Icons.add_shopping_cart),
-        label: const Text('Add Item'),
+        title: Text(
+          'Medicine Buy List',
+          style: AppTypography.headingMedium.copyWith(
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: SoftIconButton(
+              icon: Icons.add_shopping_cart_rounded,
+              size: 40,
+              iconColor: AppColors.primaryBlue,
+              tooltip: 'Add Item',
+              onPressed: () => _showAddBuyItemDialog(),
+            ),
+          ),
+        ],
       ),
       body: StreamBuilder<List<Medicine>>(
         stream: _medicineService.streamMedicines(),
@@ -99,55 +132,45 @@ class _BuyListScreenState extends State<BuyListScreen> {
             stream: _buyListService.streamBuyList(),
             builder: (context, buySnapshot) {
               if (buySnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primaryBlue),
+                );
               }
 
               final buyItems = buySnapshot.data ?? [];
+              final remainingCount = buyItems.where((i) => !i.isPurchased).length;
 
               return ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 children: [
                   // Auto-Suggest Low Stock Banner
                   if (lowStockMeds.isNotEmpty) ...[
-                    _buildLowStockSuggestionBanner(lowStockMeds, buyItems),
+                    _buildLowStockSuggestionBanner(lowStockMeds, buyItems, isDark),
                     const SizedBox(height: 20),
                   ],
 
                   // Buy List Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Shopping List', style: AppTypography.headingMedium),
-                      Chip(
-                        label: Text('${buyItems.where((i) => !i.isPurchased).length} remaining'),
-                        backgroundColor: AppColors.accentPinkLight,
-                        labelStyle: AppTypography.bodySmall.copyWith(color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                  SectionHeader(
+                    title: 'Shopping List',
+                    subtitle: 'Medicines & supplies to purchase',
+                    trailing: StatusPill(
+                      label: '$remainingCount remaining',
+                      type: remainingCount > 0 ? PillType.primary : PillType.success,
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
 
                   if (buyItems.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32.0),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.shopping_bag_outlined, size: 48, color: AppColors.primaryGreen),
-                            const SizedBox(height: 12),
-                            Text('Your Buy List is Empty', style: AppTypography.headingMedium),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Add prescription refills, supplements, or medical items to track your purchases.',
-                              textAlign: TextAlign.center,
-                              style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
+                    EmptyStateView(
+                      icon: Icons.shopping_bag_outlined,
+                      title: 'Your Buy List is Empty',
+                      description: 'Add prescription refills, supplements, or medical items to track your purchases.',
+                      buttonLabel: 'Add First Item',
+                      onButtonPressed: () => _showAddBuyItemDialog(),
                     )
                   else
-                    ...buyItems.map((item) => _buildBuyItemCard(item)),
+                    ...buyItems.map((item) => _buildBuyItemCard(item, isDark)),
+                  const SizedBox(height: 40),
                 ],
               );
             },
@@ -157,32 +180,36 @@ class _BuyListScreenState extends State<BuyListScreen> {
     );
   }
 
-  Widget _buildLowStockSuggestionBanner(List<Medicine> lowStockMeds, List<BuyListItem> existingBuyItems) {
+  Widget _buildLowStockSuggestionBanner(
+    List<Medicine> lowStockMeds,
+    List<BuyListItem> existingBuyItems,
+    bool isDark,
+  ) {
     final unaddedLowMeds = lowStockMeds.where((m) => !existingBuyItems.any((b) => b.medicineId == m.id)).toList();
 
     if (unaddedLowMeds.isEmpty) return const SizedBox.shrink();
 
-    return Container(
+    return SoftSurface(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.warning),
-      ),
+      color: isDark ? const Color(0xFF2B2215) : AppColors.warningLight,
+      borderColor: AppColors.warning.withValues(alpha: 0.35),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+              const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Low Stock Refill Suggestions',
-                style: AppTypography.headingSmall.copyWith(color: AppColors.warning),
+                style: AppTypography.headingSmall.copyWith(
+                  color: AppColors.warning,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             'The following medicines are running low. Tap to add to your Buy List:',
             style: AppTypography.bodySmall,
@@ -194,8 +221,11 @@ class _BuyListScreenState extends State<BuyListScreen> {
             children: unaddedLowMeds
                 .map(
                   (m) => ActionChip(
-                    avatar: const Icon(Icons.add, size: 16),
+                    avatar: const Icon(Icons.add, size: 16, color: AppColors.primaryBlue),
                     label: Text('${m.name} (${m.quantityCurrent} left)'),
+                    backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+                    side: BorderSide(color: AppColors.warning.withValues(alpha: 0.5)),
+                    labelStyle: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
                     onPressed: () => _showAddBuyItemDialog(m),
                   ),
                 )
@@ -206,50 +236,76 @@ class _BuyListScreenState extends State<BuyListScreen> {
     );
   }
 
-  Widget _buildBuyItemCard(BuyListItem item) {
+  Widget _buildBuyItemCard(BuyListItem item, bool isDark) {
     return Dismissible(
       key: Key('buy_${item.id}'),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: AppColors.danger,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadii.cardRadius,
         ),
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
+        child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
       ),
       onDismissed: (_) async {
         await _buyListService.deleteBuyItem(item.id);
       },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        child: CheckboxListTile(
-          value: item.isPurchased,
-          activeColor: AppColors.success,
-          onChanged: (val) async {
-            if (val == null) return;
-            await _buyListService.togglePurchased(item, val);
-            if (val && mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${item.name} marked as purchased! Stock updated.'),
-                  backgroundColor: AppColors.success,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        child: SoftSurface(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              Checkbox(
+                value: item.isPurchased,
+                activeColor: AppColors.success,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                onChanged: (val) async {
+                  if (val == null) return;
+                  await _buyListService.togglePurchased(item, val);
+                  if (val && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('✅ ${item.name} purchased! Stock updated.'),
+                        backgroundColor: AppColors.success,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: AppTypography.headingSmall.copyWith(
+                        fontSize: 14,
+                        decoration: item.isPurchased ? TextDecoration.lineThrough : null,
+                        color: item.isPurchased
+                            ? (isDark ? AppColors.darkTextSecondary : AppColors.textMuted)
+                            : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Qty to buy: ${item.quantityToBuy} ${item.notes != null ? "• ${item.notes}" : ""}',
+                      style: AppTypography.caption,
+                    ),
+                  ],
                 ),
-              );
-            }
-          },
-          title: Text(
-            item.name,
-            style: AppTypography.headingSmall.copyWith(
-              decoration: item.isPurchased ? TextDecoration.lineThrough : null,
-              color: item.isPurchased ? AppColors.textSecondary : AppColors.textPrimary,
-            ),
-          ),
-          subtitle: Text(
-            'Qty to buy: ${item.quantityToBuy} ${item.notes != null ? "• ${item.notes}" : ""}',
-            style: AppTypography.bodySmall,
+              ),
+              if (item.isPurchased)
+                const StatusPill(
+                  label: 'Purchased',
+                  type: PillType.success,
+                ),
+            ],
           ),
         ),
       ),

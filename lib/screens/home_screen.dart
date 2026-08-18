@@ -3,12 +3,20 @@ import 'package:intl/intl.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
 import '../models/user_profile.dart';
+import '../models/family_member.dart';
 import '../services/medicine_service.dart';
 import '../services/user_profile_service.dart';
+import '../services/family_service.dart';
 import '../logic/refill_calculator.dart';
+import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../utils/time_formatter.dart';
+import '../widgets/empty_state_view.dart';
+import '../widgets/section_header.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_surface.dart';
+import '../widgets/status_pill.dart';
 import 'add_edit_medicine_screen.dart';
 import 'medicine_detail_screen.dart';
 import 'prescription_vault_screen.dart';
@@ -17,8 +25,6 @@ import 'calendar_routine_screen.dart';
 import 'medicine_search_screen.dart';
 import 'nearby_pharmacies_screen.dart';
 import 'doctor_summary_screen.dart';
-import '../models/family_member.dart';
-import '../services/family_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,8 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       body: SafeArea(
         child: StreamBuilder<UserProfile?>(
           stream: _profileService.streamProfile(),
@@ -107,116 +115,84 @@ class _HomeScreenState extends State<HomeScreen> {
                     return ListView(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 12,
+                        vertical: 14,
                       ),
                       children: [
-                        // Top Header Bar (Grid Icon, Title "Home", Notification Bell)
-                        _buildTopHeaderBar(),
+                        // Top Header Bar
+                        _buildTopHeaderBar(displayName, isDark),
                         const SizedBox(height: 16),
 
-                        // Greeting Text
-                        Text(
-                          'Hi $displayName!',
-                          style: AppTypography.headingLarge.copyWith(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _getGreetingSubtitle(),
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                        // Greeting Header
+                        _buildGreetingHeader(displayName, isDark),
                         const SizedBox(height: 16),
 
                         // Search Bar
-                        _buildSearchBar(),
+                        _buildSearchBar(isDark),
                         const SizedBox(height: 20),
 
                         // Welcome Hero Card Banner
-                        _buildWelcomeHeroBanner(),
-                        const SizedBox(height: 16),
+                        _buildWelcomeHeroBanner(isDark),
+                        const SizedBox(height: 18),
 
                         // Family Filter Chips
-                        _buildFamilyFilterChips(),
-                        const SizedBox(height: 16),
+                        _buildFamilyFilterChips(isDark),
+                        const SizedBox(height: 20),
 
-                        // Ongoing Routine Header
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Ongoing Routine',
-                              style: AppTypography.headingMedium.copyWith(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+                        // Ongoing Routine Section
+                        SectionHeader(
+                          title: 'Ongoing Routine',
+                          subtitle: 'Today\'s 4 scheduled intake time slots',
+                          actionLabel: 'Calendar View →',
+                          onActionTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CalendarRoutineScreen(),
                               ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const CalendarRoutineScreen(),
-                                  ),
-                                );
-                              },
-                              child: Text(
-                                'Calendar View',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.primaryGreen,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 4),
 
                         // 2-Column Grid for Dose Cards
                         if (doseItems.isEmpty)
-                          _buildEmptyDoseGridCard()
+                          const EmptyStateView(
+                            icon: Icons.check_circle_outline_rounded,
+                            title: 'No Doses Scheduled Today',
+                            description: 'Tap the + button at the bottom to add a medicine to your daily schedule.',
+                          )
                         else
-                          _buildDoseGrid(doseItems),
+                          _buildDoseGrid(doseItems, isDark),
 
                         const SizedBox(height: 28),
 
                         // Low Stock Alert Section
                         if (lowStockMedicines.isNotEmpty) ...[
-                          Text(
-                            'Low Stock Alerts',
-                            style: AppTypography.headingMedium,
+                          const SectionHeader(
+                            title: 'Low Stock Alerts',
+                            subtitle: 'Medicines nearing depletion threshold',
                           ),
-                          const SizedBox(height: 12),
-                          _buildLowStockList(lowStockMedicines),
+                          _buildLowStockList(lowStockMedicines, isDark),
                           const SizedBox(height: 24),
                         ],
 
                         // Expiring Soon Section
                         if (expiringMedicines.isNotEmpty) ...[
-                          Text(
-                            'Expiring Soon',
-                            style: AppTypography.headingMedium,
+                          const SectionHeader(
+                            title: 'Expiring Soon',
+                            subtitle: 'Medicines approaching expiration date',
                           ),
-                          const SizedBox(height: 12),
-                          _buildExpiringSoonList(expiringMedicines),
+                          _buildExpiringSoonList(expiringMedicines, isDark),
                           const SizedBox(height: 24),
                         ],
 
-                        // All Prescriptions Section
-                        Text(
-                          'My Inventory (${allMedicines.length})',
-                          style: AppTypography.headingMedium,
+                        // All Prescriptions / Inventory Section
+                        SectionHeader(
+                          title: 'My Inventory',
+                          subtitle: '${allMedicines.length} active medicines tracked',
                         ),
-                        const SizedBox(height: 12),
-                        _buildAllPrescriptionsSection(allMedicines),
-                        const SizedBox(height: 32),
+                        _buildAllPrescriptionsSection(allMedicines, isDark),
+                        const SizedBox(height: 40),
                       ],
                     );
                   },
@@ -229,88 +205,72 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopHeaderBar() {
+  Widget _buildTopHeaderBar(String displayName, bool isDark) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Left App Grid Icon
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.grid_view_rounded,
-            color: AppColors.primaryGreen,
-            size: 22,
-          ),
+        SoftIconButton(
+          icon: Icons.grid_view_rounded,
+          size: 42,
+          iconColor: AppColors.primaryBlue,
+          onPressed: () {},
         ),
-        // Center Title "Home"
         Text(
-          'Home',
+          'MediTrack',
           style: AppTypography.headingSmall.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
         ),
-        // Right Notification Bell with Dot Badge
-        Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.primaryGreen,
-                size: 22,
-              ),
-            ),
-            Positioned(
-              right: 6,
-              top: 6,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.danger,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
+        SoftIconButton(
+          icon: Icons.notifications_none_rounded,
+          size: 42,
+          hasBadge: true,
+          iconColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          onPressed: () {},
         ),
       ],
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  Widget _buildGreetingHeader(String displayName, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Hi, $displayName 👋',
+          style: AppTypography.displayLarge.copyWith(
+            fontSize: 26,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          '${_getGreetingSubtitle()} • Let\'s stay on top of your health today.',
+          style: AppTypography.bodySmall.copyWith(
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar(bool isDark) {
+    return SoftSurface(
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(30),
       child: TextField(
         controller: _searchController,
         onChanged: (val) => setState(() => _searchQuery = val),
+        style: AppTypography.bodyMedium,
         decoration: InputDecoration(
           hintText: 'Search medicines or prescriptions...',
-          hintStyle: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
+          hintStyle: AppTypography.bodySmall.copyWith(
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
           ),
           prefixIcon: const Icon(
             Icons.search,
-            color: AppColors.textSecondary,
+            color: AppColors.primaryBlue,
             size: 22,
           ),
           suffixIcon: _searchQuery.isNotEmpty
@@ -322,6 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 )
               : null,
+          filled: false,
           border: InputBorder.none,
           focusedBorder: InputBorder.none,
           enabledBorder: InputBorder.none,
@@ -334,25 +295,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildWelcomeHeroBanner() {
-    return Container(
+  Widget _buildWelcomeHeroBanner(bool isDark) {
+    return SoftSurface(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primaryGreen.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: AppRadii.cardRadius,
+      borderColor: isDark ? AppColors.darkDivider : AppColors.primaryBlue.withValues(alpha: 0.18),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -361,18 +310,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome!',
+                      'Smart Health Tools',
                       style: AppTypography.headingMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryGreen,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
-                      'Let\'s schedule your routine & medicine intake',
+                      'AI prescription scanning, MRP generic search & 24/7 pharmacies',
                       style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.3,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        height: 1.35,
                       ),
                     ),
                   ],
@@ -380,15 +329,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.all(14),
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: AppColors.accentPinkLight,
+                  color: AppColors.primaryBlueLight,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
-                  Icons.medical_services_rounded,
-                  color: AppColors.primaryGreen,
-                  size: 36,
+                  Icons.auto_awesome,
+                  color: AppColors.primaryBlue,
+                  size: 26,
                 ),
               ),
             ],
@@ -397,13 +347,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.primaryGreen),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                child: SoftPrimaryButton(
+                  label: 'Scan Rx',
+                  icon: Icons.document_scanner_rounded,
+                  height: 44,
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -412,29 +359,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(
-                    Icons.document_scanner,
-                    size: 18,
-                    color: AppColors.primaryGreen,
-                  ),
-                  label: const Text(
-                    'Scan Rx',
-                    style: TextStyle(
-                      color: AppColors.primaryGreen,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                child: SoftSecondaryButton(
+                  label: 'Rx Vault',
+                  icon: Icons.folder_shared_outlined,
+                  height: 44,
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -443,128 +375,102 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(
-                    Icons.folder_shared_outlined,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    'Rx Vault',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: AppColors.primaryGreen.withValues(alpha: 0.4),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildQuickActionChip(
+                  icon: Icons.search_rounded,
+                  label: 'Price & Generic Lookup',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MedicineSearchScreen(),
+                      ),
+                    );
+                  },
+                  isDark: isDark,
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MedicineSearchScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(
-                  Icons.search_rounded,
-                  size: 16,
-                  color: AppColors.primaryGreen,
+                const SizedBox(width: 8),
+                _buildQuickActionChip(
+                  icon: Icons.local_pharmacy_outlined,
+                  label: 'Nearby Pharmacies',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NearbyPharmaciesScreen(),
+                      ),
+                    );
+                  },
+                  isDark: isDark,
                 ),
-                label: const Text(
-                  'Price & Generic Lookup',
-                  style: TextStyle(
-                    color: AppColors.primaryGreen,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
+                const SizedBox(width: 8),
+                _buildQuickActionChip(
+                  icon: Icons.picture_as_pdf_outlined,
+                  label: 'Doctor Summary',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DoctorSummaryScreen(),
+                      ),
+                    );
+                  },
+                  isDark: isDark,
                 ),
-              ),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: AppColors.primaryGreen.withValues(alpha: 0.4),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const NearbyPharmaciesScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(
-                  Icons.local_pharmacy_outlined,
-                  size: 16,
-                  color: AppColors.primaryGreen,
-                ),
-                label: const Text(
-                  'Nearby Pharmacies',
-                  style: TextStyle(
-                    color: AppColors.primaryGreen,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: AppColors.primaryGreen.withValues(alpha: 0.4),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const DoctorSummaryScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(
-                  Icons.picture_as_pdf_outlined,
-                  size: 16,
-                  color: AppColors.primaryGreen,
-                ),
-                label: const Text(
-                  'Doctor Summary',
-                  style: TextStyle(
-                    color: AppColors.primaryGreen,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFamilyFilterChips() {
+  Widget _buildQuickActionChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.darkDivider : AppColors.divider,
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: AppColors.primaryBlue),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFamilyFilterChips(bool isDark) {
     return StreamBuilder<List<FamilyMember>>(
       stream: _familyService.streamFamilyMembers(),
       builder: (context, snapshot) {
@@ -575,36 +481,32 @@ class _HomeScreenState extends State<HomeScreen> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              ChoiceChip(
-                label: const Text('All'),
-                selected: _selectedFamilyMemberId == null,
-                selectedColor: AppColors.accentPinkLight,
-                onSelected: (selected) {
-                  if (selected) setState(() => _selectedFamilyMemberId = null);
-                },
+              _buildFilterChipItem(
+                label: 'All Medicines',
+                isSelected: _selectedFamilyMemberId == null,
+                onSelected: () => setState(() => _selectedFamilyMemberId = null),
+                isDark: isDark,
               ),
               const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Self'),
-                selected: _selectedFamilyMemberId == 'self',
-                selectedColor: AppColors.accentPinkLight,
-                onSelected: (selected) {
-                  if (selected) setState(() => _selectedFamilyMemberId = 'self');
-                },
+              _buildFilterChipItem(
+                label: 'Myself',
+                isSelected: _selectedFamilyMemberId == 'self',
+                onSelected: () => setState(() => _selectedFamilyMemberId = 'self'),
+                isDark: isDark,
               ),
               const SizedBox(width: 8),
               ...members.map(
                 (m) => Padding(
                   padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(m.displayName),
-                    selected: _selectedFamilyMemberId == m.id,
-                    selectedColor: AppColors.accentPinkLight,
-                    onSelected: (selected) {
+                  child: _buildFilterChipItem(
+                    label: m.displayName,
+                    isSelected: _selectedFamilyMemberId == m.id,
+                    onSelected: () {
                       setState(() {
-                        _selectedFamilyMemberId = selected ? m.id : null;
+                        _selectedFamilyMemberId = _selectedFamilyMemberId == m.id ? null : m.id;
                       });
                     },
+                    isDark: isDark,
                   ),
                 ),
               ),
@@ -615,37 +517,45 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEmptyDoseGridCard() {
-    return Card(
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.check_circle_outline,
-              size: 44,
-              color: AppColors.primaryGreen,
-            ),
-            const SizedBox(height: 12),
-            Text('No Doses Scheduled Today', style: AppTypography.headingSmall),
-            const SizedBox(height: 6),
-            Text(
-              'Tap the + button below to add a medicine to your daily routine.',
-              textAlign: TextAlign.center,
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+  Widget _buildFilterChipItem({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onSelected,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: onSelected,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryBlue
+              : (isDark ? AppColors.darkSurface : AppColors.surface),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryBlue
+                : (isDark ? AppColors.darkDivider : AppColors.divider),
+            width: 0.8,
+          ),
+          boxShadow: isSelected ? AppShadows.subtle : [],
+        ),
+        child: Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: isSelected
+                ? Colors.white
+                : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDoseGrid(List<_DoseItem> doseItems) {
+  Widget _buildDoseGrid(List<_DoseItem> doseItems, bool isDark) {
     final morningDoses = <_DoseItem>[];
     final noonDoses = <_DoseItem>[];
     final eveningDoses = <_DoseItem>[];
@@ -670,32 +580,32 @@ class _HomeScreenState extends State<HomeScreen> {
         title: 'Morning',
         timeRange: '5:00 AM - 11:59 AM',
         icon: Icons.wb_sunny_rounded,
-        accentColor: const Color(0xFFD35400),
-        bgColor: const Color(0xFFFFF5E6),
+        accentColor: AppColors.accentOrange,
+        bgColor: isDark ? const Color(0xFF242017) : AppColors.accentOrangeLight,
         doses: morningDoses,
       ),
       _TimeSlotData(
         title: 'Noon',
         timeRange: '12:00 PM - 4:59 PM',
         icon: Icons.wb_sunny_outlined,
-        accentColor: const Color(0xFF2980B9),
-        bgColor: const Color(0xFFEBF5FB),
+        accentColor: AppColors.primaryBlue,
+        bgColor: isDark ? const Color(0xFF17202B) : AppColors.primaryBlueLight,
         doses: noonDoses,
       ),
       _TimeSlotData(
         title: 'Evening',
         timeRange: '5:00 PM - 8:59 PM',
         icon: Icons.wb_twilight_rounded,
-        accentColor: const Color(0xFF8E44AD),
-        bgColor: const Color(0xFFF5EEF8),
+        accentColor: AppColors.accentPink,
+        bgColor: isDark ? const Color(0xFF2B1824) : AppColors.accentPinkLight,
         doses: eveningDoses,
       ),
       _TimeSlotData(
         title: 'Night',
         timeRange: '9:00 PM - 4:59 AM',
         icon: Icons.bedtime_rounded,
-        accentColor: AppColors.primaryGreen,
-        bgColor: const Color(0xFFEAECEE),
+        accentColor: const Color(0xFF64748B),
+        bgColor: isDark ? const Color(0xFF1E242F) : const Color(0xFFF1F5F9),
         doses: nightDoses,
       ),
     ];
@@ -706,17 +616,17 @@ class _HomeScreenState extends State<HomeScreen> {
       itemCount: 4,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 1.45,
+        childAspectRatio: 1.36,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
       itemBuilder: (context, index) {
-        return _buildTimeSlotGridCard(slots[index]);
+        return _buildTimeSlotGridCard(slots[index], isDark);
       },
     );
   }
 
-  Widget _buildTimeSlotGridCard(_TimeSlotData slot) {
+  Widget _buildTimeSlotGridCard(_TimeSlotData slot, bool isDark) {
     final total = slot.doses.length;
     final taken = slot.doses
         .where((d) => d.log.status == DoseStatus.taken)
@@ -729,89 +639,66 @@ class _HomeScreenState extends State<HomeScreen> {
       subtitleText = '$total dose(s) • $names';
     }
 
-    return InkWell(
+    return SoftSurface(
+      padding: const EdgeInsets.all(14),
+      borderRadius: AppRadii.cardRadius,
+      color: slot.bgColor,
+      borderColor: slot.accentColor.withValues(alpha: 0.25),
       onTap: () => _openTimeSlotDetailModal(slot),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: slot.bgColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: slot.accentColor.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Top Row: Icon Badge & Title
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: slot.accentColor.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(slot.icon, color: slot.accentColor, size: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: slot.accentColor.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      slot.title,
-                      style: AppTypography.headingSmall.copyWith(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  '$taken/$total',
-                  style: AppTypography.bodySmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: slot.accentColor,
-                    fontSize: 11,
+                    child: Icon(slot.icon, color: slot.accentColor, size: 16),
                   ),
-                ),
-              ],
-            ),
-
-            // Middle Subtitle: Count & Names
-            Text(
-              subtitleText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 11,
+                  const SizedBox(width: 8),
+                  Text(
+                    slot.title,
+                    style: AppTypography.headingSmall.copyWith(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
+                  ),
+                ],
               ),
-            ),
-
-            // Bottom Progress Bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 5,
-                backgroundColor: slot.accentColor.withValues(alpha: 0.15),
-                valueColor: AlwaysStoppedAnimation<Color>(slot.accentColor),
+              StatusPill(
+                label: '$taken/$total',
+                customBgColor: slot.accentColor.withValues(alpha: 0.15),
+                customTextColor: slot.accentColor,
               ),
+            ],
+          ),
+          Text(
+            subtitleText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.caption.copyWith(
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              fontSize: 11,
             ),
-          ],
-        ),
+          ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 5,
+              backgroundColor: slot.accentColor.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(slot.accentColor),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -819,18 +706,34 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openTimeSlotDetailModal(_TimeSlotData slot) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (_) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.darkSurface
+              : AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Row(
               children: [
-                Icon(slot.icon, color: slot.accentColor, size: 24),
+                Icon(slot.icon, color: slot.accentColor, size: 22),
                 const SizedBox(width: 8),
                 Text(
                   '${slot.title} Routine',
@@ -839,22 +742,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Spacer(),
                 Text(
                   slot.timeRange,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTypography.caption,
                 ),
               ],
             ),
-            const Divider(),
+            const Divider(height: 24),
             if (slot.doses.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: Center(
                   child: Text(
                     'No doses scheduled for ${slot.title.toLowerCase()}',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                    style: AppTypography.bodySmall,
                   ),
                 ),
               )
@@ -864,8 +763,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(
                     item.log.status == DoseStatus.taken
-                        ? Icons.check_circle
-                        : Icons.medication,
+                        ? Icons.check_circle_rounded
+                        : Icons.medication_rounded,
                     color: item.log.status == DoseStatus.taken
                         ? AppColors.success
                         : slot.accentColor,
@@ -876,16 +775,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   subtitle: Text(
                     '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
+                    style: AppTypography.caption,
                   ),
                   trailing: item.log.status == DoseStatus.taken
-                      ? const Chip(
-                          label: Text('Taken'),
-                          backgroundColor: AppColors.accentPinkLight,
+                      ? const StatusPill(
+                          label: 'Taken',
+                          type: PillType.success,
                         )
-                      : ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: slot.accentColor,
-                          ),
+                      : SoftPrimaryButton(
+                          label: 'Take',
+                          height: 36,
+                          width: 80,
+                          backgroundColor: slot.accentColor,
                           onPressed: () async {
                             Navigator.pop(context);
                             await _medicineService.updateDoseStatus(
@@ -897,7 +798,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               scheduledAt: item.log.scheduledAt,
                             );
                           },
-                          child: const Text('Take'),
                         ),
                 ),
               ),
@@ -911,14 +811,16 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Medicine Prescription'),
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+        title: Text('Delete Medicine', style: AppTypography.headingMedium),
         content: Text(
-          'Are you sure you want to delete "${medicine.name}"? This will delete the entire prescription and all its scheduled doses.',
+          'Are you sure you want to delete "${medicine.name}"? This will delete the entire prescription and all scheduled doses.',
+          style: AppTypography.bodySmall,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
@@ -926,105 +828,123 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(dialogContext);
               await _medicineService.deleteMedicine(medicine.id);
             },
-            child: const Text('Delete'),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLowStockList(List<Medicine> medicines) {
+  Widget _buildLowStockList(List<Medicine> medicines, bool isDark) {
     return Column(
       children: medicines
           .map(
-            (m) => Card(
-              color: AppColors.warning.withValues(alpha: 0.1),
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.warning_amber_rounded,
-                  color: AppColors.warning,
-                ),
-                title: Text(m.name, style: AppTypography.headingSmall),
-                subtitle: Text(
-                  'Current Stock: ${m.quantityCurrent} (Threshold: ${m.lowStockThreshold})',
-                ),
-                trailing: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AddEditMedicineScreen(medicine: m),
-                      ),
-                    );
-                  },
-                  child: const Text('Refill'),
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _buildExpiringSoonList(List<Medicine> medicines) {
-    return Column(
-      children: medicines
-          .map(
-            (m) => Card(
-              color: AppColors.danger.withValues(alpha: 0.1),
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.error_outline_rounded,
-                  color: AppColors.danger,
-                ),
-                title: Text(m.name, style: AppTypography.headingSmall),
-                subtitle: Text(
-                  'Expires: ${m.expiryDate != null ? DateFormat('yyyy-MM-dd').format(m.expiryDate!) : "N/A"}',
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _buildAllPrescriptionsSection(List<Medicine> medicines) {
-    return Column(
-      children: medicines
-          .map(
-            (m) => Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.medication_liquid_outlined,
-                  color: AppColors.primaryGreen,
-                ),
-                title: Text(m.name, style: AppTypography.headingSmall),
-                subtitle: Text(
-                  '${m.schedule.doseTimes.length} dose(s)/day (${m.schedule.doseTimes.map(TimeFormatter.format24To12Hour).join(', ')}) • ${TimeFormatter.formatDaysOfWeek(m.schedule.daysOfWeek)}',
-                  style: AppTypography.bodySmall,
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+            (m) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: SoftSurface(
+                padding: const EdgeInsets.all(14),
+                color: isDark ? const Color(0xFF2B2215) : AppColors.warningLight,
+                borderColor: AppColors.warning.withValues(alpha: 0.3),
+                child: Row(
                   children: [
-                    Text(
-                      '${m.quantityCurrent} left',
-                      style: AppTypography.bodySmall.copyWith(
-                        fontWeight: FontWeight.bold,
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppColors.warning,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(m.name, style: AppTypography.headingSmall),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Stock: ${m.quantityCurrent} left (Threshold: ${m.lowStockThreshold})',
+                            style: AppTypography.caption,
+                          ),
+                        ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        size: 20,
-                        color: AppColors.danger,
-                      ),
-                      onPressed: () => _showDeleteConfirmationDialog(m),
+                    SoftPrimaryButton(
+                      label: 'Refill',
+                      height: 34,
+                      width: 76,
+                      backgroundColor: AppColors.warning,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddEditMedicineScreen(medicine: m),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildExpiringSoonList(List<Medicine> medicines, bool isDark) {
+    return Column(
+      children: medicines
+          .map(
+            (m) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: SoftSurface(
+                padding: const EdgeInsets.all(14),
+                color: isDark ? const Color(0xFF2D1818) : AppColors.dangerLight,
+                borderColor: AppColors.danger.withValues(alpha: 0.3),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      color: AppColors.danger,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(m.name, style: AppTypography.headingSmall),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Expires: ${m.expiryDate != null ? DateFormat('yyyy-MM-dd').format(m.expiryDate!) : "N/A"}',
+                            style: AppTypography.caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildAllPrescriptionsSection(List<Medicine> medicines, bool isDark) {
+    if (medicines.isEmpty) {
+      return const EmptyStateView(
+        icon: Icons.medication_liquid_outlined,
+        title: 'No Medicines Added Yet',
+        description: 'Keep your health organized by tracking dosages, times, and stock.',
+      );
+    }
+
+    return Column(
+      children: medicines
+          .map(
+            (m) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: SoftSurface(
+                padding: const EdgeInsets.all(14),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1033,6 +953,57 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 },
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryBlueLight,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.medication_liquid_rounded,
+                        color: AppColors.primaryBlue,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(m.name, style: AppTypography.headingSmall),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${m.schedule.doseTimes.length} dose(s)/day (${m.schedule.doseTimes.map(TimeFormatter.format24To12Hour).join(', ')})',
+                            style: AppTypography.caption,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        StatusPill(
+                          label: '${m.quantityCurrent} left',
+                          type: PillType.primary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.danger,
+                      ),
+                      onPressed: () => _showDeleteConfirmationDialog(m),
+                    ),
+                  ],
+                ),
               ),
             ),
           )

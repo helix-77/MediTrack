@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../logic/entitlement_guard.dart';
 import '../models/buy_list_item.dart';
 import '../models/medicine.dart';
 import '../models/medicine_schedule.dart';
@@ -10,8 +9,14 @@ import '../services/buy_list_service.dart';
 import '../services/entitlement_service.dart';
 import '../services/gemini_ai_service.dart';
 import '../services/medicine_service.dart';
+import '../services/notification_service.dart';
+import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../utils/voice_input_helper.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_surface.dart';
+import 'subscription_offer_screen.dart';
 
 class AiAssistantScreen extends StatefulWidget {
   const AiAssistantScreen({super.key});
@@ -21,33 +26,41 @@ class AiAssistantScreen extends StatefulWidget {
 }
 
 class _AiAssistantScreenState extends State<AiAssistantScreen> {
-  final List<GeminiChatMessage> _messages = [];
-  final TextEditingController _textController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final ImagePicker _picker = ImagePicker();
-
+  final GeminiAiService _aiService = GeminiAiService();
   final MedicineService _medicineService = MedicineService();
   final BuyListService _buyListService = BuyListService();
+  final NotificationService _notificationService = NotificationService();
+  final VoiceInputHelper _voiceHelper = VoiceInputHelper();
 
-  File? _selectedImage;
+  final TextEditingController _inputController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  final List<GeminiChatMessage> _messages = [];
   bool _isLoading = false;
+  File? _selectedImage;
+
+  final List<String> _quickPrompts = [
+    'Should I take Napa before or after meals?',
+    'What should I do if I missed my morning dose?',
+    'Find generic alternatives for Seclo 20mg',
+    'Add Paracetamol 500mg twice daily to my routine',
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Welcome message
     _messages.add(
       GeminiChatMessage(
         role: 'model',
         content:
-            'Hello! I am your MediTrack AI Assistant powered by Google Gemini. 🤖✨\n\nHow can I help you today?\n• Create a new medicine routine\n• Add items to your buy list\n• Analyze prescription photos\n• Answer health & medication questions',
+            'Hello! I am your MediTrack AI Health Assistant. You can ask me questions about dosage instructions, medication schedules, Bangladesh generic equivalents, or upload a prescription image for advice.',
       ),
     );
   }
 
   @override
   void dispose() {
-    _textController.dispose();
+    _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -65,623 +78,495 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    try {
-      final picked = await _picker.pickImage(source: source);
-      if (picked != null) {
-        setState(() {
-          _selectedImage = File(picked.path);
-        });
-      }
-    } catch (e) {
-      _showSnackbar('Failed to pick image: $e', isError: true);
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 85);
+    if (pickedFile != null) {
+      setState(() => _selectedImage = File(pickedFile.path));
     }
   }
 
-  Future<void> _sendMessage({String? customText}) async {
-    final text = (customText ?? _textController.text).trim();
+  Future<void> _sendMessage([String? promptOverride]) async {
+    final text = promptOverride ?? _inputController.text.trim();
     if (text.isEmpty && _selectedImage == null) return;
 
-    final entitlement = context.read<EntitlementService>();
-    final isAllowed = await entitlement.requirePremium(
-      context,
-      feature: EntitlementFeature.aiAssistant,
-    );
-    if (!isAllowed || !mounted) return;
-
-    final userMsg = GeminiChatMessage(
-      role: 'user',
-      content: text.isEmpty && _selectedImage != null
-          ? 'Analyze prescription image'
-          : text,
-      imagePath: _selectedImage?.path,
-    );
-
-    final imageToSend = _selectedImage;
-
+    final userImage = _selectedImage;
+    _inputController.clear();
     setState(() {
-      _messages.add(userMsg);
-      _textController.clear();
       _selectedImage = null;
+      _messages.add(
+        GeminiChatMessage(
+          role: 'user',
+          content: text,
+          imagePath: userImage?.path,
+        ),
+      );
       _isLoading = true;
     });
-
     _scrollToBottom();
-
-    final geminiService = GeminiAiService();
-    final aiResponse = await geminiService.sendMessage(
-      history: _messages,
-      userPrompt: text,
-      imageFile: imageToSend,
-    );
-
-    await entitlement.recordAiUsage();
-
-    setState(() {
-      _messages.add(aiResponse);
-      _isLoading = false;
-    });
-
-    _scrollToBottom();
-  }
-
-  Future<void> _executeAddMedicine(GeminiAction action) async {
-    final name = (action.data['name'] as String?) ?? 'New Medicine';
-    final dosage = (action.data['dosage'] as String?) ?? '1 tablet';
-    final stock = (action.data['stock'] as int?) ?? 30;
-    final now = DateTime.now();
-
-    final schedule = MedicineSchedule(
-      doseAmount: 1,
-      timesPerDay: 2,
-      doseTimes: const ['08:00', '20:00'],
-      daysOfWeek: const [1, 2, 3, 4, 5, 6, 7],
-      startDate: now,
-    );
-
-    final med = Medicine(
-      id: '',
-      name: name,
-      strength: dosage,
-      quantityCurrent: stock,
-      quantityTotal: stock,
-      schedule: schedule,
-      createdAt: now,
-      updatedAt: now,
-    );
 
     try {
-      await _medicineService.saveMedicine(med);
-      _showSnackbar('✅ Added "$name" to your Routine!');
+      final response = await _aiService.sendMessage(
+        history: _messages,
+        userPrompt: text,
+        imageFile: userImage,
+      );
+
+      setState(() {
+        _messages.add(response);
+      });
     } catch (e) {
-      _showSnackbar('Failed to add medicine: $e', isError: true);
+      setState(() {
+        _messages.add(
+          GeminiChatMessage(
+            role: 'model',
+            content: 'I apologize, but I encountered an error: $e\nPlease try again.',
+          ),
+        );
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _scrollToBottom();
+      }
     }
   }
 
-  Future<void> _executeAddBuyItem(GeminiAction action) async {
-    final name = (action.data['name'] as String?) ?? 'Grocery Item';
-    final qty = (action.data['quantity'] as int?) ?? 1;
-
-    final item = BuyListItem(
-      id: '',
-      name: name,
-      quantityToBuy: qty,
-      isPurchased: false,
-      createdAt: DateTime.now(),
-    );
-
-    try {
-      await _buyListService.saveBuyItem(item);
-      _showSnackbar('✅ Added "$name" to your Buy List!');
-    } catch (e) {
-      _showSnackbar('Failed to add item to Buy List: $e', isError: true);
-    }
-  }
-
-  void _showSnackbar(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.primaryGreen,
-      ),
-    );
-  }
-
-  void _showInfoDialog() {
+  void _showArchitectureInfoDialog() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Firebase AI Security'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+        title: Row(
           children: [
-            Row(
-              children: [
-                Icon(Icons.shield_outlined, color: AppColors.primaryGreen),
-                SizedBox(width: 8),
-                Text('Client SDK Security', style: TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            SizedBox(height: 12),
-            Text(
-              'MediTrack uses Firebase AI Logic (firebase_ai) to communicate natively with Gemini models.\n\nYour requests are authenticated via Firebase Auth & App Check, keeping your app secure without exposing API keys.',
-              style: TextStyle(fontSize: 13),
-            ),
+            const Icon(Icons.shield_outlined, color: AppColors.primaryBlue),
+            const SizedBox(width: 8),
+            Text('Firebase AI Security', style: AppTypography.headingMedium),
           ],
+        ),
+        content: Text(
+          'MediTrack integrates Gemini 3.6 Flash directly via Firebase AI Logic.\n\n'
+          '• Direct client SDK access gated by Firebase App Check & Auth.\n'
+          '• User data is scoped strictly to users/{uid}/...\n'
+          '• On-device ML Kit fallback for offline text scanning.',
+          style: AppTypography.bodySmall.copyWith(height: 1.45),
         ),
         actions: [
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryGreen,
-              foregroundColor: Colors.white,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Got it'),
+            child: const Text('Understood', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
+  }
+
+  void _executeAction(GeminiAction action) async {
+    if (action.type == GeminiActionType.addMedicine) {
+      final data = action.data;
+      final name = data['name'] as String? ?? 'New Medicine';
+      final form = data['form'] as String? ?? 'tablet';
+      final dosage = data['dosage'] as String?;
+      final times = (data['doseTimes'] as List<dynamic>?)?.cast<String>() ?? ['08:00', '20:00'];
+
+      final newMed = Medicine(
+        id: '',
+        name: name,
+        dosageForm: form,
+        strength: dosage,
+        quantityCurrent: 30,
+        quantityTotal: 30,
+        lowStockThreshold: 5,
+        schedule: MedicineSchedule(
+          doseAmount: 1,
+          timesPerDay: times.length,
+          doseTimes: times,
+          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+          startDate: DateTime.now(),
+          active: true,
+        ),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final saved = await _medicineService.saveMedicine(newMed);
+      try {
+        await _notificationService.scheduleMedicineNotifications(saved);
+      } catch (_) {}
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ $name added to your daily schedule!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } else if (action.type == GeminiActionType.addBuyItem) {
+      final data = action.data;
+      final name = data['name'] as String? ?? 'Medicine';
+      final qty = (data['quantity'] as num?)?.toInt() ?? 1;
+
+      final item = BuyListItem(
+        id: '',
+        name: name,
+        quantityToBuy: qty,
+        createdAt: DateTime.now(),
+      );
+
+      await _buyListService.saveBuyItem(item);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ $name added to your Buy List!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final entitlement = context.watch<EntitlementService>();
+    final isPro = entitlement.isSubscribed;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryGreen,
-        foregroundColor: Colors.white,
         title: Row(
           children: [
-            const Icon(Icons.auto_awesome, color: AppColors.accentPinkLight),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlueLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.auto_awesome, color: AppColors.primaryBlue, size: 18),
+            ),
             const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'MediTrack AI Assistant',
-                  style: AppTypography.headingSmall
-                      .copyWith(color: Colors.white),
-                ),
-                Text(
-                  'Powered by Firebase AI',
-                  style: AppTypography.bodySmall
-                      .copyWith(color: AppColors.accentPinkLight, fontSize: 11),
-                ),
-              ],
+            Text(
+              'AI Assistant',
+              style: AppTypography.headingMedium.copyWith(
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            tooltip: 'Firebase AI Info',
-            onPressed: _showInfoDialog,
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: SoftIconButton(
+              icon: Icons.shield_outlined,
+              size: 40,
+              iconColor: AppColors.primaryBlue,
+              tooltip: 'Security & AI Info',
+              onPressed: _showArchitectureInfoDialog,
+            ),
           ),
         ],
       ),
-      body: Consumer<EntitlementService>(
-        builder: (context, entitlement, _) {
-          final quota = entitlement.checkAiQuota();
-          return Column(
-            children: [
-              // Safety Disclaimer Banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: AppColors.accentPinkLight.withValues(alpha: 0.6),
-                child: Row(
-                  children: [
-                    const Icon(Icons.security, size: 16, color: AppColors.primaryGreen),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'MediTrack AI is for informational purposes only. Consult a doctor for medical diagnosis or emergencies.',
-                        style: AppTypography.bodySmall.copyWith(
-                          fontSize: 11,
-                          color: AppColors.primaryGreen,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Quota Tracker Banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                color: AppColors.surface,
-                child: Row(
-                  children: [
-                    Icon(
-                      entitlement.isSubscribed ? Icons.verified : Icons.hourglass_bottom_rounded,
-                      size: 14,
-                      color: entitlement.isSubscribed ? AppColors.primaryGreen : AppColors.warning,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        quota.statusMessage,
-                        style: AppTypography.bodySmall.copyWith(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1, color: AppColors.divider),
-
-              // Message List
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = _messages[index];
-                    return _buildMessageBubble(msg);
-                  },
-                ),
-              ),
-
-          // Loading Indicator
-          if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.primaryGreen,
-                    ),
+      body: Column(
+        children: [
+          // Safety Disclaimer Banner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: isDark ? const Color(0xFF1E242F) : AppColors.primaryBlueLight.withValues(alpha: 0.5),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primaryBlue),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'AI advice is for reference. Consult your registered doctor for clinical decisions.',
+                    style: AppTypography.caption.copyWith(fontSize: 10.5),
                   ),
-                  const SizedBox(width: 12),
+                ),
+              ],
+            ),
+          ),
+
+          // Quota Banner for Free tier
+          if (!isPro)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              color: isDark ? const Color(0xFF2B2215) : AppColors.warningLight,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
                   Text(
-                    'Gemini is thinking...',
-                    style: AppTypography.bodySmall
-                        .copyWith(color: AppColors.textSecondary),
+                    'Free Tier: 5 AI requests/day remaining',
+                    style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600, color: AppColors.warning),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SubscriptionOfferScreen()),
+                    ),
+                    child: Text(
+                      'Upgrade Unlimited ⚡',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
 
-          // Selected Image Banner
+          // Messages List
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return _buildMessageBubble(message, isDark);
+              },
+            ),
+          ),
+
+          // Quick Suggestion Chips (if not busy)
+          if (!_isLoading && _messages.length <= 2)
+            Container(
+              height: 40,
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _quickPrompts.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ActionChip(
+                      label: Text(_quickPrompts[index]),
+                      backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
+                      labelStyle: AppTypography.caption.copyWith(fontWeight: FontWeight.w500),
+                      side: BorderSide(color: isDark ? AppColors.darkDivider : AppColors.divider),
+                      onPressed: () => _sendMessage(_quickPrompts[index]),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+          // Image Attachment Preview
           if (_selectedImage != null)
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.divider),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: isDark ? AppColors.darkSurface : Colors.white,
               child: Row(
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      _selectedImage!,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                    ),
+                    child: Image.file(_selectedImage!, width: 44, height: 44, fit: BoxFit.cover),
                   ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text('Prescription Image attached'),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Prescription image attached', style: AppTypography.caption),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.danger),
+                    icon: const Icon(Icons.close, size: 20),
                     onPressed: () => setState(() => _selectedImage = null),
                   ),
                 ],
               ),
             ),
 
-          // Quick Suggestion Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Row(
-              children: [
-                _buildQuickChip(
-                  '💊 Add Routine',
-                  'Add a new medicine routine for Paracetamol 500mg daily',
-                ),
-                _buildQuickChip(
-                  '🛒 Add Buy List',
-                  'Add Vitamin C to my buy list',
-                ),
-                _buildQuickChip(
-                  '💡 Health Tip',
-                  'Give me a tip on how to remember medications daily',
-                ),
-              ],
-            ),
-          ),
-
           // Bottom Input Bar
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 4,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.add_a_photo_outlined,
-                        color: AppColors.primaryGreen),
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (ctx) => SafeArea(
-                          child: Wrap(
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.camera_alt),
-                                title: const Text('Take Photo'),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  _pickImage(ImageSource.camera);
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.photo_library),
-                                title: const Text('Choose from Gallery'),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  _pickImage(ImageSource.gallery);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: InputDecoration(
-                        hintText: 'Ask Gemini or command actions...',
-                        hintStyle: AppTypography.bodySmall,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
-                      foregroundColor: Colors.white,
-                    ),
-                    icon: const Icon(Icons.send),
-                    onPressed: () => _sendMessage(),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildInputBar(isDark),
         ],
-      );
-    },
-  ),
-);
-}
-
-  Widget _buildQuickChip(String label, String prompt) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: ActionChip(
-        label: Text(label, style: const TextStyle(fontSize: 12)),
-        backgroundColor: AppColors.surface,
-        side: const BorderSide(color: AppColors.divider),
-        onPressed: () => _sendMessage(customText: prompt),
       ),
     );
   }
 
-  Widget _buildMessageBubble(GeminiChatMessage msg) {
+  Widget _buildMessageBubble(GeminiChatMessage msg, bool isDark) {
     final isUser = msg.isUser;
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment:
-            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14.0),
+      child: Row(
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment:
-                isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!isUser) ...[
-                const CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppColors.primaryGreen,
-                  child: Icon(Icons.auto_awesome, color: Colors.white, size: 16),
-                ),
-                const SizedBox(width: 8),
-              ],
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.all(14),
+          if (!isUser) ...[
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryBlueLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.auto_awesome, color: AppColors.primaryBlue, size: 16),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Column(
+              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: isUser
-                        ? AppColors.primaryGreen
-                        : AppColors.surface,
+                        ? AppColors.primaryBlue
+                        : (isDark ? AppColors.darkSurface : AppColors.surface),
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(16),
-                      topRight: const Radius.circular(16),
-                      bottomLeft: Radius.circular(isUser ? 16 : 4),
-                      bottomRight: Radius.circular(isUser ? 4 : 16),
+                      topLeft: const Radius.circular(18),
+                      topRight: const Radius.circular(18),
+                      bottomLeft: Radius.circular(isUser ? 18 : 4),
+                      bottomRight: Radius.circular(isUser ? 4 : 18),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    border: Border.all(
+                      color: isUser
+                          ? AppColors.primaryBlue
+                          : (isDark ? AppColors.darkDivider : AppColors.divider.withValues(alpha: 0.8)),
+                      width: 0.8,
+                    ),
+                    boxShadow: AppShadows.subtle,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (msg.imagePath != null) ...[
+                      if (msg.imagePath != null && File(msg.imagePath!).existsSync()) ...[
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(msg.imagePath!),
-                            height: 180,
-                            fit: BoxFit.cover,
-                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(File(msg.imagePath!), height: 140, fit: BoxFit.cover),
                         ),
                         const SizedBox(height: 8),
                       ],
                       Text(
                         msg.content,
                         style: AppTypography.bodyMedium.copyWith(
-                          color: isUser ? Colors.white : AppColors.textPrimary,
+                          color: isUser ? Colors.white : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                          height: 1.45,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              if (isUser) const SizedBox(width: 8),
-            ],
-          ),
 
-          // Render Action Card if Gemini returned an action
-          if (!isUser && msg.action != null) ...[
-            const SizedBox(height: 8),
-            _buildActionCard(msg.action!),
-          ],
+                // Interactive Action Card
+                if (msg.action != null) ...[
+                  const SizedBox(height: 8),
+                  SoftSurface(
+                    padding: const EdgeInsets.all(12),
+                    color: isDark ? const Color(0xFF16253A) : AppColors.primaryBlueLight,
+                    borderColor: AppColors.primaryBlue.withValues(alpha: 0.4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.touch_app_rounded, color: AppColors.primaryBlue, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          msg.action!.type == GeminiActionType.addMedicine
+                              ? 'Action: Add ${msg.action!.data["name"] ?? "Medicine"} to Routine'
+                              : 'Action: Add to Buy List',
+                          style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(width: 12),
+                        SoftPrimaryButton(
+                          label: 'Confirm',
+                          height: 32,
+                          width: 80,
+                          onPressed: () => _executeAction(msg.action!),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildActionCard(GeminiAction action) {
-    if (action.type == GeminiActionType.addMedicine) {
-      final name = (action.data['name'] as String?) ?? 'Medicine';
-      final dosage = (action.data['dosage'] as String?) ?? '500mg';
-      final frequency = (action.data['frequency'] as String?) ?? 'Daily';
-      final stock = (action.data['stock'] as int?) ?? 30;
-
-      return Container(
-        margin: const EdgeInsets.only(left: 40, right: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.accentPinkLight,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primaryGreenLight),
+  Widget _buildInputBar(bool isDark) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 12,
+        right: 12,
+        top: 8,
+        bottom: MediaQuery.of(context).padding.bottom + 8,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.darkDivider : AppColors.divider,
+            width: 0.8,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.medication, color: AppColors.primaryGreen),
-                const SizedBox(width: 8),
-                Text(
-                  'Suggested Routine Action',
-                  style: AppTypography.headingSmall.copyWith(
-                    color: AppColors.primaryGreen,
-                    fontSize: 14,
-                  ),
+      ),
+      child: Row(
+        children: [
+          SoftIconButton(
+            icon: Icons.camera_alt_outlined,
+            size: 38,
+            iconSize: 18,
+            onPressed: () => _pickImage(ImageSource.camera),
+          ),
+          const SizedBox(width: 6),
+          SoftIconButton(
+            icon: Icons.photo_library_outlined,
+            size: 38,
+            iconSize: 18,
+            onPressed: () => _pickImage(ImageSource.gallery),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _inputController,
+              onSubmitted: (_) => _sendMessage(),
+              style: AppTypography.bodyMedium,
+              decoration: InputDecoration(
+                hintText: 'Ask AI or upload prescription...',
+                filled: true,
+                fillColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
                 ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text('• Name: $name'),
-            Text('• Dosage: $dosage'),
-            Text('• Schedule: $frequency'),
-            Text('• Total Stock: $stock tablets'),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 36),
-              ),
-              icon: const Icon(Icons.add, size: 18),
-              label: Text('Confirm & Add "$name" to Routine'),
-              onPressed: () => _executeAddMedicine(action),
-            ),
-          ],
-        ),
-      );
-    } else if (action.type == GeminiActionType.addBuyItem) {
-      final name = (action.data['name'] as String?) ?? 'Grocery Item';
-      final qty = (action.data['quantity'] as int?) ?? 1;
-
-      return Container(
-        margin: const EdgeInsets.only(left: 40, right: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.accentPinkLight,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primaryGreenLight),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.shopping_bag, color: AppColors.primaryGreen),
-                const SizedBox(width: 8),
-                Text(
-                  'Suggested Buy List Action',
-                  style: AppTypography.headingSmall.copyWith(
-                    color: AppColors.primaryGreen,
-                    fontSize: 14,
-                  ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.mic, color: AppColors.primaryBlue, size: 20),
+                  onPressed: () {
+                    _voiceHelper.startListening(
+                      onResult: (text) => _inputController.text = text,
+                      onError: (e) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e))),
+                    );
+                  },
                 ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text('• Item: $name'),
-            Text('• Quantity: $qty'),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 36),
               ),
-              icon: const Icon(Icons.add_shopping_cart, size: 18),
-              label: Text('Confirm & Add "$name" to Buy List'),
-              onPressed: () => _executeAddBuyItem(action),
             ),
-          ],
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
+          ),
+          const SizedBox(width: 8),
+          Container(
+            height: 42,
+            width: 42,
+            decoration: BoxDecoration(
+              color: AppColors.primaryBlue,
+              shape: BoxShape.circle,
+              boxShadow: AppShadows.subtle,
+            ),
+            child: IconButton(
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+              onPressed: _isLoading ? null : () => _sendMessage(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

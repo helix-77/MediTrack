@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/prescription.dart';
+import '../models/prescription_extraction.dart';
 import '../services/prescription_service.dart';
+import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/empty_state_view.dart';
+import '../widgets/section_header.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_surface.dart';
+import '../widgets/status_pill.dart';
 import 'scan_prescription_screen.dart';
 
 class PrescriptionVaultScreen extends StatefulWidget {
@@ -16,27 +23,252 @@ class PrescriptionVaultScreen extends StatefulWidget {
 class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
   final PrescriptionService _prescriptionService = PrescriptionService();
 
+  void _showPrescriptionViewer(Prescription rx) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (ctx, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.darkSurface
+                : AppColors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(20),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      rx.title,
+                      style: AppTypography.headingMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              if (rx.doctorName != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'Doctor: Dr. ${rx.doctorName!}',
+                  style: AppTypography.caption.copyWith(color: AppColors.primaryBlue, fontWeight: FontWeight.w600),
+                ),
+              ],
+              const SizedBox(height: 4),
+              Text(
+                'Consultation Date: ${DateFormat('dd MMMM yyyy').format(rx.date)}',
+                style: AppTypography.caption,
+              ),
+              const Divider(height: 24),
+
+              // Image Viewer
+              ClipRRect(
+                borderRadius: AppRadii.cardRadius,
+                child: rx.imageUrl != null && rx.imageUrl!.isNotEmpty
+                    ? InteractiveViewer(
+                        minScale: 1.0,
+                        maxScale: 4.0,
+                        child: Image.network(
+                          rx.imageUrl!,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 250,
+                              color: AppColors.canvas,
+                              child: const Center(
+                                child: CircularProgressIndicator(color: AppColors.primaryBlue),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 200,
+                            color: AppColors.canvas,
+                            child: const Center(
+                              child: Icon(Icons.broken_image_outlined, size: 48, color: AppColors.textMuted),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        height: 180,
+                        color: AppColors.canvas,
+                        child: const Center(
+                          child: Text('No image attached'),
+                        ),
+                      ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Extracted Items from subcollection
+              StreamBuilder<List<PrescriptionItem>>(
+                stream: _prescriptionService.streamPrescriptionItems(rx.id),
+                builder: (context, itemSnapshot) {
+                  final items = itemSnapshot.data ?? [];
+                  if (items.isEmpty) {
+                    if (rx.extractedText.isNotEmpty) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SectionHeader(
+                            title: 'Extracted Notes',
+                            subtitle: 'Transcribed text from prescription',
+                          ),
+                          SoftSurface(
+                            padding: const EdgeInsets.all(14),
+                            child: Text(
+                              rx.extractedText,
+                              style: AppTypography.bodySmall,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SectionHeader(
+                        title: 'Extracted Medicines (${items.length})',
+                        subtitle: 'Medicines transcribed by AI',
+                      ),
+                      ...items.map(
+                        (m) => Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: SoftSurface(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.medication_rounded, color: AppColors.primaryBlue, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(m.extractedName, style: AppTypography.headingSmall.copyWith(fontSize: 14)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${m.extractedForm ?? "Tablet"} • ${m.extractedStrength ?? "N/A"} • ${m.extractedFrequencyPerDay ?? 2} times/day',
+                                        style: AppTypography.caption,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (m.confirmed)
+                                  const StatusPill(label: 'Added', type: PillType.success),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(Prescription rx) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+        title: Text('Delete Prescription', style: AppTypography.headingMedium),
+        content: Text(
+          'Are you sure you want to delete "${rx.title}" from your digital vault?',
+          style: AppTypography.bodySmall,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _prescriptionService.deletePrescription(rx.id, rx.imageUrl);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
-        title: Text('Digital Prescription Vault', style: AppTypography.headingLarge.copyWith(color: AppColors.primaryGreen)),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ScanPrescriptionScreen()),
-          );
-        },
-        icon: const Icon(Icons.document_scanner),
-        label: const Text('Scan Prescription'),
+        title: const Text('Prescription Vault'),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: SoftIconButton(
+            icon: Icons.arrow_back_rounded,
+            size: 40,
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: SoftIconButton(
+              icon: Icons.add_a_photo_outlined,
+              size: 40,
+              iconColor: AppColors.primaryBlue,
+              tooltip: 'Scan New',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ScanPrescriptionScreen()),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       body: StreamBuilder<List<Prescription>>(
         stream: _prescriptionService.streamPrescriptions(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryBlue),
+            );
           }
 
           final prescriptions = snapshot.data ?? [];
@@ -44,55 +276,35 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
           if (prescriptions.isEmpty) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: const BoxDecoration(
-                        color: AppColors.accentPinkLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.folder_shared_outlined, size: 56, color: AppColors.primaryGreen),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('No Prescriptions Stored Yet', style: AppTypography.headingMedium),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Scan written prescriptions with your camera to extract medicines and save them securely in your digital vault.',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ScanPrescriptionScreen()),
-                        );
-                      },
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Scan Your First Prescription'),
-                    ),
-                  ],
+                padding: const EdgeInsets.all(24.0),
+                child: EmptyStateView(
+                  icon: Icons.folder_shared_outlined,
+                  title: 'Your Vault is Empty',
+                  description: 'Keep your doctor prescriptions, diagnostic reports, and medical advice safely organized in one place.',
+                  buttonLabel: 'Scan First Prescription',
+                  onButtonPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ScanPrescriptionScreen()),
+                    );
+                  },
                 ),
               ),
             );
           }
 
           return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: prescriptions.length,
+            padding: const EdgeInsets.all(20),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               childAspectRatio: 0.78,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
             ),
+            itemCount: prescriptions.length,
             itemBuilder: (context, index) {
-              final item = prescriptions[index];
-              return _buildPrescriptionCard(item);
+              final rx = prescriptions[index];
+              return _buildVaultGridCard(rx, isDark);
             },
           );
         },
@@ -100,175 +312,86 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
     );
   }
 
-  Widget _buildPrescriptionCard(Prescription item) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () => _openPrescriptionViewerModal(item),
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Thumbnail Image Header
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.accentPinkLight,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                        child: Image.network(
-                          item.imageUrl!,
+  Widget _buildVaultGridCard(Prescription rx, bool isDark) {
+    return SoftSurface(
+      padding: EdgeInsets.zero,
+      borderRadius: AppRadii.cardRadius,
+      onTap: () => _showPrescriptionViewer(rx),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Thumbnail Preview
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                  child: rx.imageUrl != null && rx.imageUrl!.isNotEmpty
+                      ? Image.network(
+                          rx.imageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.description, size: 48, color: AppColors.primaryGreen),
+                          errorBuilder: (_, error, stackTrace) => Container(
+                            color: AppColors.canvas,
+                            child: const Icon(Icons.receipt_long, size: 36, color: AppColors.primaryBlue),
+                          ),
+                        )
+                      : Container(
+                          color: AppColors.canvas,
+                          child: const Icon(Icons.receipt_long, size: 36, color: AppColors.primaryBlue),
                         ),
-                      )
-                    : const Center(
-                        child: Icon(Icons.receipt_long, size: 48, color: AppColors.primaryGreen),
-                      ),
-              ),
-            ),
-            // Information Body
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.headingSmall.copyWith(fontSize: 14),
+                ),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: SoftIconButton(
+                    icon: Icons.delete_outline,
+                    size: 32,
+                    iconSize: 16,
+                    iconColor: AppColors.danger,
+                    backgroundColor: Colors.white.withValues(alpha: 0.85),
+                    onPressed: () => _confirmDelete(rx),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item.doctorName ?? DateFormat('MMM d, yyyy').format(item.date),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 11),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _openPrescriptionViewerModal(Prescription item) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        height: MediaQuery.of(context).size.height * 0.88,
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            // Bottom Sheet Handle
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.divider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Header Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item.title, style: AppTypography.headingMedium),
-                        Text(
-                          '${item.doctorName ?? "Prescription"} • ${DateFormat('yyyy-MM-dd').format(item.date)}',
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                        ),
-                      ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  rx.title,
+                  style: AppTypography.headingSmall.copyWith(fontSize: 13),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  rx.doctorName != null ? 'Dr. ${rx.doctorName!}' : 'Doctor Visit',
+                  style: AppTypography.caption.copyWith(color: AppColors.primaryBlue),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      DateFormat('MMM d, yyyy').format(rx.date),
+                      style: AppTypography.caption.copyWith(fontSize: 10),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: AppColors.danger),
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (dCtx) => AlertDialog(
-                          title: const Text('Delete Prescription'),
-                          content: Text('Delete "${item.title}" from your digital vault?'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(dCtx, false), child: const Text('Cancel')),
-                            TextButton(
-                              onPressed: () => Navigator.pop(dCtx, true),
-                              child: const Text('Delete', style: TextStyle(color: AppColors.danger)),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm == true) {
-                        if (!mounted) return;
-                        Navigator.pop(context);
-                        await _prescriptionService.deletePrescription(item.id, item.imageUrl);
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const Divider(),
-            // Zoomable Interactive Photo
-            Expanded(
-              child: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                  ? InteractiveViewer(
-                      minScale: 0.5,
-                      maxScale: 4.0,
-                      child: Center(
-                        child: Image.network(item.imageUrl!, fit: BoxFit.contain),
-                      ),
-                    )
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.receipt_long, size: 64, color: AppColors.primaryGreen),
-                          const SizedBox(height: 12),
-                          Text('No Photo Attached', style: AppTypography.headingSmall),
-                        ],
-                      ),
+                    StatusPill(
+                      label: rx.status.toUpperCase(),
+                      type: rx.status == 'reviewed' ? PillType.success : PillType.neutral,
                     ),
+                  ],
+                ),
+              ],
             ),
-            // OCR Text Section
-            if (item.extractedText.isNotEmpty)
-              ExpansionTile(
-                title: const Text('Extracted OCR Text'),
-                children: [
-                  SizedBox(
-                    height: 120,
-                    width: double.infinity,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SingleChildScrollView(
-                        child: SelectableText(item.extractedText, style: AppTypography.bodySmall),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

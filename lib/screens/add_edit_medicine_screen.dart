@@ -14,6 +14,10 @@ import '../theme/typography.dart';
 import '../utils/time_formatter.dart';
 import '../utils/voice_input_helper.dart';
 import '../logic/ocr_parser.dart';
+import '../widgets/section_header.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_surface.dart';
+import '../widgets/soft_text_field.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicine;
@@ -55,6 +59,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     'injection',
     'drops',
     'inhaler',
+    'capsule',
     'other',
   ];
 
@@ -131,42 +136,57 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
+        builder: (ctx, setModalState) => Container(
           padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.darkSurface
+                : AppColors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
-                  const Icon(Icons.auto_awesome, color: AppColors.primaryGreen),
+                  const Icon(Icons.auto_awesome, color: AppColors.primaryBlue),
                   const SizedBox(width: 8),
-                  Text('Describe with AI', style: AppTypography.headingSmall),
+                  Text('Describe with AI', style: AppTypography.headingMedium),
                 ],
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Type or dictate a description (e.g. "Napa 500mg, 1 tablet twice daily, 30 tablets"). AI will populate the empty fields.',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              const SizedBox(height: 6),
+              Text(
+                'Type or dictate a description (e.g. "Napa 500mg, 1 tablet twice daily, 30 tablets"). Gemini AI will auto-populate the form.',
+                style: AppTypography.bodySmall,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: textController,
                 maxLines: 2,
+                style: AppTypography.bodyMedium,
                 decoration: InputDecoration(
                   hintText: 'e.g. Napa 500mg, 2 times daily for 10 days',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.mic, color: AppColors.primaryGreen),
+                    icon: const Icon(Icons.mic, color: AppColors.primaryBlue),
                     onPressed: () {
                       _voiceHelper.startListening(
                         onResult: (words) {
@@ -184,84 +204,75 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-                  onPressed: isProcessing
-                      ? null
-                      : () async {
-                          final prompt = textController.text.trim();
-                          if (prompt.isEmpty) return;
-                          final messenger = ScaffoldMessenger.of(context);
-                          final nav = Navigator.of(ctx);
-                          setModalState(() => isProcessing = true);
-                          try {
-                            final gemini = GeminiAiService();
-                            final response = await gemini.sendMessage(
-                              history: [],
-                              userPrompt:
-                                  'User wants to add medication: $prompt. Provide ADD_MEDICINE action JSON block.',
-                            );
+              const SizedBox(height: 18),
+              SoftPrimaryButton(
+                label: 'Fill Form with AI',
+                isLoading: isProcessing,
+                onPressed: isProcessing
+                    ? null
+                    : () async {
+                        final prompt = textController.text.trim();
+                        if (prompt.isEmpty) return;
+                        final messenger = ScaffoldMessenger.of(context);
+                        final nav = Navigator.of(ctx);
+                        setModalState(() => isProcessing = true);
+                        try {
+                          final gemini = GeminiAiService();
+                          final response = await gemini.sendMessage(
+                            history: [],
+                            userPrompt:
+                                'User wants to add medication: $prompt. Provide ADD_MEDICINE action JSON block.',
+                          );
 
-                            if (response.action != null &&
-                                response.action!.type == GeminiActionType.addMedicine) {
-                              final data = response.action!.data;
-                              final name = data['name'] as String?;
-                              final dosage = data['dosage'] as String?;
-                              final stock = data['stock'];
+                          if (response.action != null &&
+                              response.action!.type == GeminiActionType.addMedicine) {
+                            final data = response.action!.data;
+                            final name = data['name'] as String?;
+                            final dosage = data['dosage'] as String?;
+                            final stock = data['stock'];
 
-                              setState(() {
-                                if (name != null && name.isNotEmpty && _nameController.text.isEmpty) {
-                                  _nameController.text = name;
-                                }
-                                if (dosage != null && dosage.isNotEmpty && _strengthController.text.isEmpty) {
-                                  _strengthController.text = dosage;
-                                }
-                                if (stock != null && _quantityCurrentController.text.isEmpty) {
-                                  _quantityCurrentController.text = '$stock';
-                                  _quantityTotalController.text = '$stock';
-                                }
-                              });
-
-                              if (mounted) {
-                                nav.pop();
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Form populated! Please review and tap Save.'),
-                                    backgroundColor: AppColors.success,
-                                  ),
-                                );
+                            setState(() {
+                              if (name != null && name.isNotEmpty && _nameController.text.isEmpty) {
+                                _nameController.text = name;
                               }
-                            } else {
-                              if (mounted) {
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Could not extract medication info from description.'),
-                                    backgroundColor: AppColors.warning,
-                                  ),
-                                );
+                              if (dosage != null && dosage.isNotEmpty && _strengthController.text.isEmpty) {
+                                _strengthController.text = dosage;
                               }
-                            }
-                          } catch (e) {
+                              if (stock != null && _quantityCurrentController.text.isEmpty) {
+                                _quantityCurrentController.text = '$stock';
+                                _quantityTotalController.text = '$stock';
+                              }
+                            });
+
                             if (mounted) {
+                              nav.pop();
                               messenger.showSnackBar(
-                                SnackBar(content: Text('AI fill failed: $e'), backgroundColor: AppColors.danger),
+                                const SnackBar(
+                                  content: Text('Form populated! Please review and tap Save.'),
+                                  backgroundColor: AppColors.success,
+                                ),
                               );
                             }
-                          } finally {
-                            setModalState(() => isProcessing = false);
+                          } else {
+                            if (mounted) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Could not extract medication info from description.'),
+                                  backgroundColor: AppColors.warning,
+                                ),
+                              );
+                            }
                           }
-                        },
-                  child: isProcessing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                        )
-                      : const Text('Fill Form with AI', style: TextStyle(color: Colors.white)),
-                ),
+                        } catch (e) {
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              SnackBar(content: Text('AI fill failed: $e'), backgroundColor: AppColors.danger),
+                            );
+                          }
+                        } finally {
+                          setModalState(() => isProcessing = false);
+                        }
+                      },
               ),
             ],
           ),
@@ -322,6 +333,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Box scanned! Auto-filled fields from OCR.'),
+        backgroundColor: AppColors.success,
       ),
     );
   }
@@ -330,7 +342,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_doseTimes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one dose time')),
+        const SnackBar(
+          content: Text('Please add at least one dose time'),
+          backgroundColor: AppColors.warning,
+        ),
       );
       return;
     }
@@ -401,256 +416,296 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.medicine != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
         title: Text(isEdit ? 'Edit Medicine' : 'Add Medicine'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.auto_awesome, color: AppColors.primaryGreen),
-            tooltip: 'Describe with AI',
-            onPressed: _showDescribeWithAiModal,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: SoftIconButton(
+            icon: Icons.arrow_back_rounded,
+            size: 40,
+            onPressed: () => Navigator.pop(context),
           ),
-          IconButton(
-            icon: _isOcrScanning
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.center_focus_strong),
-            tooltip: 'Scan Medicine Box',
-            onPressed: _isOcrScanning ? null : _scanBoxPhoto,
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: SoftIconButton(
+              icon: Icons.auto_awesome,
+              iconColor: AppColors.primaryBlue,
+              size: 40,
+              tooltip: 'Describe with AI',
+              onPressed: _showDescribeWithAiModal,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: SoftIconButton(
+              icon: _isOcrScanning ? Icons.hourglass_top : Icons.center_focus_strong,
+              iconColor: AppColors.primaryBlue,
+              size: 40,
+              tooltip: 'Scan Medicine Box',
+              onPressed: _isOcrScanning ? null : _scanBoxPhoto,
+            ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Family Member Assignment
-              _buildFamilyMemberSelector(),
-              const SizedBox(height: 16),
+              _buildFamilyMemberSelector(isDark),
+              const SizedBox(height: 18),
 
-              // Medicine Details Section
-              Text('Medicine Information', style: AppTypography.headingSmall),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Medicine Name *',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.mic, color: AppColors.primaryGreen),
-                    tooltip: 'Speak name',
-                    onPressed: () => _dictateIntoController(_nameController),
-                  ),
-                ),
-                validator: (val) => val == null || val.trim().isEmpty
-                    ? 'Please enter medicine name'
-                    : null,
+              // Medicine Information Section
+              const SectionHeader(
+                title: 'Medicine Information',
+                subtitle: 'Essential pharmaceutical & inventory details',
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _genericNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Generic Name (e.g. Paracetamol)',
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _dosageForm,
-                      decoration: const InputDecoration(labelText: 'Form'),
-                      items: _dosageForms
-                          .map(
-                            (f) => DropdownMenuItem(
-                              value: f,
-                              child: Text(f.toUpperCase()),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (val) =>
-                          setState(() => _dosageForm = val ?? 'tablet'),
+              SoftSurface(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  children: [
+                    SoftTextField(
+                      controller: _nameController,
+                      labelText: 'Medicine Name *',
+                      hintText: 'e.g. Napa Extra',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.mic, color: AppColors.primaryBlue),
+                        tooltip: 'Speak name',
+                        onPressed: () => _dictateIntoController(_nameController),
+                      ),
+                      validator: (val) => val == null || val.trim().isEmpty
+                          ? 'Please enter medicine name'
+                          : null,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _strengthController,
-                      decoration: InputDecoration(
-                        labelText: 'Strength (e.g. 500 mg)',
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.mic, color: AppColors.primaryGreen),
-                          tooltip: 'Speak strength',
-                          onPressed: () => _dictateIntoController(_strengthController),
+                    const SizedBox(height: 14),
+                    SoftTextField(
+                      controller: _genericNameController,
+                      labelText: 'Generic Name',
+                      hintText: 'e.g. Paracetamol + Caffeine',
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Form',
+                                style: AppTypography.headingSmall.copyWith(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              DropdownButtonFormField<String>(
+                                initialValue: _dosageForm,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: isDark ? AppColors.darkSurface : AppColors.surface,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                ),
+                                items: _dosageForms
+                                    .map(
+                                      (f) => DropdownMenuItem(
+                                        value: f,
+                                        child: Text(
+                                          f.toUpperCase(),
+                                          style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (val) =>
+                                    setState(() => _dosageForm = val ?? 'tablet'),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SoftTextField(
+                            controller: _strengthController,
+                            labelText: 'Strength',
+                            hintText: 'e.g. 500 mg',
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.mic, color: AppColors.primaryBlue),
+                              tooltip: 'Speak strength',
+                              onPressed: () => _dictateIntoController(_strengthController),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SoftTextField(
+                            controller: _quantityCurrentController,
+                            labelText: 'Current Stock',
+                            hintText: '30',
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SoftTextField(
+                            controller: _quantityTotalController,
+                            labelText: 'Pack Size (Total)',
+                            hintText: '30',
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Expiry Date', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                      subtitle: Text(
+                        _expiryDate != null
+                            ? DateFormat('dd/MM/yyyy').format(_expiryDate!)
+                            : 'Not set',
+                        style: AppTypography.caption,
+                      ),
+                      trailing: SoftIconButton(
+                        icon: Icons.calendar_today_rounded,
+                        iconColor: AppColors.primaryBlue,
+                        size: 38,
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _expiryDate ??
+                                DateTime.now().add(const Duration(days: 180)),
+                            firstDate: DateTime.now().subtract(
+                              const Duration(days: 365),
+                            ),
+                            lastDate: DateTime.now().add(const Duration(days: 3650)),
+                          );
+                          if (picked != null) {
+                            setState(() => _expiryDate = picked);
+                          }
+                        },
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _quantityCurrentController,
+                    const Divider(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SoftTextField(
+                            controller: _batchNumberController,
+                            labelText: 'Batch No.',
+                            hintText: 'Optional',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SoftTextField(
+                            controller: _manufacturerController,
+                            labelText: 'Manufacturer',
+                            hintText: 'e.g. Beximco, Square',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    SoftTextField(
+                      controller: _lowStockThresholdController,
+                      labelText: 'Low Stock Alert Threshold',
+                      hintText: '5',
+                      helperText: 'Alert when remaining stock drops to or below this count',
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Current Stock',
-                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _quantityTotalController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Pack Size (Total)',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Expiry Date'),
-                subtitle: Text(
-                  _expiryDate != null
-                      ? DateFormat('dd/MM/yyyy').format(_expiryDate!)
-                      : 'Not set',
-                ),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _expiryDate ??
-                        DateTime.now().add(const Duration(days: 180)),
-                    firstDate: DateTime.now().subtract(
-                      const Duration(days: 365),
-                    ),
-                    lastDate: DateTime.now().add(const Duration(days: 3650)),
-                  );
-                  if (picked != null) {
-                    setState(() => _expiryDate = picked);
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _batchNumberController,
-                      decoration: const InputDecoration(
-                        labelText: 'Batch Number',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _manufacturerController,
-                      decoration: const InputDecoration(
-                        labelText: 'Manufacturer',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _lowStockThresholdController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Low Stock Alert Threshold',
-                  helperText: 'Alert when remaining stock is at or below this',
+                  ],
                 ),
               ),
 
               const SizedBox(height: 24),
+
               // Schedule Section
-              Text('Dose Schedule', style: AppTypography.headingSmall),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _doseAmountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Dose Amount (e.g. 1 tablet per intake)',
+              const SectionHeader(
+                title: 'Dose Schedule',
+                subtitle: 'Configure daily intake times and quantities',
+              ),
+              SoftSurface(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SoftTextField(
+                      controller: _doseAmountController,
+                      labelText: 'Dose Amount',
+                      hintText: '1',
+                      helperText: 'Units per intake (e.g. 1 tablet, 5 ml)',
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Dose Times (${_doseTimes.length} per day)',
+                          style: AppTypography.headingSmall.copyWith(fontSize: 14),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.add_alarm_rounded, size: 18, color: AppColors.primaryBlue),
+                          label: Text('Add Time', style: AppTypography.bodySmall.copyWith(color: AppColors.primaryBlue, fontWeight: FontWeight.w600)),
+                          onPressed: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                            );
+                            if (picked != null) {
+                              final formatted =
+                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                              if (!_doseTimes.contains(formatted)) {
+                                setState(() {
+                                  _doseTimes.add(formatted);
+                                  _doseTimes.sort();
+                                });
+                              }
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _doseTimes.map((time) {
+                        return Chip(
+                          label: Text(TimeFormatter.format24To12Hour(time)),
+                          deleteIcon: const Icon(Icons.close, size: 16),
+                          onDeleted: _doseTimes.length > 1
+                              ? () => setState(() => _doseTimes.remove(time))
+                              : null,
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Dose Times (${_doseTimes.length} per day)'),
-                  TextButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Time'),
-                    onPressed: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-                      if (picked != null) {
-                        final formatted =
-                            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                        if (!_doseTimes.contains(formatted)) {
-                          setState(() {
-                            _doseTimes.add(formatted);
-                            _doseTimes.sort();
-                          });
-                        }
-                      }
-                    },
-                  ),
-                ],
-              ),
-              Wrap(
-                spacing: 8,
-                children: _doseTimes.map((time) {
-                  return Chip(
-                    label: Text(TimeFormatter.format24To12Hour(time)),
-                    deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: _doseTimes.length > 1
-                        ? () => setState(() => _doseTimes.remove(time))
-                        : null,
-                  );
-                }).toList(),
               ),
 
               const SizedBox(height: 32),
-              // Save Button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                  onPressed: _isSaving ? null : _saveMedicine,
-                  child: _isSaving
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          isEdit ? 'Update Medicine' : 'Save Medicine',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
+
+              // Save Action Button
+              SoftPrimaryButton(
+                label: isEdit ? 'Update Medicine' : 'Save Medicine to Schedule',
+                isLoading: _isSaving,
+                onPressed: _isSaving ? null : _saveMedicine,
               ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -658,33 +713,28 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     );
   }
 
-  Widget _buildFamilyMemberSelector() {
+  Widget _buildFamilyMemberSelector(bool isDark) {
     return StreamBuilder<List<FamilyMember>>(
       stream: _familyService.streamFamilyMembers(),
       builder: (context, snapshot) {
         final members = snapshot.data ?? [];
         if (members.isEmpty) return const SizedBox.shrink();
 
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.divider),
-          ),
+        return SoftSurface(
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Assign to Family Member (Optional)',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 children: [
                   ChoiceChip(
-                    label: const Text('Self'),
+                    label: const Text('Myself'),
                     selected: _selectedFamilyMemberId == null,
                     onSelected: (selected) {
                       if (selected) setState(() => _selectedFamilyMemberId = null);

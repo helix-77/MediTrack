@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/medicine_service.dart';
+import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import 'home_screen.dart';
@@ -50,75 +51,108 @@ class MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navBg = isDark ? AppColors.darkSurface : AppColors.surface;
+
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       body: IndexedStack(index: _currentIndex, children: _screens),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Container(
-        height: 60,
-        width: 60,
-        margin: const EdgeInsets.only(top: 8),
+        height: 56,
+        width: 56,
+        margin: const EdgeInsets.only(top: 10),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: AppShadows.floating,
+        ),
         child: FloatingActionButton(
-          elevation: 4,
+          elevation: 0,
+          highlightElevation: 0,
           shape: const CircleBorder(),
-          backgroundColor: AppColors.primaryGreen,
+          backgroundColor: AppColors.primaryBlue,
           onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AddEditMedicineScreen()),
             );
           },
-          child: const Icon(Icons.add, color: Colors.white, size: 30),
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        elevation: 10,
-        color: AppColors.surface,
-        surfaceTintColor: AppColors.surface,
-        padding: EdgeInsets.zero,
-        height: 64,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            // Left Group: Home & Routine
-            Row(
-              children: [
-                _buildNavItem(
-                  index: 0,
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home,
-                  label: 'Home',
-                ),
-                const SizedBox(width: 12),
-                _buildNavItem(
-                  index: 1,
-                  icon: Icons.auto_awesome_outlined,
-                  activeIcon: Icons.auto_awesome,
-                  label: 'AI Assistant',
-                ),
-              ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.darkDivider : AppColors.divider.withValues(alpha: 0.7),
+              width: 0.8,
             ),
-            const SizedBox(width: 40), // Gap for center FAB
-            // Right Group: Buy List & Profile
-            Row(
-              children: [
-                _buildNavItem(
-                  index: 2,
-                  icon: Icons.shopping_bag_outlined,
-                  activeIcon: Icons.shopping_bag,
-                  label: 'Buy List',
-                ),
-                const SizedBox(width: 12),
-                _buildNavItem(
-                  index: 3,
-                  icon: Icons.person_outline,
-                  activeIcon: Icons.person,
-                  label: 'Profile',
-                ),
-              ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF18233D).withValues(alpha: 0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
           ],
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            height: 64,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                // Left Group: Home & AI Assistant
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildNavItem(
+                        index: 0,
+                        icon: Icons.home_outlined,
+                        activeIcon: Icons.home_rounded,
+                        label: 'Home',
+                        isDark: isDark,
+                      ),
+                      _buildNavItem(
+                        index: 1,
+                        icon: Icons.auto_awesome_outlined,
+                        activeIcon: Icons.auto_awesome_rounded,
+                        label: 'AI Chat',
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ),
+                // Center Gap for FAB
+                const SizedBox(width: 64),
+                // Right Group: Buy List & Profile
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildNavItem(
+                        index: 2,
+                        icon: Icons.shopping_bag_outlined,
+                        activeIcon: Icons.shopping_bag_rounded,
+                        label: 'Buy List',
+                        isDark: isDark,
+                      ),
+                      _buildNavItem(
+                        index: 3,
+                        icon: Icons.person_outline_rounded,
+                        activeIcon: Icons.person_rounded,
+                        label: 'Profile',
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -129,14 +163,22 @@ class MainNavigationShellState extends State<MainNavigationShell> {
     required IconData icon,
     required IconData activeIcon,
     required String label,
+    required bool isDark,
   }) {
     final isSelected = _currentIndex == index;
 
     return InkWell(
       onTap: () => setState(() => _currentIndex = index),
       borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? AppColors.primaryBlue.withValues(alpha: 0.15) : AppColors.primaryBlueLight)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -144,19 +186,19 @@ class MainNavigationShellState extends State<MainNavigationShell> {
             Icon(
               isSelected ? activeIcon : icon,
               color: isSelected
-                  ? AppColors.primaryGreen
-                  : AppColors.textSecondary,
+                  ? AppColors.primaryBlue
+                  : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
               size: 22,
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: AppTypography.bodySmall.copyWith(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              style: AppTypography.caption.copyWith(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
-                    ? AppColors.primaryGreen
-                    : AppColors.textSecondary,
+                    ? AppColors.primaryBlue
+                    : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
               ),
             ),
           ],

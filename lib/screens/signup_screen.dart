@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
-import '../services/auth_service.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_text_field.dart';
 import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -45,7 +47,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         displayName: _nameController.text,
       );
       if (!mounted) return;
-      // Close auth flow back to home screen root
       Navigator.popUntil(context, (route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
@@ -82,11 +83,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: SoftIconButton(
+            icon: Icons.arrow_back_rounded,
+            size: 40,
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -98,23 +109,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
               children: [
                 Text(
                   'Create Account',
-                  style: AppTypography.headingLarge.copyWith(color: AppColors.primaryGreen),
+                  style: AppTypography.displayLarge.copyWith(
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Start tracking your medication and stay on schedule',
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                  'Start tracking your prescriptions and stay healthy',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
                 // Name Input Field
-                TextFormField(
+                SoftTextField(
                   controller: _nameController,
+                  labelText: 'Full Name',
+                  hintText: 'e.g. John Doe',
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
+                  prefixIcon: const Icon(Icons.person_outline, color: AppColors.primaryBlue, size: 20),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your full name';
@@ -125,14 +139,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 16),
 
                 // Email Input Field
-                TextFormField(
+                SoftTextField(
                   controller: _emailController,
+                  labelText: 'Email Address',
+                  hintText: 'name@example.com',
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
-                  decoration: const InputDecoration(
-                    labelText: 'Email Address',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
+                  prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primaryBlue, size: 20),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your email address';
@@ -146,20 +159,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 16),
 
                 // Password Input Field
-                TextFormField(
+                SoftTextField(
                   controller: _passwordController,
+                  labelText: 'Password',
+                  hintText: 'At least 6 characters',
                   obscureText: !_isPasswordVisible,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() => _isPasswordVisible = !_isPasswordVisible);
-                      },
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primaryBlue, size: 20),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppColors.textSecondary,
+                      size: 20,
                     ),
+                    onPressed: () {
+                      setState(() => _isPasswordVisible = !_isPasswordVisible);
+                    },
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -174,20 +188,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 16),
 
                 // Confirm Password Input Field
-                TextFormField(
+                SoftTextField(
                   controller: _confirmPasswordController,
+                  labelText: 'Confirm Password',
+                  hintText: 'Re-enter your password',
                   obscureText: !_isConfirmPasswordVisible,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
-                      },
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primaryBlue, size: 20),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isConfirmPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppColors.textSecondary,
+                      size: 20,
                     ),
+                    onPressed: () {
+                      setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
+                    },
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -199,67 +214,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
 
                 // Create Account Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _isLoading || _isGoogleLoading ? null : _handleSignUp,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Text('Create Account'),
-                  ),
+                SoftPrimaryButton(
+                  label: 'Create Account',
+                  isLoading: _isLoading,
+                  onPressed: _isLoading || _isGoogleLoading ? null : _handleSignUp,
                 ),
                 const SizedBox(height: 24),
 
                 // Divider OR
                 Row(
                   children: [
-                    const Expanded(child: Divider()),
+                    Expanded(
+                      child: Divider(color: isDark ? AppColors.darkDivider : AppColors.divider),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text(
-                        'OR',
-                        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                      ),
+                      child: Text('OR', style: AppTypography.caption),
                     ),
-                    const Expanded(child: Divider()),
+                    Expanded(
+                      child: Divider(color: isDark ? AppColors.darkDivider : AppColors.divider),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
 
                 // Google Sign-In Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: OutlinedButton.icon(
-                    onPressed: _isLoading || _isGoogleLoading ? null : _handleGoogleSignUp,
-                    icon: _isGoogleLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Image.network(
-                            'https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg',
-                            height: 22,
-                            errorBuilder: (_, _, _) => const Icon(Icons.account_circle, color: Colors.blue),
-                          ),
-                    label: const Text(
-                      'Sign up with Gmail',
-                      style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      side: BorderSide(color: Colors.grey.shade300),
-                    ),
-                  ),
+                SoftSecondaryButton(
+                  label: 'Sign up with Google',
+                  icon: Icons.g_mobiledata_rounded,
+                  onPressed: _isLoading || _isGoogleLoading ? null : _handleGoogleSignUp,
                 ),
                 const SizedBox(height: 32),
 
@@ -269,7 +255,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   children: [
                     Text(
                       'Already have an account? ',
-                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -280,14 +268,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       },
                       child: Text(
                         'Log In',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.primaryGreen,
-                          fontWeight: FontWeight.bold,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

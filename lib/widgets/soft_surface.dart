@@ -1,0 +1,112 @@
+import 'package:flutter/material.dart';
+import '../theme/app_tokens.dart';
+import '../theme/colors.dart';
+
+/// A reusable soft-neumorphic raised surface container.
+/// Features subtle diffuse ambient shadows, soft rounded corners, and customizable padding.
+class SoftSurface extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
+  final BorderRadius? borderRadius;
+  final Color? color;
+  final Color? borderColor;
+  final double? borderWidth;
+  final List<BoxShadow>? boxShadow;
+  final VoidCallback? onTap;
+  final double? width;
+  final double? height;
+  final AlignmentGeometry? alignment;
+
+  const SoftSurface({
+    super.key,
+    required this.child,
+    this.padding = AppSpacing.cardPadding,
+    this.margin,
+    this.borderRadius,
+    this.color,
+    this.borderColor,
+    this.borderWidth,
+    this.boxShadow,
+    this.onTap,
+    this.width,
+    this.height,
+    this.alignment,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveRadius = borderRadius ?? AppRadii.cardRadius;
+    final effectiveBg = color ?? (isDark ? AppColors.darkSurface : AppColors.surface);
+    final effectiveShadow = boxShadow ?? (isDark ? AppShadows.darkCard : AppShadows.softCard);
+    final effectiveBorderColor = borderColor ?? (isDark ? AppColors.darkDivider : AppColors.divider.withValues(alpha: 0.5));
+    final effectiveBorderWidth = borderWidth ?? 0.8;
+
+    Widget container = Container(
+      width: width,
+      height: height,
+      margin: margin,
+      alignment: alignment,
+      decoration: BoxDecoration(
+        color: effectiveBg,
+        borderRadius: effectiveRadius,
+        border: Border.all(color: effectiveBorderColor, width: effectiveBorderWidth),
+        boxShadow: effectiveShadow,
+      ),
+      child: ClipRRect(
+        borderRadius: effectiveRadius,
+        child: Padding(
+          padding: padding ?? EdgeInsets.zero,
+          child: child,
+        ),
+      ),
+    );
+
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        borderRadius: effectiveRadius,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: effectiveRadius,
+          child: container,
+        ),
+      );
+    }
+
+    return container;
+  }
+}
+
+/// Specialized soft card wrapper.
+class SoftCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
+  final BorderRadius? borderRadius;
+  final Color? color;
+  final VoidCallback? onTap;
+
+  const SoftCard({
+    super.key,
+    required this.child,
+    this.padding = AppSpacing.cardPadding,
+    this.margin,
+    this.borderRadius,
+    this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftSurface(
+      padding: padding,
+      margin: margin,
+      borderRadius: borderRadius,
+      color: color,
+      onTap: onTap,
+      child: child,
+    );
+  }
+}

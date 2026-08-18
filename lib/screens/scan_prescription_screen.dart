@@ -2,24 +2,22 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-
-import 'package:provider/provider.dart';
-
-import '../logic/entitlement_guard.dart';
-import '../logic/image_preflight.dart';
-import '../logic/prescription_validator.dart';
 import '../models/prescription.dart';
 import '../models/prescription_extraction.dart';
-import '../services/entitlement_service.dart';
-import '../services/prescription_extraction_service.dart';
 import '../services/prescription_service.dart';
+import '../services/prescription_extraction_service.dart';
+import '../logic/image_preflight.dart';
+import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/section_header.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_surface.dart';
+import '../widgets/soft_text_field.dart';
+import '../widgets/status_pill.dart';
 
 class ScanPrescriptionScreen extends StatefulWidget {
-  final File? initialImage;
-
-  const ScanPrescriptionScreen({super.key, this.initialImage});
+  const ScanPrescriptionScreen({super.key});
 
   @override
   State<ScanPrescriptionScreen> createState() => _ScanPrescriptionScreenState();
@@ -28,313 +26,245 @@ class ScanPrescriptionScreen extends StatefulWidget {
 class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
   final PrescriptionService _prescriptionService = PrescriptionService();
   final PrescriptionExtractionService _aiService = PrescriptionExtractionService();
-  final ImagePicker _picker = ImagePicker();
 
-  File? _imageFile;
-  bool _isExtracting = false;
+  File? _capturedImage;
+  bool _isAnalyzing = false;
   bool _isSaving = false;
-  String? _preflightWarning;
-  String? _errorMessage;
+  ImageQualityResult? _qualityResult;
 
+  // Metadata form
   final _titleController = TextEditingController();
-  final _doctorController = TextEditingController();
-  final _patientController = TextEditingController();
-  final _notesController = TextEditingController();
-  final DateTime _prescriptionDate = DateTime.now();
+  final _doctorNameController = TextEditingController();
+  DateTime _visitDate = DateTime.now();
 
-  List<PrescriptionItem> _extractedItems = [];
-  String? _rawExtractionText;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController.text =
-        'Prescription ${DateFormat('MMM d, yyyy').format(DateTime.now())}';
-    if (widget.initialImage != null) {
-      _imageFile = widget.initialImage;
-      _preflightImage(_imageFile!);
-    }
-  }
+  List<PrescriptionItem> _extractedReviewItems = [];
 
   @override
   void dispose() {
     _titleController.dispose();
-    _doctorController.dispose();
-    _patientController.dispose();
-    _notesController.dispose();
+    _doctorNameController.dispose();
     super.dispose();
   }
 
-  Future<ImageQualityResult> _preflightImage(File file) async {
-    final size = await file.length();
-    final preflight = ImagePreflight.evaluate(fileSizeBytes: size);
-    if (mounted) {
-      setState(() {
-        _preflightWarning = preflight.warningMessage;
-      });
-    }
-    return preflight;
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    final picked = await _picker.pickImage(
+  Future<void> _pickAndAnalyzeImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
       source: source,
+      maxWidth: 1920,
+      maxHeight: 1920,
       imageQuality: 85,
-      maxWidth: 1600,
-      maxHeight: 1600,
     );
-    if (picked != null) {
-      final file = File(picked.path);
-      setState(() {
-        _imageFile = file;
-        _errorMessage = null;
-      });
-      await _preflightImage(file);
-      await _runExtraction(file);
-    }
-  }
+    if (pickedFile == null) return;
 
-  Future<void> _runExtraction(File file) async {
-    // Preflight quality check
-    final preflight = await _preflightImage(file);
-    if (!preflight.isAcceptable) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = preflight.warningMessage;
-        });
-      }
-      return;
-    }
-
-    if (!mounted) return;
-    final entitlement = context.read<EntitlementService>();
-    final isAllowed = await entitlement.requirePremium(
-      context,
-      feature: EntitlementFeature.prescriptionOcr,
-    );
-    if (!isAllowed || !mounted) {
-      return;
-    }
+    final imageFile = File(pickedFile.path);
+    final fileLength = await imageFile.length();
 
     setState(() {
-      _isExtracting = true;
-      _errorMessage = null;
+      _capturedImage = imageFile;
+      _qualityResult = null;
+      _extractedReviewItems.clear();
+      _isAnalyzing = true;
     });
 
     try {
-      final draft = await _aiService.extractPrescription(imageFile: file);
-      await entitlement.recordPrescriptionScanUsage();
-      if (!mounted) return;
+      final quality = ImagePreflight.evaluate(fileSizeBytes: fileLength);
+      setState(() => _qualityResult = quality);
+
+      if (!quality.isAcceptable) {
+        setState(() => _isAnalyzing = false);
+        return;
+      }
+
+      final draft = await _aiService.extractPrescription(imageFile: imageFile);
+
       setState(() {
         if (draft.doctorName != null && draft.doctorName!.isNotEmpty) {
-          _doctorController.text = draft.doctorName!;
+          _doctorNameController.text = draft.doctorName!;
         }
-        if (draft.patientName != null && draft.patientName!.isNotEmpty) {
-          _patientController.text = draft.patientName!;
+        if (draft.date != null) {
+          final parsedDate = DateTime.tryParse(draft.date!);
+          if (parsedDate != null) _visitDate = parsedDate;
         }
-        _extractedItems = draft.medicines;
-        _rawExtractionText = draft.rawText;
-      });
-    } on PrescriptionExtractionException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
+        if (_titleController.text.isEmpty) {
+          final doc = draft.doctorName != null ? ' - Dr. ${draft.doctorName}' : '';
+          _titleController.text = 'Prescription ${DateFormat("MMM d, yyyy").format(_visitDate)}$doc';
+        }
+
+        _extractedReviewItems = List.from(draft.medicines);
       });
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Unexpected extraction error: $e';
-      });
-    } finally {
       if (mounted) {
-        setState(() => _isExtracting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('AI extraction notice: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
       }
+    } finally {
+      if (mounted) setState(() => _isAnalyzing = false);
     }
   }
 
-  void _editItemDialog(int index) {
-    final item = _extractedItems[index];
-    final nameController = TextEditingController(text: item.extractedName);
-    final strengthController = TextEditingController(text: item.extractedStrength ?? '');
-    final formController = TextEditingController(text: item.extractedForm ?? '');
-    final freqController = TextEditingController(
-        text: item.extractedFrequencyPerDay != null ? '${item.extractedFrequencyPerDay}' : '');
-    final durationController = TextEditingController(
-        text: item.extractedDurationDays != null ? '${item.extractedDurationDays}' : '');
-    final instructionsController = TextEditingController(text: item.extractedInstructions ?? '');
+  void _editExtractedMedicine(int index) {
+    final med = _extractedReviewItems[index];
+    final nameCtrl = TextEditingController(text: med.extractedName);
+    final dosageCtrl = TextEditingController(text: med.extractedStrength ?? '');
+    final formCtrl = TextEditingController(text: med.extractedForm ?? 'tablet');
+    final durationCtrl = TextEditingController(text: med.extractedDurationDays?.toString() ?? '7');
+    final instructionsCtrl = TextEditingController(text: med.extractedInstructions ?? '');
+    int timesPerDay = med.extractedFrequencyPerDay ?? 2;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Edit Medicine Item', style: AppTypography.headingSmall),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Medicine Name *'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: strengthController,
-                decoration: const InputDecoration(labelText: 'Strength (e.g. 500 mg)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: formController,
-                decoration: const InputDecoration(labelText: 'Form (e.g. tablet, syrup)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: freqController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Frequency per day (1-6)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: durationController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Duration in days'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: instructionsController,
-                decoration: const InputDecoration(labelText: 'Instructions (e.g. after meal)'),
-              ),
-            ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+          title: Text('Edit Extracted Medicine', style: AppTypography.headingMedium),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SoftTextField(
+                  controller: nameCtrl,
+                  labelText: 'Medicine Name',
+                  hintText: 'e.g. Napa Extra',
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SoftTextField(
+                        controller: formCtrl,
+                        labelText: 'Form',
+                        hintText: 'tablet',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SoftTextField(
+                        controller: dosageCtrl,
+                        labelText: 'Dosage / Strength',
+                        hintText: '500mg',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Times per day', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<int>(
+                            initialValue: timesPerDay,
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                            items: [1, 2, 3, 4]
+                                .map((v) => DropdownMenuItem(value: v, child: Text('$v times')))
+                                .toList(),
+                            onChanged: (v) => setDialogState(() => timesPerDay = v ?? 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SoftTextField(
+                        controller: durationCtrl,
+                        labelText: 'Duration (days)',
+                        hintText: '7',
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SoftTextField(
+                  controller: instructionsCtrl,
+                  labelText: 'Instructions',
+                  hintText: 'After meal',
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
+              onPressed: () {
+                final updatedMed = med.copyWith(
+                  extractedName: nameCtrl.text.trim(),
+                  extractedForm: formCtrl.text.trim().isEmpty ? null : formCtrl.text.trim(),
+                  extractedStrength: dosageCtrl.text.trim().isEmpty ? null : dosageCtrl.text.trim(),
+                  extractedFrequencyPerDay: timesPerDay,
+                  extractedDurationDays: int.tryParse(durationCtrl.text),
+                  extractedInstructions: instructionsCtrl.text.trim().isEmpty ? null : instructionsCtrl.text.trim(),
+                );
+                setState(() {
+                  _extractedReviewItems[index] = updatedMed;
+                });
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Save Changes', style: TextStyle(color: Colors.white)),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-            onPressed: () {
-              final newName = nameController.text.trim();
-              if (newName.isEmpty) return;
-
-              final updated = item.copyWith(
-                extractedName: newName,
-                extractedStrength:
-                    strengthController.text.trim().isEmpty ? null : strengthController.text.trim(),
-                extractedForm:
-                    formController.text.trim().isEmpty ? null : formController.text.trim(),
-                extractedFrequencyPerDay: int.tryParse(freqController.text.trim()),
-                extractedDurationDays: int.tryParse(durationController.text.trim()),
-                extractedInstructions:
-                    instructionsController.text.trim().isEmpty ? null : instructionsController.text.trim(),
-              );
-
-              setState(() {
-                _extractedItems[index] = updated;
-              });
-              Navigator.pop(ctx);
-            },
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
 
-  Future<void> _savePhotoOnly() async {
-    final title = _titleController.text.trim();
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a prescription title'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-
+  Future<void> _saveAll({required bool saveToInventory}) async {
+    if (_capturedImage == null) return;
     setState(() => _isSaving = true);
+
     try {
-      final pres = Prescription(
+      final prescription = Prescription(
         id: '',
-        title: title,
-        doctorName: _doctorController.text.trim().isEmpty ? null : _doctorController.text.trim(),
-        date: _prescriptionDate,
-        extractedText: _rawExtractionText ?? '',
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        status: 'draft',
+        title: _titleController.text.trim().isNotEmpty
+            ? _titleController.text.trim()
+            : 'Prescription ${DateFormat("MMM d, yyyy").format(_visitDate)}',
+        doctorName: _doctorNameController.text.trim().isNotEmpty
+            ? _doctorNameController.text.trim()
+            : null,
+        date: _visitDate,
+        extractedText: _extractedReviewItems.map((m) => '${m.extractedName} ${m.extractedStrength ?? ""}').join(', '),
         createdAt: DateTime.now(),
       );
 
-      await _prescriptionService.savePrescription(pres, _imageFile);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Prescription photo saved to Vault!'),
-          backgroundColor: AppColors.success,
-        ),
+      final savedRx = await _prescriptionService.savePrescriptionWithItems(
+        prescription,
+        _extractedReviewItems,
+        _capturedImage,
       );
-      Navigator.pop(context);
-    } catch (e) {
+
+      if (saveToInventory) {
+        await _prescriptionService.confirmAndPersistMedicines(
+          prescriptionId: savedRx.id,
+          items: _extractedReviewItems,
+        );
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Save failed: $e'), backgroundColor: AppColors.danger),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _saveAndConfirmMedicines() async {
-    final title = _titleController.text.trim();
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a prescription title'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-
-    final confirmedItems = _extractedItems.where((i) => i.confirmed).toList();
-
-    setState(() => _isSaving = true);
-    try {
-      final pres = Prescription(
-        id: '',
-        title: title,
-        doctorName: _doctorController.text.trim().isEmpty ? null : _doctorController.text.trim(),
-        date: _prescriptionDate,
-        extractedText: _rawExtractionText ?? '',
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        status: confirmedItems.isNotEmpty ? 'reviewed' : 'draft',
-        createdAt: DateTime.now(),
-      );
-
-      final saved = await _prescriptionService.savePrescriptionWithItems(
-        pres,
-        _extractedItems,
-        _imageFile,
-      );
-
-      if (confirmedItems.isNotEmpty) {
-        await _prescriptionService.confirmAndPersistMedicines(
-          prescriptionId: saved.id,
-          items: confirmedItems,
-        );
-      }
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            confirmedItems.isNotEmpty
-                ? 'Prescription saved & ${confirmedItems.length} medicine(s) added to routine!'
-                : 'Prescription draft saved to Vault!',
+          SnackBar(
+            content: Text(
+              saveToInventory
+                  ? '✅ Prescription & confirmed medicines saved to routine!'
+                  : '✅ Prescription image saved to digital vault!',
+            ),
+            backgroundColor: AppColors.success,
           ),
-          backgroundColor: AppColors.success,
-        ),
-      );
-      Navigator.pop(context);
+        );
+        Navigator.pop(context, savedRx);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -348,179 +278,290 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
-        title: Text(
-          'Scan Prescription',
-          style: AppTypography.headingMedium.copyWith(color: AppColors.primaryGreen),
+        title: const Text('Scan Prescription'),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: SoftIconButton(
+            icon: Icons.arrow_back_rounded,
+            size: 40,
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Image Picker Area
-          _buildImageCard(),
-          const SizedBox(height: 16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Capture Box
+            _buildImageCaptureBox(isDark),
+            const SizedBox(height: 18),
 
-          // Quality Warning Banner
-          if (_preflightWarning != null) _buildWarningBanner(_preflightWarning!),
+            // Preflight Quality Result
+            if (_qualityResult != null) ...[
+              _buildQualityBanner(_qualityResult!, isDark),
+              const SizedBox(height: 18),
+            ],
 
-          // Loading Indicator
-          if (_isExtracting) _buildExtractingIndicator(),
-
-          // Error Message Banner
-          if (_errorMessage != null && !_isExtracting) _buildErrorBanner(_errorMessage!),
-
-          // Extracted Items Section
-          if (_extractedItems.isNotEmpty && !_isExtracting) ...[
-            _buildDisclaimerBanner(),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Extracted Medicines (${_extractedItems.length})',
-                  style: AppTypography.headingSmall.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
+            // Analyzing Indicator
+            if (_isAnalyzing) ...[
+              SoftCard(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Column(
+                    children: [
+                      const CircularProgressIndicator(color: AppColors.primaryBlue),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Analyzing Prescription with Gemini AI...',
+                        style: AppTypography.headingSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Extracting doctor info, dosage instructions, and schedules.',
+                        style: AppTypography.caption,
+                      ),
+                    ],
                   ),
                 ),
-                TextButton(
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Extracted Medicines Section
+            if (_extractedReviewItems.isNotEmpty) ...[
+              SectionHeader(
+                title: 'Extracted Medicines (${_extractedReviewItems.length})',
+                subtitle: 'Review and confirm medicines to add to your daily schedule',
+                trailing: TextButton(
                   onPressed: () {
-                    final allChecked = _extractedItems.every((i) => i.confirmed);
+                    final allSelected = _extractedReviewItems.every((i) => i.confirmed);
                     setState(() {
-                      _extractedItems = _extractedItems
-                          .map((i) => i.copyWith(confirmed: !allChecked))
+                      _extractedReviewItems = _extractedReviewItems
+                          .map((item) => item.copyWith(confirmed: !allSelected))
                           .toList();
                     });
                   },
                   child: Text(
-                    _extractedItems.every((i) => i.confirmed)
-                        ? 'Uncheck All'
-                        : 'Check All',
-                    style: const TextStyle(color: AppColors.primaryGreen),
+                    _extractedReviewItems.every((i) => i.confirmed) ? 'Deselect All' : 'Select All',
+                    style: AppTypography.caption.copyWith(color: AppColors.primaryBlue, fontWeight: FontWeight.w700),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ..._extractedItems.asMap().entries.map((entry) {
-              return _buildItemCard(entry.key, entry.value);
-            }),
-            const SizedBox(height: 20),
-          ],
+              ),
+              ..._extractedReviewItems.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final item = entry.value;
+                return _buildExtractedMedCard(item, idx, isDark);
+              }),
+              const SizedBox(height: 24),
+            ],
 
-          // Prescription Meta Form Fields
-          _buildMetaFields(),
-          const SizedBox(height: 24),
-
-          // Action Buttons
-          _buildActionButtons(),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageCard() {
-    return GestureDetector(
-      onTap: _showSourcePickerModal,
-      child: Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.primaryGreen.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
-        ),
-        child: _imageFile != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
+            // Prescription Metadata Form
+            if (_capturedImage != null && !_isAnalyzing) ...[
+              const SectionHeader(
+                title: 'Prescription Details',
+                subtitle: 'Add physician details for clinical record-keeping',
+              ),
+              SoftSurface(
+                padding: const EdgeInsets.all(18),
+                child: Column(
                   children: [
-                    Image.file(_imageFile!, fit: BoxFit.cover),
-                    Positioned(
-                      right: 12,
-                      bottom: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.camera_alt, color: Colors.white, size: 14),
-                            SizedBox(width: 4),
-                            Text('Retake', style: TextStyle(color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
+                    SoftTextField(
+                      controller: _titleController,
+                      labelText: 'Prescription Title',
+                      hintText: 'e.g. Cardiology Visit',
+                    ),
+                    const SizedBox(height: 14),
+                    SoftTextField(
+                      controller: _doctorNameController,
+                      labelText: 'Doctor Name',
+                      hintText: 'e.g. Prof. Ahmed',
+                    ),
+                    const SizedBox(height: 14),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Consultation Date', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                      subtitle: Text(DateFormat('dd MMMM yyyy').format(_visitDate), style: AppTypography.caption),
+                      trailing: SoftIconButton(
+                        icon: Icons.calendar_today_rounded,
+                        iconColor: AppColors.primaryBlue,
+                        size: 38,
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _visitDate,
+                            firstDate: DateTime.now().subtract(const Duration(days: 730)),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) setState(() => _visitDate = picked);
+                        },
                       ),
                     ),
                   ],
                 ),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: const BoxDecoration(
-                      color: AppColors.accentPinkLight,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.document_scanner_rounded,
-                      size: 36,
-                      color: AppColors.primaryGreen,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Tap to capture or upload prescription',
-                    style: AppTypography.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryGreen,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'AI Gemini 3.6 Flash will extract medicines & dosages',
-                    style: AppTypography.bodySmall,
-                  ),
-                ],
               ),
+              const SizedBox(height: 24),
+
+              // Action Buttons
+              if (_extractedReviewItems.isNotEmpty) ...[
+                SoftPrimaryButton(
+                  label: 'Save & Add Confirmed to Routine',
+                  isLoading: _isSaving,
+                  onPressed: _isSaving ? null : () => _saveAll(saveToInventory: true),
+                ),
+                const SizedBox(height: 12),
+              ],
+              SoftSecondaryButton(
+                label: 'Save Photo to Vault Only',
+                onPressed: _isSaving ? null : () => _saveAll(saveToInventory: false),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildExtractingIndicator() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+  Widget _buildImageCaptureBox(bool isDark) {
+    if (_capturedImage != null) {
+      return SoftSurface(
+        padding: const EdgeInsets.all(12),
+        borderRadius: AppRadii.cardRadius,
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.file(
+                _capturedImage!,
+                height: 220,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: SoftSecondaryButton(
+                    label: 'Retake Camera',
+                    icon: Icons.camera_alt_outlined,
+                    height: 42,
+                    onPressed: () => _pickAndAnalyzeImage(ImageSource.camera),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SoftSecondaryButton(
+                    label: 'From Gallery',
+                    icon: Icons.photo_library_outlined,
+                    height: 42,
+                    onPressed: () => _pickAndAnalyzeImage(ImageSource.gallery),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SoftSurface(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      borderRadius: AppRadii.cardRadius,
+      borderColor: AppColors.primaryBlue.withValues(alpha: 0.3),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryBlueLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.document_scanner_rounded,
+                size: 36,
+                color: AppColors.primaryBlue,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Capture Prescription', style: AppTypography.headingMedium),
+            const SizedBox(height: 6),
+            Text(
+              'Take a clear photo in good lighting to let Gemini AI extract medications and doctor instructions.',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall,
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: SoftPrimaryButton(
+                    label: 'Take Photo',
+                    icon: Icons.camera_alt_rounded,
+                    height: 46,
+                    onPressed: () => _pickAndAnalyzeImage(ImageSource.camera),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SoftSecondaryButton(
+                    label: 'Choose Gallery',
+                    icon: Icons.image_outlined,
+                    height: 46,
+                    onPressed: () => _pickAndAnalyzeImage(ImageSource.gallery),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-      child: const Row(
+    );
+  }
+
+  Widget _buildQualityBanner(ImageQualityResult quality, bool isDark) {
+    final isPassed = quality.isAcceptable;
+    final bg = isPassed
+        ? (isDark ? const Color(0xFF152A1E) : AppColors.successLight)
+        : (isDark ? const Color(0xFF2B2215) : AppColors.warningLight);
+    final border = isPassed ? AppColors.success : AppColors.warning;
+
+    return SoftSurface(
+      padding: const EdgeInsets.all(14),
+      color: bg,
+      borderColor: border.withValues(alpha: 0.35),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircularProgressIndicator(color: AppColors.primaryGreen),
-          SizedBox(width: 16),
+          Icon(
+            isPassed ? Icons.check_circle_outline_rounded : Icons.warning_amber_rounded,
+            color: border,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Extracting prescription details...',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                SizedBox(height: 4),
-                Text('Analyzing handwriting and dosages with Gemini AI',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(
+                  isPassed ? 'Image Quality Passed' : 'Image Quality Warning',
+                  style: AppTypography.headingSmall.copyWith(fontSize: 14, color: border),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isPassed
+                      ? 'Image is sharp and clear for extraction.'
+                      : (quality.warningMessage ?? 'Please retake with good lighting to avoid OCR mistakes.'),
+                  style: AppTypography.caption,
+                ),
               ],
             ),
           ),
@@ -529,318 +570,71 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
     );
   }
 
-  Widget _buildWarningBanner(String warning) {
+  Widget _buildExtractedMedCard(PrescriptionItem med, int index, bool isDark) {
+    PillType confType;
+    if (med.confidence.toLowerCase() == 'high') {
+      confType = PillType.success;
+    } else if (med.confidence.toLowerCase() == 'medium') {
+      confType = PillType.warning;
+    } else {
+      confType = PillType.danger;
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.warning),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              warning,
-              style: AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorBanner(String error) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.danger),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.error_outline, color: AppColors.danger, size: 20),
-              const SizedBox(width: 8),
-              Text('Extraction Failed',
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.danger,
-                  )),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(error, style: AppTypography.bodySmall),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              if (_imageFile != null)
-                OutlinedButton(
-                  onPressed: () => _runExtraction(_imageFile!),
-                  child: const Text('Retry Scan'),
-                ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: _savePhotoOnly,
-                child: const Text('Save Photo Only'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDisclaimerBanner() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.accentPinkLight.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline, color: AppColors.primaryGreen, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'AI extraction may make mistakes. Please verify every dosage and medicine against the physical prescription.',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.primaryGreen,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemCard(int index, PrescriptionItem item) {
-    final Color confidenceColor = switch (item.confidence) {
-      'high' => AppColors.success,
-      'low' => AppColors.danger,
-      _ => AppColors.warning,
-    };
-
-    return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 0,
-      color: AppColors.surface,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: SoftSurface(
+        padding: const EdgeInsets.all(14),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Checkbox(
-              value: item.confirmed,
-              activeColor: AppColors.primaryGreen,
+              value: med.confirmed,
+              activeColor: AppColors.primaryBlue,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
               onChanged: (val) {
                 setState(() {
-                  _extractedItems[index] = item.copyWith(confirmed: val ?? false);
+                  _extractedReviewItems[index] = med.copyWith(confirmed: val ?? true);
                 });
               },
             ),
+            const SizedBox(width: 6),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
-                          item.extractedName,
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          med.extractedName,
+                          style: AppTypography.headingSmall.copyWith(fontSize: 14),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: confidenceColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${item.confidence.toUpperCase()} CONFIDENCE',
-                          style: TextStyle(
-                            color: confidenceColor,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      StatusPill(
+                        label: med.confidence.toUpperCase(),
+                        type: confType,
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      if (item.extractedStrength != null)
-                        _buildChip(item.extractedStrength!),
-                      if (item.extractedForm != null) _buildChip(item.extractedForm!),
-                      if (item.extractedFrequencyPerDay != null)
-                        _buildChip('${item.extractedFrequencyPerDay}x / day'),
-                      if (item.extractedDurationDays != null)
-                        _buildChip('${item.extractedDurationDays} days'),
-                    ],
+                  Text(
+                    '${med.extractedForm ?? "Tablet"} • ${med.extractedStrength ?? "N/A"} • ${med.extractedFrequencyPerDay ?? 2} times/day • ${med.extractedDurationDays ?? "Ongoing"} days',
+                    style: AppTypography.caption,
                   ),
-                  if (item.extractedInstructions != null) ...[
-                    const SizedBox(height: 4),
+                  if (med.extractedInstructions != null && med.extractedInstructions!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      'Instructions: ${item.extractedInstructions}',
-                      style: AppTypography.bodySmall.copyWith(
-                        fontStyle: FontStyle.italic,
-                      ),
+                      'Instructions: ${med.extractedInstructions}',
+                      style: AppTypography.caption.copyWith(color: AppColors.primaryBlue),
                     ),
                   ],
                 ],
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primaryGreen),
-              onPressed: () => _editItemDialog(index),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(label, style: AppTypography.bodySmall.copyWith(fontSize: 11)),
-    );
-  }
-
-  Widget _buildMetaFields() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Prescription Details',
-              style: AppTypography.headingSmall.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Title / Label *',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _doctorController,
-            decoration: const InputDecoration(
-              labelText: 'Doctor Name',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _notesController,
-            maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Notes',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryGreen,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-            ),
-            onPressed: _isSaving ? null : _saveAndConfirmMedicines,
-            child: _isSaving
-                ? const CircularProgressIndicator(color: Colors.white)
-                : const Text(
-                    'Save & Add Confirmed to Routine',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          height: 46,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primaryGreen),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-            ),
-            onPressed: _isSaving ? null : _savePhotoOnly,
-            child: const Text(
-              'Save Photo to Vault Only',
-              style: TextStyle(
-                color: AppColors.primaryGreen,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showSourcePickerModal() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppColors.primaryGreen),
-              title: const Text('Take Photo with Camera'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: AppColors.primaryGreen),
-              title: const Text('Choose from Gallery'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage(ImageSource.gallery);
-              },
+              icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.primaryBlue),
+              onPressed: () => _editExtractedMedicine(index),
             ),
           ],
         ),

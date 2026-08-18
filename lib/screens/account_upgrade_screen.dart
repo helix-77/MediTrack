@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-
 import '../services/auth_service.dart';
+import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_surface.dart';
+import '../widgets/soft_text_field.dart';
 
 class AccountUpgradeScreen extends StatefulWidget {
   const AccountUpgradeScreen({super.key});
@@ -68,14 +71,16 @@ class _AccountUpgradeScreenState extends State<AccountUpgradeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isBusy = _isEmailLoading || _isGoogleLoading;
+
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Form(
               key: _formKey,
               child: Column(
@@ -84,83 +89,84 @@ class _AccountUpgradeScreenState extends State<AccountUpgradeScreen> {
                   Container(
                     width: 64,
                     height: 64,
-                    decoration: const BoxDecoration(
-                      color: AppColors.accentPinkLight,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlueLight,
                       shape: BoxShape.circle,
+                      boxShadow: AppShadows.subtle,
                     ),
                     child: const Icon(
                       Icons.admin_panel_settings_outlined,
-                      color: AppColors.primaryGreen,
+                      color: AppColors.primaryBlue,
                       size: 32,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Text(
                     'Secure Your Account',
-                    style: AppTypography.headingLarge,
+                    style: AppTypography.displayLarge.copyWith(
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'MediTrack now requires an account. Create credentials for your current profile to keep your medicines, reminders, and prescriptions linked to the same data.',
+                    'MediTrack requires an account. Create credentials for your profile to keep your medicines, reminders, and prescriptions securely synced.',
                     style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                      height: 1.5,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      height: 1.45,
                     ),
                   ),
                   const SizedBox(height: 28),
-                  TextFormField(
+
+                  SoftTextField(
                     controller: _nameController,
+                    labelText: 'Full Name',
+                    hintText: 'e.g. John Doe',
                     textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
+                    prefixIcon: const Icon(Icons.person_outline, color: AppColors.primaryBlue, size: 20),
                     validator: (value) => value == null || value.trim().isEmpty
                         ? 'Please enter your full name'
                         : null,
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+
+                  SoftTextField(
                     controller: _emailController,
+                    labelText: 'Email Address',
+                    hintText: 'name@example.com',
                     keyboardType: TextInputType.emailAddress,
                     autofillHints: const [AutofillHints.email],
-                    decoration: const InputDecoration(
-                      labelText: 'Email Address',
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
+                    prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primaryBlue, size: 20),
                     validator: (value) {
                       final email = value?.trim() ?? '';
                       if (email.isEmpty) {
                         return 'Please enter your email address';
                       }
-                      if (!RegExp(
-                        r'^[\w-.]+@([\w-]+\.)+[\w-]{2,}$',
-                      ).hasMatch(email)) {
+                      if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(email)) {
                         return 'Please enter a valid email address';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+
+                  SoftTextField(
                     controller: _passwordController,
+                    labelText: 'Password',
+                    hintText: 'At least 6 characters',
                     obscureText: !_isPasswordVisible,
                     autofillHints: const [AutofillHints.newPassword],
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        tooltip: _isPasswordVisible
-                            ? 'Hide password'
-                            : 'Show password',
-                        onPressed: () => setState(
-                          () => _isPasswordVisible = !_isPasswordVisible,
-                        ),
-                        icon: Icon(
-                          _isPasswordVisible
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
+                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primaryBlue, size: 20),
+                    suffixIcon: IconButton(
+                      tooltip: _isPasswordVisible ? 'Hide password' : 'Show password',
+                      onPressed: () => setState(
+                        () => _isPasswordVisible = !_isPasswordVisible,
+                      ),
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: AppColors.textSecondary,
+                        size: 20,
                       ),
                     ),
                     validator: (value) => value == null || value.length < 6
@@ -168,61 +174,55 @@ class _AccountUpgradeScreenState extends State<AccountUpgradeScreen> {
                         : null,
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: isBusy ? null : _linkEmail,
-                      child: _isEmailLoading
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text('Create Account and Keep Data'),
-                    ),
+
+                  SoftPrimaryButton(
+                    label: 'Create Account and Keep Data',
+                    isLoading: _isEmailLoading,
+                    onPressed: isBusy ? null : _linkEmail,
                   ),
                   const SizedBox(height: 20),
+
                   Row(
                     children: [
-                      const Expanded(child: Divider()),
+                      Expanded(
+                        child: Divider(color: isDark ? AppColors.darkDivider : AppColors.divider),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('OR', style: AppTypography.bodySmall),
+                        child: Text('OR', style: AppTypography.caption),
                       ),
-                      const Expanded(child: Divider()),
+                      Expanded(
+                        child: Divider(color: isDark ? AppColors.darkDivider : AppColors.divider),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: OutlinedButton.icon(
-                      onPressed: isBusy ? null : _linkGoogle,
-                      icon: _isGoogleLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.account_circle_outlined),
-                      label: const Text('Link Google Account'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryGreen,
-                        side: const BorderSide(color: AppColors.primaryGreen),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
+
+                  SoftSecondaryButton(
+                    label: 'Link Google Account',
+                    icon: Icons.g_mobiledata_rounded,
+                    onPressed: isBusy ? null : _linkGoogle,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Already-used credentials cannot be merged automatically. Your current data stays with this profile until linking succeeds.',
-                    style: AppTypography.bodySmall,
+                  const SizedBox(height: 18),
+
+                  SoftSurface(
+                    padding: const EdgeInsets.all(12),
+                    color: isDark ? AppColors.darkSurface : AppColors.surface,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline, color: AppColors.primaryBlue, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Your existing medication data and prescriptions will remain safely attached to your new profile.',
+                            style: AppTypography.bodySmall.copyWith(
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

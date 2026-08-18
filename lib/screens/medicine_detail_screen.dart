@@ -5,9 +5,15 @@ import '../models/medicine_schedule.dart';
 import '../models/dose_log.dart';
 import '../services/medicine_service.dart';
 import '../logic/refill_calculator.dart';
+import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../utils/time_formatter.dart';
+import '../widgets/empty_state_view.dart';
+import '../widgets/section_header.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_surface.dart';
+import '../widgets/status_pill.dart';
 import 'add_edit_medicine_screen.dart';
 
 class MedicineDetailScreen extends StatefulWidget {
@@ -26,21 +32,26 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Medicine'),
-        content: const Text('Are you sure you want to delete this medicine record?'),
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+        title: Text('Delete Medicine', style: AppTypography.headingMedium),
+        content: Text(
+          'Are you sure you want to delete this medicine record? This cannot be undone.',
+          style: AppTypography.bodySmall,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () async {
               Navigator.pop(dialogContext);
               await _medicineService.deleteMedicine(widget.medicineId);
               if (!mounted) return;
               Navigator.pop(context);
             },
-            child: const Text('Delete', style: TextStyle(color: AppColors.danger)),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -49,11 +60,18 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return StreamBuilder<List<Medicine>>(
       stream: _medicineService.streamMedicines(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return Scaffold(
+            backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
+            body: const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryBlue),
+            ),
+          );
         }
 
         final medicines = snapshot.data ?? [];
@@ -78,8 +96,23 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
 
         if (medicine.id.isEmpty) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Medicine Details')),
-            body: const Center(child: Text('Medicine not found')),
+            backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
+            appBar: AppBar(
+              title: const Text('Medicine Details'),
+              leading: Padding(
+                padding: const EdgeInsets.only(left: 12.0),
+                child: SoftIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  size: 40,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+            body: const EmptyStateView(
+              icon: Icons.medication_outlined,
+              title: 'Medicine Not Found',
+              description: 'This record may have been deleted or moved.',
+            ),
           );
         }
 
@@ -87,108 +120,176 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
         final daysLeft = RefillCalculator.daysRemaining(medicine.quantityCurrent, medicine.schedule);
 
         return Scaffold(
+          backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
           appBar: AppBar(
             title: Text(medicine.name),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => AddEditMedicineScreen(medicine: medicine)),
-                  );
-                },
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 12.0),
+              child: SoftIconButton(
+                icon: Icons.arrow_back_rounded,
+                size: 40,
+                onPressed: () => Navigator.pop(context),
               ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: AppColors.danger),
-                onPressed: _confirmDelete,
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: SoftIconButton(
+                  icon: Icons.edit_outlined,
+                  size: 40,
+                  iconColor: AppColors.primaryBlue,
+                  tooltip: 'Edit Medicine',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AddEditMedicineScreen(medicine: medicine)),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 12.0),
+                child: SoftIconButton(
+                  icon: Icons.delete_outline,
+                  size: 40,
+                  iconColor: AppColors.danger,
+                  tooltip: 'Delete',
+                  onPressed: _confirmDelete,
+                ),
               ),
             ],
           ),
           body: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             children: [
-              // Header Card
-              Card(
-                color: AppColors.accentPinkLight,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(medicine.name, style: AppTypography.headingLarge),
-                      if (medicine.genericName != null) ...[
-                        const SizedBox(height: 4),
-                        Text(medicine.genericName!, style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary)),
+              // Hero Stat Card
+              SoftSurface(
+                padding: const EdgeInsets.all(20),
+                borderRadius: AppRadii.cardRadius,
+                color: isDark ? AppColors.darkSurface : AppColors.surface,
+                borderColor: AppColors.primaryBlue.withValues(alpha: 0.2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                medicine.name,
+                                style: AppTypography.displayLarge.copyWith(fontSize: 24),
+                              ),
+                              if (medicine.genericName != null) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  medicine.genericName!,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        StatusPill(
+                          label: medicine.dosageForm?.toUpperCase() ?? 'TABLET',
+                          type: PillType.primary,
+                        ),
                       ],
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildStatItem('Stock Left', '${medicine.quantityCurrent} ${medicine.dosageForm ?? "units"}'),
-                          _buildStatItem('Est. Supply', '$daysLeft days'),
-                          _buildStatItem('Strength', medicine.strength ?? 'N/A'),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildStatItem('Stock Left', '${medicine.quantityCurrent} ${medicine.dosageForm ?? "units"}', isDark),
+                        _buildStatItem('Est. Supply', '$daysLeft days', isDark),
+                        _buildStatItem('Strength', medicine.strength ?? 'N/A', isDark),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
 
-              // Alert Cards if any
+              // Alert Cards if low stock
               if (isLowStock) ...[
-                Card(
-                  color: AppColors.warning.withValues(alpha: 0.15),
-                  child: const ListTile(
-                    leading: Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-                    title: Text('Low Stock Warning'),
-                    subtitle: Text('Re-order or purchase refill soon.'),
+                SoftSurface(
+                  padding: const EdgeInsets.all(14),
+                  color: isDark ? const Color(0xFF2B2215) : AppColors.warningLight,
+                  borderColor: AppColors.warning.withValues(alpha: 0.3),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Low Stock Warning',
+                              style: AppTypography.headingSmall.copyWith(fontSize: 14),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Only ${medicine.quantityCurrent} units remaining. Plan a refill soon.',
+                              style: AppTypography.caption,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
               ],
 
               // Schedule Info Card
-              Text('Schedule & Usage', style: AppTypography.headingSmall),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _buildDetailRow('Dose Amount', '${medicine.schedule.doseAmount} ${medicine.dosageForm ?? "unit(s)"}'),
-                      const Divider(),
-                      _buildDetailRow('Dose Times', medicine.schedule.doseTimes.map(TimeFormatter.format24To12Hour).join(", ")),
-                      const Divider(),
-                      _buildDetailRow('Scheduled Days', TimeFormatter.formatDaysOfWeek(medicine.schedule.daysOfWeek)),
-                      const Divider(),
-                      _buildDetailRow('Expiry Date', medicine.expiryDate != null ? DateFormat('yyyy-MM-dd').format(medicine.expiryDate!) : 'Not set'),
-                      if (medicine.batchNumber != null) ...[
-                        const Divider(),
-                        _buildDetailRow('Batch Number', medicine.batchNumber!),
-                      ],
-                      if (medicine.manufacturer != null) ...[
-                        const Divider(),
-                        _buildDetailRow('Manufacturer', medicine.manufacturer!),
-                      ],
+              const SectionHeader(
+                title: 'Schedule & Usage',
+                subtitle: 'Prescribed dosage frequency and pack details',
+              ),
+              SoftSurface(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  children: [
+                    _buildDetailRow('Dose Amount', '${medicine.schedule.doseAmount} ${medicine.dosageForm ?? "unit(s)"}', isDark),
+                    const Divider(height: 18),
+                    _buildDetailRow('Dose Times', medicine.schedule.doseTimes.map(TimeFormatter.format24To12Hour).join(", "), isDark),
+                    const Divider(height: 18),
+                    _buildDetailRow('Scheduled Days', TimeFormatter.formatDaysOfWeek(medicine.schedule.daysOfWeek), isDark),
+                    const Divider(height: 18),
+                    _buildDetailRow('Expiry Date', medicine.expiryDate != null ? DateFormat('yyyy-MM-dd').format(medicine.expiryDate!) : 'Not set', isDark),
+                    if (medicine.batchNumber != null) ...[
+                      const Divider(height: 18),
+                      _buildDetailRow('Batch Number', medicine.batchNumber!, isDark),
                     ],
-                  ),
+                    if (medicine.manufacturer != null) ...[
+                      const Divider(height: 18),
+                      _buildDetailRow('Manufacturer', medicine.manufacturer!, isDark),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
 
               // Recent Dose History
-              Text('Recent Dose Logs (Last 7 Days)', style: AppTypography.headingSmall),
-              const SizedBox(height: 8),
+              const SectionHeader(
+                title: 'Recent Dose Logs',
+                subtitle: 'Intake history from the past 7 days',
+              ),
               StreamBuilder<List<DoseLog>>(
                 stream: _medicineService.streamRecentDoseLogs(medicine.id),
-                builder: (context, snapshot) {
-                  final logs = snapshot.data ?? [];
+                builder: (context, logSnapshot) {
+                  final logs = logSnapshot.data ?? [];
                   if (logs.isEmpty) {
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
+                    return SoftCard(
+                      padding: const EdgeInsets.all(20),
+                      child: Center(
                         child: Text(
                           'No recent logs recorded yet.',
                           style: AppTypography.bodySmall,
@@ -200,19 +301,39 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
                   return Column(
                     children: logs
                         .map(
-                          (log) => Card(
+                          (log) => Container(
                             margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: Icon(
-                                log.status == DoseStatus.taken
-                                    ? Icons.check_circle
-                                    : (log.status == DoseStatus.skipped ? Icons.cancel : Icons.error),
-                                color: log.status == DoseStatus.taken
-                                    ? AppColors.success
-                                    : (log.status == DoseStatus.skipped ? AppColors.textSecondary : AppColors.danger),
+                            child: SoftSurface(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    log.status == DoseStatus.taken
+                                        ? Icons.check_circle_rounded
+                                        : (log.status == DoseStatus.skipped ? Icons.cancel_rounded : Icons.error_outline_rounded),
+                                    size: 20,
+                                    color: log.status == DoseStatus.taken
+                                        ? AppColors.success
+                                        : (log.status == DoseStatus.skipped ? AppColors.textSecondary : AppColors.danger),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      TimeFormatter.formatDateTime12Hour(log.scheduledAt),
+                                      style: AppTypography.bodySmall.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  StatusPill(
+                                    label: log.status.name.toUpperCase(),
+                                    type: log.status == DoseStatus.taken
+                                        ? PillType.success
+                                        : (log.status == DoseStatus.skipped ? PillType.neutral : PillType.danger),
+                                  ),
+                                ],
                               ),
-                              title: Text(TimeFormatter.formatDateTime12Hour(log.scheduledAt)),
-                              subtitle: Text('Status: ${log.status.name.toUpperCase()}'),
                             ),
                           ),
                         )
@@ -220,6 +341,7 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
                   );
                 },
               ),
+              const SizedBox(height: 24),
             ],
           ),
         );
@@ -227,27 +349,46 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
+  Widget _buildStatItem(String label, String value, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.bodySmall),
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(value, style: AppTypography.headingSmall.copyWith(color: AppColors.primaryGreen)),
+        Text(
+          value,
+          style: AppTypography.headingSmall.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryBlue,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary)),
-          Text(value, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
-        ],
-      ),
+  Widget _buildDetailRow(String label, String value, bool isDark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: AppTypography.bodySmall.copyWith(
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+          ),
+        ),
+        Text(
+          value,
+          style: AppTypography.bodySmall.copyWith(
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:provider/provider.dart';
-import '../logic/entitlement_guard.dart';
-import '../services/entitlement_service.dart';
 import '../services/pharmacy_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/section_header.dart';
+import '../widgets/soft_button.dart';
+import '../widgets/soft_surface.dart';
 
 class NearbyPharmaciesScreen extends StatefulWidget {
   const NearbyPharmaciesScreen({super.key});
@@ -16,283 +16,205 @@ class NearbyPharmaciesScreen extends StatefulWidget {
 
 class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
   final PharmacyService _pharmacyService = PharmacyService();
+
   Position? _currentPosition;
-  bool _isLoadingLocation = true;
-  bool _isOpeningMap = false;
-  bool _isEmulatorDefault = false;
-  LocationFailureReason? _failureReason;
-  bool _isEntitled = true;
-  String? _selectedCityName;
+  bool _isLoadingLocation = false;
+  String? _locationError;
+  String _selectedCity = 'Dhaka';
 
-  final List<_PharmacyCategory> _categories = const [
-    _PharmacyCategory(
-      title: 'All Nearby Pharmacies',
-      subtitle: 'Drugstores, dispensaries, and retail medicine shops',
-      query: 'pharmacy',
-      icon: Icons.local_pharmacy_rounded,
-      color: AppColors.primaryGreen,
-    ),
-    _PharmacyCategory(
-      title: '24-Hour Pharmacies',
-      subtitle: 'Open 24/7 for urgent and late-night medications',
-      query: '24 hours pharmacy',
-      icon: Icons.access_time_filled_rounded,
-      color: Color(0xFF2E7D32),
-    ),
-    _PharmacyCategory(
-      title: 'Hospital & Model Pharmacies',
-      subtitle: 'DGDA accredited model pharmacies and hospital stores',
-      query: 'model pharmacy',
-      icon: Icons.local_hospital_rounded,
-      color: Color(0xFF1565C0),
-    ),
-    _PharmacyCategory(
-      title: 'Medicine & Surgical Stores',
-      subtitle: 'Surgical supplies, diagnostic items, and medicines',
-      query: 'medicine store',
-      icon: Icons.medical_services_rounded,
-      color: Color(0xFF7B1FA2),
-    ),
-  ];
-
-  final List<_PresetLocation> _presetLocations = const [
-    _PresetLocation(name: 'Dhaka', latitude: 23.8103, longitude: 90.4125),
-    _PresetLocation(name: 'Chittagong', latitude: 22.3569, longitude: 91.7832),
-    _PresetLocation(name: 'Sylhet', latitude: 24.8949, longitude: 91.8687),
-    _PresetLocation(name: 'Rajshahi', latitude: 24.3636, longitude: 88.6241),
-  ];
+  final List<String> _bdCities = ['Dhaka', 'Chittagong', 'Sylhet', 'Rajshahi', 'Khulna'];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _checkEntitlementAndDetectLocation();
-    });
+    _fetchCurrentLocation();
   }
 
-  Future<void> _checkEntitlementAndDetectLocation() async {
-    final entitlement = context.read<EntitlementService>();
-    final isAllowed = await entitlement.requirePremium(
-      context,
-      feature: EntitlementFeature.nearbyPharmacy,
-    );
-
-    if (!isAllowed || !mounted) {
-      setState(() {
-        _isEntitled = false;
-        _isLoadingLocation = false;
-      });
-      return;
-    }
-
-    setState(() {
-      _isEntitled = true;
-    });
-
-    await _detectLocation();
-  }
-
-  Future<void> _detectLocation() async {
+  Future<void> _fetchCurrentLocation() async {
     setState(() {
       _isLoadingLocation = true;
-      _failureReason = null;
-      _selectedCityName = null;
-    });
-
-    final result = await _pharmacyService.getCurrentPositionDetailed();
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingLocation = false;
-      _currentPosition = result.position;
-      _failureReason = result.failureReason;
-      _isEmulatorDefault = result.isEmulatorDefault;
-    });
-  }
-
-  void _setLocation(double lat, double lon, String cityName) {
-    setState(() {
-      _currentPosition = Position(
-        latitude: lat,
-        longitude: lon,
-        timestamp: DateTime.now(),
-        accuracy: 5,
-        altitude: 0,
-        heading: 0,
-        speed: 0,
-        speedAccuracy: 0,
-        altitudeAccuracy: 0,
-        headingAccuracy: 0,
-      );
-      _failureReason = null;
-      _isEmulatorDefault = false;
-      _selectedCityName = cityName;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Location set to $cityName ($lat° N, $lon° E)'),
-        backgroundColor: AppColors.primaryGreen,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  Future<void> _launchMapsSearch({String query = 'pharmacy'}) async {
-    if (_isOpeningMap) return;
-
-    setState(() {
-      _isOpeningMap = true;
+      _locationError = null;
     });
 
     try {
-      final success = await _pharmacyService.openNearbyPharmaciesInMaps(
+      final pos = await _pharmacyService.getCurrentPosition();
+      setState(() => _currentPosition = pos);
+    } catch (e) {
+      setState(() => _locationError = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoadingLocation = false);
+    }
+  }
+
+  Future<void> _launchMaps(String query) async {
+    try {
+      final launched = await _pharmacyService.openNearbyPharmaciesInMaps(
         latitude: _currentPosition?.latitude,
         longitude: _currentPosition?.longitude,
-        query: query,
+        query: _currentPosition != null ? query : '$query $_selectedCity Bangladesh',
       );
-
-      if (!success && mounted) {
+      if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not launch Google Maps. Please verify your browser or Maps app.'),
-            backgroundColor: AppColors.danger,
-          ),
+          const SnackBar(content: Text('Could not launch Google Maps app')),
         );
       }
-    } finally {
+    } catch (e) {
       if (mounted) {
-        setState(() {
-          _isOpeningMap = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error launching Maps: $e')),
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
         title: const Text('Nearby Pharmacies'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.my_location),
-            tooltip: 'Detect Location',
-            onPressed: _detectLocation,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: SoftIconButton(
+            icon: Icons.arrow_back_rounded,
+            size: 40,
+            onPressed: () => Navigator.pop(context),
           ),
-        ],
-      ),
-      body: !_isEntitled ? _buildLockedView() : _buildContent(),
-    );
-  }
-
-  Widget _buildLockedView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.lock_outline, size: 56, color: AppColors.warning),
-            const SizedBox(height: 16),
-            Text(
-              'MediTrack Premium Required',
-              style: AppTypography.headingMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Subscribe to MediTrack Premium to unlock nearby pharmacy directions, AI prescription scanning, and smart price lookups.',
-              style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: _checkEntitlementAndDetectLocation,
-              child: const Text('Unlock Premium'),
-            ),
-          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildContent() {
-    return RefreshIndicator(
-      color: AppColors.primaryGreen,
-      onRefresh: _detectLocation,
-      child: ListView(
-        padding: const EdgeInsets.all(16.0),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         children: [
-          _buildLocationStatusCard(),
-          const SizedBox(height: 12),
-          _buildCityPresetChips(),
-          const SizedBox(height: 16),
-          _buildHeroMapsCard(),
+          // GPS Location Status Card
+          _buildLocationStatusCard(isDark),
+          const SizedBox(height: 18),
+
+          // Bangladesh City Preset Chips
+          _buildCitySelector(isDark),
           const SizedBox(height: 24),
-          Text(
-            'Quick Categories',
-            style: AppTypography.headingSmall,
+
+          // Primary Maps Launch Card
+          _buildHeroMapsCard(isDark),
+          const SizedBox(height: 24),
+
+          // Categorized Quick Searches
+          const SectionHeader(
+            title: 'Pharmacy Categories',
+            subtitle: 'Find specialized medical dispensaries in Bangladesh',
+          ),
+          _buildCategoryCard(
+            title: '24-Hour Emergency Pharmacies',
+            subtitle: 'Find open overnight pharmacies and critical medicine dispensaries',
+            icon: Icons.access_time_filled_rounded,
+            color: AppColors.accentPink,
+            onTap: () => _launchMaps('24 hour pharmacy'),
+            isDark: isDark,
           ),
           const SizedBox(height: 12),
-          ..._categories.map(_buildCategoryCard),
-          const SizedBox(height: 24),
-          _buildFeaturesCard(),
-          const SizedBox(height: 16),
+          _buildCategoryCard(
+            title: 'Hospital & Model Pharmacies',
+            subtitle: 'Verified government model pharmacies & hospital dispensaries',
+            icon: Icons.local_hospital_rounded,
+            color: AppColors.primaryBlue,
+            onTap: () => _launchMaps('model pharmacy hospital'),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 12),
+          _buildCategoryCard(
+            title: 'Medicine & Surgical Stores',
+            subtitle: 'Retail chemist shops, first aid supplies & surgical goods',
+            icon: Icons.medical_services_rounded,
+            color: AppColors.accentOrange,
+            onTap: () => _launchMaps('medicine store chemist'),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildCityPresetChips() {
+  Widget _buildLocationStatusCard(bool isDark) {
+    return SoftSurface(
+      padding: const EdgeInsets.all(16),
+      color: isDark ? AppColors.darkSurface : AppColors.surface,
+      borderColor: AppColors.primaryBlue.withValues(alpha: 0.25),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: _currentPosition != null ? AppColors.successLight : AppColors.primaryBlueLight,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _currentPosition != null ? Icons.my_location_rounded : Icons.location_searching_rounded,
+              color: _currentPosition != null ? AppColors.success : AppColors.primaryBlue,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _currentPosition != null
+                      ? 'GPS Location Active'
+                      : (_isLoadingLocation ? 'Locating device...' : 'Location Not Detected'),
+                  style: AppTypography.headingSmall.copyWith(fontSize: 14),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _currentPosition != null
+                      ? 'Using real-time coordinates (${_currentPosition!.latitude.toStringAsFixed(3)}, ${_currentPosition!.longitude.toStringAsFixed(3)})'
+                      : (_locationError ?? 'Defaulting to $_selectedCity center.'),
+                  style: AppTypography.caption,
+                ),
+              ],
+            ),
+          ),
+          SoftIconButton(
+            icon: Icons.refresh_rounded,
+            size: 36,
+            iconSize: 18,
+            iconColor: AppColors.primaryBlue,
+            tooltip: 'Refresh Location',
+            onPressed: _isLoadingLocation ? null : _fetchCurrentLocation,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCitySelector(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Preset Locations (Bangladesh)',
-          style: AppTypography.bodySmall.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
+          'Select Bangladesh City / Region',
+          style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: _presetLocations.map((loc) {
-              final isSelected = _selectedCityName == loc.name ||
-                  (_selectedCityName == null &&
-                      _currentPosition != null &&
-                      (_currentPosition!.latitude - loc.latitude).abs() < 0.01 &&
-                      (_currentPosition!.longitude - loc.longitude).abs() < 0.01);
-
+            children: _bdCities.map((city) {
+              final isSelected = _selectedCity == city;
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ChoiceChip(
-                  label: Text(loc.name),
+                  label: Text(city),
                   selected: isSelected,
-                  selectedColor: AppColors.primaryGreen,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.textPrimary,
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  backgroundColor: AppColors.surface,
-                  side: BorderSide(
-                    color: isSelected ? AppColors.primaryGreen : AppColors.divider,
+                  selectedColor: AppColors.primaryBlueLight,
+                  labelStyle: AppTypography.caption.copyWith(
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? AppColors.primaryBlue : null,
                   ),
                   onSelected: (selected) {
-                    if (selected) {
-                      _setLocation(loc.latitude, loc.longitude, loc.name);
-                    }
+                    if (selected) setState(() => _selectedCity = city);
                   },
                 ),
               );
@@ -303,493 +225,87 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
     );
   }
 
-  Widget _buildLocationStatusCard() {
-    if (_isLoadingLocation) {
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: const Row(
-          children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: AppColors.primaryGreen,
-              ),
-            ),
-            SizedBox(width: 12),
-            Text(
-              'Acquiring precise GPS coordinates...',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_currentPosition != null) {
-      if (_isEmulatorDefault) {
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.warning.withValues(alpha: 0.5)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.devices_other_rounded, color: AppColors.warning, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Emulator Location Detected',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                    ),
-                    Text(
-                      'Defaulting to Mountain View (${_currentPosition!.latitude.toStringAsFixed(2)}, ${_currentPosition!.longitude.toStringAsFixed(2)})',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () => _setLocation(23.8103, 90.4125, 'Dhaka'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryGreen,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  visualDensity: VisualDensity.compact,
-                ),
-                child: const Text('Set Dhaka', style: TextStyle(fontSize: 11)),
-              ),
-            ],
-          ),
-        );
-      }
-
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.success.withValues(alpha: 0.35),
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.location_on,
-              color: AppColors.success,
-              size: 22,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _selectedCityName != null
-                        ? 'Location: $_selectedCityName'
-                        : 'GPS Location Active',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    '${_currentPosition!.latitude.toStringAsFixed(4)}° N, ${_currentPosition!.longitude.toStringAsFixed(4)}° E',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            TextButton(
-              onPressed: _detectLocation,
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                foregroundColor: AppColors.primaryGreen,
-              ),
-              child: const Text('Refresh', style: TextStyle(fontSize: 12)),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Handle failure reasons with clear, actionable UI
-    String title = 'GPS Unavailable';
-    String description = 'Google Maps will search your general area.';
-    Widget actionButton = TextButton(
-      onPressed: () => _setLocation(23.8103, 90.4125, 'Dhaka'),
-      style: TextButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        foregroundColor: AppColors.primaryGreen,
-      ),
-      child: const Text('Use Dhaka', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-    );
-
-    switch (_failureReason) {
-      case LocationFailureReason.serviceDisabled:
-        title = 'Location Services Off';
-        description = 'Turn on device location for exact GPS coordinates.';
-        actionButton = TextButton(
-          onPressed: () async {
-            await _pharmacyService.openLocationSettings();
-            _detectLocation();
-          },
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            foregroundColor: AppColors.primaryGreen,
-          ),
-          child: const Text('Turn On', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-        );
-        break;
-      case LocationFailureReason.permissionDenied:
-        title = 'Permission Denied';
-        description = 'Allow location permission to pinpoint nearby pharmacies.';
-        actionButton = TextButton(
-          onPressed: _detectLocation,
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            foregroundColor: AppColors.primaryGreen,
-          ),
-          child: const Text('Allow', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-        );
-        break;
-      case LocationFailureReason.permissionDeniedForever:
-        title = 'Permission Blocked';
-        description = 'Location permission is permanently denied in settings.';
-        actionButton = TextButton(
-          onPressed: () async {
-            await _pharmacyService.openAppSettings();
-            _detectLocation();
-          },
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            foregroundColor: AppColors.primaryGreen,
-          ),
-          child: const Text('Settings', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-        );
-        break;
-      case LocationFailureReason.timeoutOrUnavailable:
-      default:
-        title = 'GPS Fix Pending / Emulator';
-        description = 'No satellite fix yet. Select a city or search Maps directly.';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.warning.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.location_off_outlined,
-            color: AppColors.warning,
-            size: 22,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actionButton,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeroMapsCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+  Widget _buildHeroMapsCard(bool isDark) {
+    return SoftSurface(
       padding: const EdgeInsets.all(20),
+      color: isDark ? AppColors.darkSurface : AppColors.surface,
+      borderColor: AppColors.primaryBlue.withValues(alpha: 0.3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreenLight.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.map_rounded,
-                  color: AppColors.primaryGreen,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Live Google Maps Search',
-                      style: AppTypography.headingSmall.copyWith(fontSize: 17),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _currentPosition != null
-                          ? 'Coordinates: ${_currentPosition!.latitude.toStringAsFixed(4)}, ${_currentPosition!.longitude.toStringAsFixed(4)}'
-                          : 'Searches automatically around your location',
-                      style: AppTypography.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Explore pharmacies around your selected coordinates on Google Maps with verified reviews, contact numbers, and turn-by-turn navigation.',
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
+                  color: AppColors.primaryBlueLight,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                elevation: 0,
-              ),
-              onPressed: _isOpeningMap ? null : () => _launchMapsSearch(query: 'pharmacy'),
-              icon: _isOpeningMap
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.explore_rounded, size: 20),
-              label: Text(
-                _isOpeningMap ? 'Opening Maps...' : 'Find Pharmacies on Google Maps',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(_PharmacyCategory category) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.divider),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: _isOpeningMap ? null : () => _launchMapsSearch(query: category.query),
-        child: Padding(
-          padding: const EdgeInsets.all(14.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: category.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(category.icon, color: category.color, size: 22),
+                child: const Icon(Icons.map_rounded, color: AppColors.primaryBlue, size: 24),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      category.title,
-                      style: AppTypography.headingSmall.copyWith(fontSize: 15),
-                    ),
+                    Text('Open Google Maps', style: AppTypography.headingMedium),
                     const SizedBox(height: 2),
                     Text(
-                      category.subtitle,
-                      style: AppTypography.bodySmall.copyWith(fontSize: 12),
+                      'Turn-by-turn navigation, store hours, and contact numbers',
+                      style: AppTypography.caption,
                     ),
                   ],
                 ),
               ),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: AppColors.textSecondary,
-              ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeaturesCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Key Information on Google Maps',
-            style: AppTypography.headingSmall.copyWith(fontSize: 14),
-          ),
-          const SizedBox(height: 12),
-          _buildFeatureItem(
-            icon: Icons.schedule_rounded,
-            title: 'Live Opening Hours',
-            description: 'Check if the pharmacy is open now or 24/7 before traveling.',
-          ),
-          const Divider(height: 20, color: AppColors.divider),
-          _buildFeatureItem(
-            icon: Icons.directions_car_rounded,
-            title: 'Live Navigation & Traffic',
-            description: 'Get real-time driving, transit, and walking route estimates.',
-          ),
-          const Divider(height: 20, color: AppColors.divider),
-          _buildFeatureItem(
-            icon: Icons.call_rounded,
-            title: 'Direct Phone Calling',
-            description: 'Call the pharmacy directly to verify medicine availability.',
-          ),
-          const Divider(height: 20, color: AppColors.divider),
-          _buildFeatureItem(
-            icon: Icons.star_rounded,
-            title: 'Ratings & Reviews',
-            description: 'Read feedback from other local customers.',
+          const SizedBox(height: 18),
+          SoftPrimaryButton(
+            label: 'Search Nearest Pharmacies',
+            icon: Icons.directions_rounded,
+            onPressed: () => _launchMaps('pharmacy'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureItem({
-    required IconData icon,
+  Widget _buildCategoryCard({
     required String title,
-    required String description,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    required bool isDark,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: AppColors.primaryGreen),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+    return SoftSurface(
+      padding: const EdgeInsets.all(16),
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 22),
           ),
-        ),
-      ],
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTypography.headingSmall.copyWith(fontSize: 14)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: AppTypography.caption),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary),
+        ],
+      ),
     );
   }
-}
-
-class _PresetLocation {
-  final String name;
-  final double latitude;
-  final double longitude;
-
-  const _PresetLocation({
-    required this.name,
-    required this.latitude,
-    required this.longitude,
-  });
-}
-
-class _PharmacyCategory {
-  final String title;
-  final String subtitle;
-  final String query;
-  final IconData icon;
-  final Color color;
-
-  const _PharmacyCategory({
-    required this.title,
-    required this.subtitle,
-    required this.query,
-    required this.icon,
-    required this.color,
-  });
 }
