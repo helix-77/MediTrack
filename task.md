@@ -19,3 +19,6 @@ I/flutter (22345): Firebase AI Gemini Error: [firebase_app_check/unknown] com.go
 
 [x] Test SMS service
 [x] Subscription service
+[x] ai service
+[x] prescription ocr
+[] Ui revamp

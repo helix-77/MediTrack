@@ -85,7 +85,7 @@ class EntitlementGuard {
       remaining: 0,
       isSoftCapReached: false,
       statusMessage:
-          '$featureName requires MediTrack Premium (৳2.78/day via Robi/Airtel).',
+          '$featureName requires MediTrack Premium (৳2.00/day via Robi/Airtel).',
     );
   }
 }

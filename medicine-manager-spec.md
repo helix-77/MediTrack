@@ -1,6 +1,6 @@
 # MediTrack — Medicine Manager App: Build Spec & AI Prompt Pack
 
-*(Working title "MediTrack" — rename freely, it's a find-and-replace.)*
+_(Working title "MediTrack" — rename freely, it's a find-and-replace.)_
 
 ## 0. How to use this document
 
@@ -29,6 +29,7 @@ app extracts the details → app tracks stock, schedules doses, reminds you to t
 and helps you find a cheaper generic or a nearby pharmacy.
 
 **MVP feature set** (build in this order, see Section 6 for phasing):
+
 1. Add medicine by camera + on-device OCR (name, expiry, batch, quantity)
 2. Dose scheduling + local reminders (take-now / refill / expiry alerts)
 3. Home dashboard (today's doses, upcoming refills, expiring soon)
@@ -331,6 +332,7 @@ bare "No data" text.
 Screen list (sequencing lives in Section 6 now; see Section 5.8 for screens already
 shipped beyond this original list — Welcome/Login/Signup, AI Assistant, Buy List,
 Prescription Vault, Calendar & Routine, Profile Settings):
+
 1. Onboarding (3 slides + "Get Started", illustration-led, matches reference style)
 2. Home dashboard — "Today's Doses" card list + "Upcoming Refills" + "Expiring Soon" +
    FAB for add-medicine
@@ -350,6 +352,7 @@ Prescription Vault, Calendar & Routine, Profile Settings):
 ## 5. Feature Specs
 
 ### 5.1 Add Medicine via Camera OCR
+
 Flow: FAB → bottom sheet → "Scan Box" (or the camera icon on the manual Add/Edit form) →
 `image_picker` opens the camera → capture → run `google_mlkit_text_recognition` on the
 image → pass the raw recognized text into a pure parsing function → pre-fill the form →
@@ -359,9 +362,10 @@ Parsing heuristics (currently implemented inline inside
 `screens/add_edit_medicine_screen.dart` — extract them into `lib/logic/ocr_parser.dart`
 as pure, unit-testable functions the next time that screen is touched; logic embedded in
 a `State` class can't be unit-tested):
+
 - Expiry date: search recognized lines (case-insensitive) for a token matching
   `exp|expiry|exp date|use before`, then look at that line and the following line for a
-  date pattern: `DD/MM/YYYY`, `MM/YYYY`, `MM-YYYY`, `DD-MM-YYYY`. Parse the *first* match.
+  date pattern: `DD/MM/YYYY`, `MM/YYYY`, `MM-YYYY`, `DD-MM-YYYY`. Parse the _first_ match.
 - Manufacture date: same approach with `mfg|manufactured|mfd`.
 - Batch number: same approach with `batch|b\.no|lot`.
 - Medicine name candidate: the text block with the largest bounding-box height that is
@@ -389,6 +393,7 @@ rest of this section is the target architecture, and 5.2.8 is the concrete plan 
 there — treat it as the current top priority (Section 6).
 
 #### 5.2.1 Design goals (non-negotiable)
+
 - Never let a model output become a saved dosage without a human looking at it —
   confirmation is mandatory, not a UX nicety (this is already a standing rule in
   Section 2's DO NOT list).
@@ -403,6 +408,7 @@ there — treat it as the current top priority (Section 6).
   raw going into analytics or crash logs.
 
 #### 5.2.2 Pipeline architecture
+
 1. **Capture & assembly** — `image_picker` camera/gallery, multi-page supported (a list
    of files assembled client-side before upload). Compress each page client-side
    (target ≤ 1600px longest edge, JPEG quality ~85) before it touches the network — keeps
@@ -441,7 +447,9 @@ there — treat it as the current top priority (Section 6).
    `items` doc; `prescriptions/{id}.status` flips to `"reviewed"`.
 
 #### 5.2.3 Exact contract for the Gemini call
+
 🤖 System prompt:
+
 ```
 You are a medical prescription OCR assistant. You will receive one or more images of a
 doctor's prescription, which may be handwritten and may mix Bangla and English. Extract
@@ -469,6 +477,7 @@ Return ONLY valid JSON, no prose, no markdown code fences, matching exactly this
 }
 If the image is unreadable or is not a prescription, return {"error": "unreadable"}.
 ```
+
 Use `schema_version` for forward-compatible migrations — bump it whenever the shape
 changes, and branch client-side parsing on it rather than assuming the latest shape.
 Client-side rule: any line item with `confidence: "low"` or `"medium"` is visually
@@ -476,15 +485,17 @@ flagged on the review screen so the user scrutinizes it before confirming — ne
 auto-confirm low-confidence items. Always show the disclaimer from 5.2.2 step 6.
 
 #### 5.2.4 Error handling taxonomy
-| Failure | Detection | User-facing behavior |
-|---|---|---|
-| Image unreadable / not a prescription | model returns `{"error": "unreadable"}` | Toast + retake prompt, no draft written |
-| Network/timeout | SDK exception | Retry button, then fall back to "save the photo only, extract later" |
-| Malformed JSON despite schema | parse failure | One silent retry with a stricter reminder appended to the prompt; if that also fails, fall back to on-device ML Kit raw text + manual entry |
-| Quota/rate limit (App Check / Gemini) | SDK error code | Friendly "AI extraction is busy, try again shortly" + keep the photo saved as a plain prescription-vault entry so the user isn't blocked |
-| Low confidence across all items | client-side check | Still show the review screen, but with a banner: "This scan wasn't very clear — please double check every field" |
+
+| Failure                               | Detection                               | User-facing behavior                                                                                                                        |
+| ------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Image unreadable / not a prescription | model returns `{"error": "unreadable"}` | Toast + retake prompt, no draft written                                                                                                     |
+| Network/timeout                       | SDK exception                           | Retry button, then fall back to "save the photo only, extract later"                                                                        |
+| Malformed JSON despite schema         | parse failure                           | One silent retry with a stricter reminder appended to the prompt; if that also fails, fall back to on-device ML Kit raw text + manual entry |
+| Quota/rate limit (App Check / Gemini) | SDK error code                          | Friendly "AI extraction is busy, try again shortly" + keep the photo saved as a plain prescription-vault entry so the user isn't blocked    |
+| Low confidence across all items       | client-side check                       | Still show the review screen, but with a banner: "This scan wasn't very clear — please double check every field"                            |
 
 #### 5.2.5 Observability & quality tracking
+
 Log (never with PHI content): call latency, success/failure/error-type counts, the
 confidence distribution per extraction, and the "edit rate" (did the user change a field
 the model filled in). A simple aggregated diagnostics doc or Firebase Analytics custom
@@ -492,6 +503,7 @@ events with all prescription content stripped out is enough — this is how you'
 know the feature works, not just that it shipped.
 
 #### 5.2.6 Security & privacy
+
 Prescription images live at `users/{uid}/prescriptions/{prescriptionId}/{page}.jpg` in
 Firebase Storage. **`storage.rules` does not exist in this repo today** — this repo has
 `firestore.rules` but no Storage rules file, and `firebase.json` doesn't reference one
@@ -502,6 +514,7 @@ being uploaded. Treat adding `storage.rules` (scoped the same way as `firestore.
 generate a public/shareable download URL for a prescription image.
 
 #### 5.2.7 Testing strategy
+
 A small fixed set of representative prescription photos (clear handwriting, messy
 handwriting, Bangla+English mix, blurry, and a non-prescription control image) checked
 into `test/fixtures/` — synthetic/sample prescriptions only, never real patient data —
@@ -510,6 +523,7 @@ Unit-test the client-side validation/clamping logic from 5.2.4 as pure functions
 network involved, no mocking needed).
 
 #### 5.2.8 Execution Strategy
+
 Ordered, each step independently buildable and reviewable. Steps 1–4 are a strict
 dependency chain — don't parallelize those; steps 6–8 can trail behind once 1–5 are
 stable.
@@ -544,6 +558,7 @@ stable.
    against real failures, bump `schema_version` if the shape changes as a result.
 
 ### 5.3 Refill / Dose Reminder Logic
+
 Pure functions already implemented in `lib/logic/refill_calculator.dart`
 (`RefillCalculator`), unit-tested, no UI/Firestore dependency:
 
@@ -559,6 +574,7 @@ isExpiringSoon = (expiryDate - today).days <= expiryAlertDaysBefore  // default 
 Notification scheduling, already implemented in
 `lib/services/notification_service.dart` (`NotificationService`) via
 `flutter_local_notifications` + `timezone`:
+
 - On medicine/schedule save, cancel and reschedule that medicine's notifications: one
   repeating local notification per entry in `schedule.doseTimes`, an expiry-warning
   notification fired once at (expiryDate − 30 days), and a refill notification shown
@@ -577,8 +593,9 @@ Notification scheduling, already implemented in
   work, not yet built — the values above are currently hardcoded defaults.
 
 ### 5.4 Price & Generic-Alternative Lookup
+
 Important reframe, stated plainly because it changes what's actually buildable: there is
-no live public API in Bangladesh that reports what different *pharmacies* currently
+no live public API in Bangladesh that reports what different _pharmacies_ currently
 charge for a given medicine — that data simply isn't published anywhere accessible.
 What does exist is manufacturer-listed unit prices (MRP) per brand, aggregated by
 medex.com.bd, and there's already a public scrape of it (an open-source scraper,
@@ -588,6 +605,7 @@ current terms of service/robots.txt — treat that as an open task for you to ve
 something to automate blindly.
 
 So MVP feature = **"Price & Generic Lookup"**, not "pharmacy price comparison":
+
 - Seed the top-level `medicineReference` Firestore collection (Section 3) from that
   existing dataset via a one-time authenticated seed script (Firebase Admin SDK,
   Node.js or Python — run once, not part of the app), `source: "medex_seed_2026"`,
@@ -604,7 +622,9 @@ So MVP feature = **"Price & Generic Lookup"**, not "pharmacy price comparison":
   prices from users, with moderation) — flagged, not built now.
 
 #### 5.4.1 Execution Strategy
+
 Ordered steps to take this from "planned" to shipped:
+
 1. **Source the dataset.** Default to the static Kaggle "All Medicine Data of Bangladesh"
    snapshot (~25k rows) rather than running `bd-medicine-scraper` yourself for v1 — it
    sidesteps the medex.com.bd terms-of-service/robots.txt question entirely (Section 7
@@ -627,6 +647,7 @@ Ordered steps to take this from "planned" to shipped:
    reason to (Section 7 has the open question if that changes).
 
 ### 5.5 Nearby Pharmacy
+
 - Device location is acquired via `geolocator` (GPS coordinates `lat, lon` with standard permission handling).
 - The client constructs a Google Maps Universal Search URL:
   `https://www.google.com/maps/search/?api=1&query=pharmacy+near+<lat>,<lon>` (or specific category queries like `24 hours pharmacy`, `model pharmacy`, `medicine store`).
@@ -635,6 +656,7 @@ Ordered steps to take this from "planned" to shipped:
 - Entitlement: Gated behind `EntitlementFeature.nearbyPharmacy` premium check.
 
 ### 5.6 Settings / Family Profiles (Phase 2)
+
 - Language toggle (English/Bangla) via `easy_localization` — this is why Section 2
   requires every string to be centralized/translation-ready from day one.
 - Notification threshold sliders (refill days, expiry days, snooze presets) — the
@@ -648,6 +670,7 @@ Ordered steps to take this from "planned" to shipped:
   the same home dashboard (filter chips).
 
 ### 5.7 Deliberately out of scope for now
+
 - **Drug interaction / contraindication checking.** This would mean the app making a
   medical-safety claim, which needs a properly licensed interaction database and, really,
   clinical review before shipping — a hand-rolled ruleset here is a genuine safety risk,
@@ -659,8 +682,10 @@ Ordered steps to take this from "planned" to shipped:
 - **Live crowdsourced pharmacy pricing.** Needs a moderation system before it's trustworthy.
 
 ### 5.8 Already shipped beyond the original MVP scope
+
 These exist in the codebase today, aren't described elsewhere in this spec, and should
 be kept working while the rest of this document's plan is executed:
+
 - **Auth flows** (`welcome_screen.dart`, `login_screen.dart`, `signup_screen.dart`,
   `auth_service.dart`) — anonymous, email/password, and Google Sign-In, gating entry via
   `MainNavigationShell` vs. `WelcomeScreen` in `main.dart`'s `authStateChanges()` stream.
@@ -691,6 +716,7 @@ individual fields, and a "describe it, I'll fill the form" AI shortcut built on 
 Gemini structured-action support that already exists (Section 5.8's AI Assistant).
 
 **Voice dictation:**
+
 - Use `speech_to_text` (wraps the OS/Google on-device speech engine) — no new cloud
   dependency, consistent with Section 2's on-device-first stance for anything that has an
   on-device option.
@@ -703,9 +729,10 @@ Gemini structured-action support that already exists (Section 5.8's AI Assistant
   dictation is acceptable for v1 or whether Bangla support is a launch requirement.
 
 **AI-assisted fill:**
+
 - Add a "Describe with AI" entry point on the manual-entry screen accepting typed or
   dictated free text (e.g. "Napa 500mg, one tablet twice a day for a week"), sends it
-  through Gemini, and reuses the *existing* `ADD_MEDICINE` JSON action contract and parser
+  through Gemini, and reuses the _existing_ `ADD_MEDICINE` JSON action contract and parser
   in `GeminiAiService` (Section 5.8) rather than inventing a second schema.
 - Apply results the same non-destructive way as `_applyOcrResult` (Section 5.1): only
   fill fields that are currently empty, never overwrite what the user already typed, and
@@ -714,6 +741,7 @@ Gemini structured-action support that already exists (Section 5.8's AI Assistant
   Section 5.11 defines for chat actions — share one validator, don't fork it.
 
 **Execution steps:**
+
 1. Add the `speech_to_text` dependency and a small reusable voice-input widget/controller.
 2. Wire microphone permission requests with a graceful typing fallback.
 3. Add the "Describe with AI" text/voice entry point to `AddEditMedicineScreen`, calling a
@@ -727,21 +755,23 @@ Gemini structured-action support that already exists (Section 5.8's AI Assistant
 
 The BD Apps subscription rail connects carrier billing (Robi / Airtel) to premium feature entitlements.
 MediTrack operates a hybrid model: core tracking is free forever, while external API cost centers
-are gated behind an active ৳2.78/day (+VAT+SD+SC) micro-subscription.
+are gated behind an active ৳2.00/day (+VAT+SD+SC) micro-subscription.
 
 **Implemented Gatekeeping (Option A - Active):**
+
 - **Free Tier (Free forever, offline-first):**
   - Medicine management, pill schedule tracking, local notifications.
   - On-device box/strip OCR (ML Kit text recognition).
   - Digital Prescription Vault (photo storage & retrieval).
   - Low-stock Buy List.
-- **Premium Tier (৳2.78/day via Robi 018 / Airtel 016 carrier billing):**
+- **Premium Tier (৳2.00/day via Robi 018 / Airtel 016 carrier billing):**
   1. **Prescription AI OCR:** Multi-page structured Gemini 3.6 Flash dosage extraction.
   2. **AI Health Assistant:** Multimodal Gemini conversation & prescription analysis.
   3. **Medicine Price & Generic Lookup:** Bangladesh reference database search & cheap alternatives.
   4. **Nearby Pharmacies:** Live GPS & Google Places locator with call / directions shortcuts.
 
 **Architecture & Implementation:**
+
 - `EntitlementGuard` & `EntitlementService`: Check cached entitlement state (`subscriptionStatus` on `users/{uid}/profile/main`), enforce a 5-minute cache freshness window, query BD Apps carrier servers on stale/foreground resume, and guard against non-registered accounts.
 - `SubscriptionOfferScreen`: Commercial subscription UI showing carrier badges, clear pricing disclosure, legal consent checkboxes, terms / privacy dialogs, auto-renewal rules, and polling activation state machine.
 - `backend/subscribe.php`: Server-side endpoint executing direct carrier billing subscription requests.
@@ -759,6 +789,7 @@ There is currently no usage limiting, no shared action-JSON validation, and no p
 in-UI safety disclaimer beyond whatever text the model happens to include in a reply.
 
 **Roadmap:**
+
 - **Settle ownership once Section 5.2 ships:** `PrescriptionExtractionService` owns
   structured prescription-photo-to-JSON extraction; `GeminiAiService` owns free-form chat
   and quick structured actions. Retire or fold `AIPrescriptionService` into one of those
@@ -778,6 +809,7 @@ in-UI safety disclaimer beyond whatever text the model happens to include in a r
   mirroring Section 5.2.5's approach, so quality regressions are visible.
 
 **Execution steps:**
+
 1. Add `lib/logic/ai_action_validator.dart`, shared by chat actions now and prescription
    items later where the rules overlap (e.g. positive integer quantities).
 2. Add the Section 5.10 entitlement check at the point a chat message/image is sent.
@@ -798,6 +830,7 @@ services doing it invisibly, on top of that, is the "invisible anonymous auth" t
 is about.
 
 **Design:**
+
 - Remove the silent fallback from all five services. Each should surface a typed
   "not authenticated" result/error instead of calling `signInAnonymously()` itself.
 - Screens that call these services catch that error and route to `WelcomeScreen` (or show
@@ -815,6 +848,7 @@ is about.
   creates a real account — anonymous Firebase users have no recovery path today.
 
 **Execution steps:**
+
 1. Audit and remove every `signInAnonymously()` fallback in `MedicineService`,
    `PrescriptionService`, `UserProfileService`, `BuyListService`, and `GeminiAiService`.
 2. Update each call site to handle the resulting "not authenticated" state by routing to
@@ -830,6 +864,7 @@ is about.
 
 This is a verification/hardening pass on the already-implemented Section 5.3 system, not
 a rebuild. Checklist:
+
 - **Exact-alarm fallback:** `NotificationService` already requests
   `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` and falls back to `inexactAllowWhileIdle` on
   failure — verify that fallback actually fires correctly on a device where the
@@ -861,6 +896,7 @@ a rebuild. Checklist:
   "Mark as Taken" action.
 
 **Execution steps:**
+
 1. Run a manual device-matrix test (at minimum one OEM known for aggressive battery
    management) covering all three notification types across app-killed, backgrounded, and
    foregrounded states.
@@ -880,6 +916,7 @@ decisions belong in a short, focused pass per screen (a good candidate for the
 brainstorming workflow's visual-companion mode) rather than being locked in here.
 
 **Audit checklist:**
+
 - **Design-token drift:** check every screen in Section 4's screen list / Section 5.8's
   shipped list against Section 4's spacing scale, radius scale, shadow style, and color
   usage — screens built incrementally over time commonly drift from the tokens they
@@ -908,6 +945,7 @@ fixes to already-shipped Phase 1 work, not new features, and should land before 
 features are stacked on top of them.
 
 **Phase 2 — in progress / current priorities, roughly in this order:**
+
 1. Section 5.2 prescription OCR — a working prototype exists today but not yet the
    structured, reviewable, confidence-scored pipeline this spec targets; 5.2.8's
    Execution Strategy is the concrete plan.
@@ -952,7 +990,7 @@ already-delivered extras; keep them working while executing the rest of this pha
   rather than the originally-proposed "fully anonymous/local until opt-in" flow —
   confirm that's the intended product decision (a reasonable one, given cross-device sync
   and the AI assistant both wanting a stable `uid` from day one) rather than accidental
-  scope creep. Section 5.12 answers the narrower follow-up (remove the *silent* anonymous
+  scope creep. Section 5.12 answers the narrower follow-up (remove the _silent_ anonymous
   fallback in services) but still needs your call on whether "Continue as Guest" stays as
   an explicit option at all.
 - Where the seed medicine-price dataset (Section 5.4) actually gets hosted — a top-level
