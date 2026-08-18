@@ -248,49 +248,59 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             context.read<BdAppsService>().updateBdMobile(profile.bdMobile);
           });
 
-          return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            children: [
-              // User Profile Header Card
-              _buildProfileHeaderCard(profile, user),
-              const SizedBox(height: 20),
+          return RefreshIndicator(
+            color: AppColors.primaryGreen,
+            onRefresh: () async {
+              final entitlement = context.read<EntitlementService>();
+              final bdApps = context.read<BdAppsService>();
+              await entitlement.refreshEntitlement(forceCarrierCheck: true);
+              await bdApps.refreshSubscriptionStatus();
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
+                // User Profile Header Card
+                _buildProfileHeaderCard(profile, user),
+                const SizedBox(height: 20),
 
-              // Subscribe Service — manage BD Apps subscription lifecycle (MediTrack Premium)
-              _buildSubscribeServiceCard(),
-              const SizedBox(height: 20),
+                // Subscribe Service — manage BD Apps subscription lifecycle (MediTrack Premium)
+                _buildSubscribeServiceCard(),
+                const SizedBox(height: 20),
 
-              // Language Selector Card
-              _buildLanguageSettingsCard(),
-              const SizedBox(height: 20),
+                // Language Selector Card
+                _buildLanguageSettingsCard(),
+                const SizedBox(height: 20),
 
-              // Dark Mode Theme Card
-              _buildThemeSettingsCard(),
-              const SizedBox(height: 20),
+                // Dark Mode Theme Card
+                _buildThemeSettingsCard(),
+                const SizedBox(height: 20),
 
-              // Medical Tools & Reports Card
-              _buildMedicalToolsCard(),
-              const SizedBox(height: 20),
+                // Medical Tools & Reports Card
+                _buildMedicalToolsCard(),
+                const SizedBox(height: 20),
 
-              // Family Profiles Card
-              _buildFamilyProfilesCard(),
-              const SizedBox(height: 20),
+                // Family Profiles Card
+                _buildFamilyProfilesCard(),
+                const SizedBox(height: 20),
 
-              // Medical & Emergency Info Card
-              _buildMedicalInfoCard(profile),
-              const SizedBox(height: 20),
+                // Medical & Emergency Info Card
+                _buildMedicalInfoCard(profile),
+                const SizedBox(height: 20),
 
-              // SMS Service — fire test SMS through BD Apps gateway
-              _buildSmsServiceCard(),
-              const SizedBox(height: 20),
+                // SMS Service — fire test SMS through BD Apps gateway
+                _buildSmsServiceCard(),
+                const SizedBox(height: 20),
 
-              // Notification & Preference Settings
-              _buildNotificationSettingsCard(profile),
-              const SizedBox(height: 20),
+                // Notification & Preference Settings
+                _buildNotificationSettingsCard(profile),
+                const SizedBox(height: 20),
 
-              // Account Security & Actions
-              _buildAccountActionsCard(user),
-              const SizedBox(height: 24),
-            ],
+                // Account Security & Actions
+                _buildAccountActionsCard(user),
+                const SizedBox(height: 24),
+              ],
+            ),
           );
         },
       ),
@@ -1061,6 +1071,77 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       },
                     ),
                   ),
+                  if (mobile != null && mobile.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      enabled: !isChecking,
+                      leading: const Icon(
+                        Icons.refresh,
+                        color: AppColors.primaryGreen,
+                      ),
+                      title: const Text('Check Subscription Status'),
+                      subtitle: const Text(
+                        'Already subscribed via SMS/USSD? Tap to verify',
+                      ),
+                      trailing: isChecking
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.primaryGreen,
+                            ),
+                      onTap: !isChecking
+                          ? () async {
+                              final entitled = await entitlement.refreshEntitlement(forceCarrierCheck: true);
+                              await service.refreshSubscriptionStatus();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      entitled || service.isRegistered
+                                          ? '🎉 Active subscription confirmed! Premium features unlocked.'
+                                          : 'Status from BD Apps: ${service.subscriptionStatus ?? 'UNREGISTERED'}',
+                                    ),
+                                    backgroundColor: (entitled || service.isRegistered)
+                                        ? AppColors.success
+                                        : AppColors.textSecondary,
+                                  ),
+                                );
+                              }
+                            }
+                          : null,
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      enabled: !isUnsubscribing,
+                      leading: const Icon(
+                        Icons.unsubscribe,
+                        color: AppColors.danger,
+                      ),
+                      title: const Text('Unsubscribe from Premium'),
+                      subtitle: Text(
+                        'Cancel daily carrier auto-renewal',
+                        style: AppTypography.bodySmall,
+                      ),
+                      trailing: isUnsubscribing
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.danger,
+                            ),
+                      onTap: !isUnsubscribing
+                          ? () => _confirmUnsubscribe(service, entitlement)
+                          : null,
+                    ),
+                  ],
                 ],
 
                 if (lastResponse != null) ...[

@@ -46,9 +46,20 @@ class SubscribeResponse {
   /// Helper: whether the user is successfully subscribed.
   bool get isSubscribed => isRegistered;
 
+  /// Helper: whether the carrier reported that the user is already registered.
+  bool get isAlreadyRegistered {
+    final detail = (statusDetail ?? '').toLowerCase();
+    final err = (error ?? '').toLowerCase();
+    return isRegistered ||
+        detail.contains('already register') ||
+        err.contains('already register') ||
+        detail.contains('already subscribe') ||
+        err.contains('already subscribe');
+  }
+
   /// Helper: whether the request reached the carrier successfully (even if pending confirmation).
   bool get isRequestAccepted =>
-      statusCode == 'S1000' || isPending || isRegistered;
+      statusCode == 'S1000' || isPending || isRegistered || isAlreadyRegistered;
 
   factory SubscribeResponse.fromJson(Map<String, dynamic> json) {
     return SubscribeResponse(

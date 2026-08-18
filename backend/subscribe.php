@@ -83,9 +83,18 @@ $statusCode = $response['statusCode'] ?? null;
 $subscriptionStatus = $response['subscriptionStatus'] ?? 'PENDING';
 $statusDetail = $response['statusDetail'] ?? null;
 
+// If BD Apps reports that the subscriber is already registered, treat as registered
+$isAlreadyRegistered = (stripos((string)$statusDetail, 'already register') !== false ||
+                        stripos((string)$statusDetail, 'already subscribe') !== false ||
+                        $statusCode === 'E1351');
+
+if ($isAlreadyRegistered) {
+    $subscriptionStatus = 'REGISTERED';
+}
+
 // Never report active entitlement for pending states
 $isRegistered = (strtoupper((string)$subscriptionStatus) === 'REGISTERED');
-$isSuccess = ($statusCode === 'S1000' && $isRegistered);
+$isSuccess = ($isRegistered && ($statusCode === 'S1000' || $isAlreadyRegistered));
 
 echo json_encode([
     'success'            => $isSuccess,

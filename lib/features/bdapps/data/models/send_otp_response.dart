@@ -18,6 +18,16 @@ class SendOtpResponse {
   final String? version;
   final String? error;
 
+  /// Helper: whether BD Apps reported the subscriber is already registered.
+  bool get isAlreadyRegistered {
+    final detail = (statusDetail ?? '').toLowerCase();
+    final err = (error ?? '').toLowerCase();
+    return detail.contains('already register') ||
+        err.contains('already register') ||
+        detail.contains('already subscribe') ||
+        err.contains('already subscribe');
+  }
+
   factory SendOtpResponse.fromJson(Map<String, dynamic> json) {
     return SendOtpResponse(
       isSuccess: json['success'] == true || json['statusCode'] == 'S1000',

@@ -129,11 +129,98 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     if (!mounted) return;
     final bdService = context.read<BdAppsService>();
     final ok = await bdService.sendOtp(mobileNumber: normalized);
+    if (!mounted) return;
+
+    if (bdService.isRegistered) {
+      final entitlementService = context.read<EntitlementService>();
+      entitlementService.updateSubscribedState(true);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('profile')
+              .doc('main')
+              .set({
+            'bdMobile': normalized,
+            'subscriptionStatus': 'REGISTERED',
+            'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🎉 You are already subscribed! MediTrack Premium is unlocked.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      Navigator.pop(context, true);
+      return;
+    }
+
     if (ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('OTP sent to $normalized via SMS. Enter code below.'),
           backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleCheckExistingStatus() async {
+    final rawNumber = _mobileController.text.trim();
+    final validationError = BdMobileValidator.validateRobiAirtel(rawNumber);
+    if (validationError != null) {
+      setState(() => _inlineError = validationError);
+      return;
+    }
+
+    setState(() => _inlineError = null);
+    final normalized = BdMobileValidator.normalize(rawNumber);
+
+    final bdService = context.read<BdAppsService>();
+    final entitlementService = context.read<EntitlementService>();
+
+    bdService.updateBdMobile(normalized);
+    await bdService.refreshSubscriptionStatus();
+
+    if (!mounted) return;
+
+    if (bdService.isRegistered) {
+      entitlementService.updateSubscribedState(true);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('profile')
+              .doc('main')
+              .set({
+            'bdMobile': normalized,
+            'subscriptionStatus': 'REGISTERED',
+            'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🎉 Active subscription found! MediTrack Premium is unlocked.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No active subscription found for $normalized (${bdService.subscriptionStatus ?? 'UNREGISTERED'}). Please send SMS OTP to subscribe.',
+          ),
+          backgroundColor: AppColors.textSecondary,
         ),
       );
     }
@@ -442,7 +529,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Subscribe with Robi / Airtel (৳2.78/day)',
+            'Subscribe with Robi / Airtel (৳2.00/day)',
             style: AppTypography.headingSmall.copyWith(fontSize: 15),
           ),
           const SizedBox(height: 4),
@@ -514,10 +601,25 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
               label: Text(
                 service.isSendingOtp
                     ? 'Sending SMS Code...'
-                    : (hasPendingOtp ? 'Resend SMS OTP' : 'Send SMS OTP (৳2.78/day)'),
+                    : (hasPendingOtp ? 'Resend SMS OTP' : 'Send SMS OTP (৳2.00/day)'),
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
               onPressed: (!_hasConsented || isBusy) ? null : _handleSendOtp,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton.icon(
+              onPressed: isBusy ? null : _handleCheckExistingStatus,
+              icon: const Icon(Icons.refresh, size: 16, color: AppColors.primaryGreen),
+              label: const Text(
+                'Already subscribed? Check status',
+                style: TextStyle(
+                  color: AppColors.primaryGreen,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
 
@@ -611,7 +713,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
             child: Wrap(
               children: [
                 const Text(
-                  'I agree to subscribe to MediTrack Premium at ৳2.78/day +(VAT+SD+SC) on auto-renewal basis and accept the ',
+                  'I agree to subscribe to MediTrack Premium at ৳2.00/day +(VAT+SD+SC) on auto-renewal basis and accept the ',
                   style: TextStyle(fontSize: 11, height: 1.3),
                 ),
                 GestureDetector(

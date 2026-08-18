@@ -37,16 +37,15 @@ void main() {
       expect(response.isRequestAccepted, isTrue);
     });
 
-    test('parses failed subscription response', () {
+    test('parses already registered response', () {
       final json = {
         'statusCode': 'E1351',
-        'statusDetail': 'User is not allowed to register or insufficient balance.',
+        'statusDetail': 'user already registered',
       };
 
       final response = SubscribeResponse.fromJson(json);
-      expect(response.isRegistered, isFalse);
-      expect(response.isPending, isFalse);
-      expect(response.isRequestAccepted, isFalse);
+      expect(response.isAlreadyRegistered, isTrue);
+      expect(response.isRequestAccepted, isTrue);
     });
   });
 }

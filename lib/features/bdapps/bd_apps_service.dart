@@ -108,7 +108,7 @@ class BdAppsService extends ChangeNotifier {
       final response = await _apiClient.subscribe(userMobile: normalized);
       lastSubscribeResponse = response;
 
-      if (response.isRegistered) {
+      if (response.isRegistered || response.isAlreadyRegistered) {
         subscriptionStatus = 'REGISTERED';
         subscriptionState = SubscriptionState.registered;
         isRequestingSubscription = false;
@@ -190,6 +190,12 @@ class BdAppsService extends ChangeNotifier {
     try {
       final response = await _apiClient.sendOtp(userMobile: mobileNumber);
       lastSendOtpResponse = response;
+      if (response.isAlreadyRegistered) {
+        _bdMobile = mobileNumber;
+        subscriptionStatus = 'REGISTERED';
+        subscriptionState = SubscriptionState.registered;
+        return true;
+      }
       if (response.isSuccess && response.referenceNo != null) {
         pendingReferenceNo = response.referenceNo;
         _bdMobile = mobileNumber;
