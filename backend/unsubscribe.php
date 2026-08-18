@@ -41,7 +41,7 @@ $requestData = [
     'password'      => BDAPPS_APP_PASSWORD,
     'subscriberId'  => $subscriberId,
     'version'       => '1.0',
-    'action'        => '1', // 1 = Unsubscribe
+    'action'        => 1, // 1 = Unsubscribe (integer)
 ];
 
 $ch = curl_init('https://developer.bdapps.com/subscription/send');

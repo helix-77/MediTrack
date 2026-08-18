@@ -21,6 +21,8 @@ import '../logic/bd_mobile_validator.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../theme/theme_notifier.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'prescription_vault_screen.dart';
 import 'nearby_pharmacies_screen.dart';
 import 'doctor_summary_screen.dart';
@@ -1160,35 +1162,96 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
+  Future<void> _launchSmsUnsubscribe() async {
+    final uri = Uri.parse('sms:21213?body=STOP%20activate_meditrack');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please send "STOP activate_meditrack" to 21213 from your SMS app.'),
+            ),
+          );
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please send "STOP activate_meditrack" to 21213 from your SMS app.'),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _confirmUnsubscribe(
     BdAppsService service,
     EntitlementService entitlement,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final action = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Cancel Premium Subscription?'),
-        content: const Text(
-          'This will cancel your BD Apps daily auto-renewal (৳2.78/day). '
-          'You will lose access to AI Assistant, Prescription OCR, Price Lookup, and Nearby Pharmacy searches. '
-          'Your saved medicines and local alerts will remain completely free.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This will cancel your BD Apps daily auto-renewal (৳2.78/day). '
+              'You will lose access to AI Assistant, Prescription OCR, Price Lookup, and Nearby Pharmacy searches.\n',
+              style: TextStyle(fontSize: 13, height: 1.4),
+            ),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.sms, color: AppColors.primaryGreen, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Official Carrier SMS Method:\nSend "STOP activate_meditrack" to 21213',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
+            onPressed: () => Navigator.pop(dialogContext, 'cancel'),
             child: const Text('Keep Premium'),
+          ),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.sms, size: 16),
+            label: const Text('Send SMS (21213)'),
+            onPressed: () => Navigator.pop(dialogContext, 'sms'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Unsubscribe'),
+            onPressed: () => Navigator.pop(dialogContext, 'api'),
+            child: const Text('Unsubscribe via API'),
           ),
         ],
       ),
     );
 
-    if (confirmed != true) return;
+    if (action == null || action == 'cancel') return;
     if (!mounted) return;
+
+    if (action == 'sms') {
+      await _launchSmsUnsubscribe();
+      return;
+    }
 
     final success = await service.unsubscribe();
     if (!mounted) return;
@@ -1215,12 +1278,66 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     } else {
       final errorDetail = service.errorMessage ??
           service.lastUnsubscribeResponse?.statusDetail ??
-          'Failed to cancel subscription via BD Apps. Please try again or dial *213# on your SIM.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorDetail),
-          backgroundColor: AppColors.danger,
-          duration: const Duration(seconds: 5),
+          'Failed to cancel subscription via BD Apps server.';
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.danger),
+              SizedBox(width: 8),
+              Text('Unsubscribe Notice'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Carrier response: $errorDetail\n\n'
+                'BD Apps requires cancellation via SMS or USSD:',
+                style: const TextStyle(fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGreen.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.primaryGreenLight),
+                ),
+                child: const Text(
+                  'Send "STOP activate_meditrack" to 21213 from your Robi/Airtel SIM.',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                entitlement.updateSubscribedState(false);
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null) {
+                  try {
+                    await _profileService.updateSubscriptionStatus('UNREGISTERED');
+                  } catch (_) {}
+                }
+              },
+              child: const Text('Mark Unregistered in App'),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
+              icon: const Icon(Icons.sms, size: 16, color: Colors.white),
+              label: const Text('Open SMS to Send STOP', style: TextStyle(color: Colors.white)),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _launchSmsUnsubscribe();
+              },
+            ),
+          ],
         ),
       );
     }
