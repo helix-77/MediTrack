@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
 import '../models/user_profile.dart';
 import '../models/family_member.dart';
+import '../services/avatar_service.dart';
 import '../services/medicine_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/family_service.dart';
@@ -193,29 +195,43 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(builder: (_) => const ProfileSettingsScreen()),
             );
           },
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0EDFE),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primaryBlue.withValues(alpha: 0.12),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+          child: Builder(
+            builder: (context) {
+              final avatarNotifier = context.watch<AvatarNotifier>();
+              return Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0EDFE),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryBlue.withValues(alpha: 0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                initial,
-                style: AppTypography.headingMedium.copyWith(
-                  color: AppColors.primaryBlue,
-                  fontWeight: FontWeight.w700,
+                child: ClipOval(
+                  child: avatarNotifier.avatarFile != null
+                      ? Image.file(
+                          avatarNotifier.avatarFile!,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                        )
+                      : Center(
+                          child: Text(
+                            initial,
+                            style: AppTypography.headingMedium.copyWith(
+                              color: AppColors.primaryBlue,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ],

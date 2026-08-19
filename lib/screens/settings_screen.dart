@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
+import '../services/avatar_service.dart';
 import '../services/user_profile_service.dart';
 import '../features/bdapps/bd_apps_service.dart';
 import '../theme/theme_notifier.dart';
@@ -506,41 +507,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   );
                 },
-                child: Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryBlueLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          initial,
-                          style: AppTypography.headingLarge.copyWith(
-                            color: AppColors.primaryBlue,
-                            fontWeight: FontWeight.w700,
+                child: Builder(
+                  builder: (context) {
+                    final avatarNotifier = context.watch<AvatarNotifier>();
+                    return Row(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primaryBlueLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(
+                            child: avatarNotifier.avatarFile != null
+                                ? Image.file(
+                                    avatarNotifier.avatarFile!,
+                                    width: 52,
+                                    height: 52,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Center(
+                                    child: Text(
+                                      initial,
+                                      style: AppTypography.headingLarge.copyWith(
+                                        color: AppColors.primaryBlue,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(profile.displayName, style: AppTypography.headingSmall),
-                          const SizedBox(height: 2),
-                          Text(
-                            profile.bdMobile ?? (profile.email.isNotEmpty ? profile.email : 'Tap to edit profile details'),
-                            style: AppTypography.caption,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(profile.displayName, style: AppTypography.headingSmall),
+                              const SizedBox(height: 2),
+                              Text(
+                                profile.bdMobile ?? (profile.email.isNotEmpty ? profile.email : 'Tap to edit profile details'),
+                                style: AppTypography.caption,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary),
-                  ],
+                        ),
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary),
+                      ],
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 20),

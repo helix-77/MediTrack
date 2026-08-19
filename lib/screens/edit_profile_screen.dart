@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
+import '../services/avatar_service.dart';
 import '../services/user_profile_service.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
@@ -26,10 +28,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _emailController;
   late final TextEditingController _bloodGroupController;
   late final TextEditingController _allergiesController;
-  late final TextEditingController _emergencyNameController;
-  late final TextEditingController _emergencyPhoneController;
 
-  File? _avatarImage;
+  File? _localAvatarFile;
   bool _isSaving = false;
 
   final List<String> _bloodGroups = [
@@ -51,8 +51,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController = TextEditingController(text: widget.profile.email);
     _bloodGroupController = TextEditingController(text: widget.profile.bloodGroup ?? '');
     _allergiesController = TextEditingController(text: widget.profile.allergies ?? '');
-    _emergencyNameController = TextEditingController(text: widget.profile.emergencyContactName ?? '');
-    _emergencyPhoneController = TextEditingController(text: widget.profile.emergencyContactPhone ?? '');
   }
 
   @override
@@ -62,16 +60,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController.dispose();
     _bloodGroupController.dispose();
     _allergiesController.dispose();
-    _emergencyNameController.dispose();
-    _emergencyPhoneController.dispose();
     super.dispose();
   }
 
   Future<void> _pickAvatar() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
     if (picked != null) {
-      setState(() => _avatarImage = File(picked.path));
+      setState(() => _localAvatarFile = File(picked.path));
+      if (mounted) {
+        await context.read<AvatarNotifier>().setAvatarPath(picked.path);
+      }
     }
   }
 
@@ -95,8 +94,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         bdMobile: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         bloodGroup: _bloodGroupController.text.trim().isEmpty ? null : _bloodGroupController.text.trim(),
         allergies: _allergiesController.text.trim().isEmpty ? null : _allergiesController.text.trim(),
-        emergencyContactName: _emergencyNameController.text.trim().isEmpty ? null : _emergencyNameController.text.trim(),
-        emergencyContactPhone: _emergencyPhoneController.text.trim().isEmpty ? null : _emergencyPhoneController.text.trim(),
       );
 
       await _profileService.saveProfile(updated);
@@ -166,6 +163,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final avatarNotifier = context.watch<AvatarNotifier>();
+    final currentAvatarFile = _localAvatarFile ?? avatarNotifier.avatarFile;
     final initial = widget.profile.displayName.isNotEmpty
         ? widget.profile.displayName[0].toUpperCase()
         : 'U';
@@ -198,8 +197,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         boxShadow: AppShadows.floating,
                       ),
                       child: ClipOval(
-                        child: _avatarImage != null
-                            ? Image.file(_avatarImage!, width: 96, height: 96, fit: BoxFit.cover)
+                        child: currentAvatarFile != null
+                            ? Image.file(currentAvatarFile, width: 96, height: 96, fit: BoxFit.cover)
                             : Center(
                                 child: Text(
                                   initial,
@@ -290,9 +289,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Emergency & Clinical Profile Card
+            // Clinical Profile Card (Blood Group & Allergies)
             Text(
-              'Emergency & Clinical Details',
+              'Clinical Information',
               style: AppTypography.headingSmall.copyWith(
                 color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
               ),
@@ -335,21 +334,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     labelText: 'Known Drug & Food Allergies',
                     hintText: 'e.g. Penicillin, Peanuts, Sulfa',
                     prefixIcon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
-                  ),
-                  const SizedBox(height: 14),
-                  SoftTextField(
-                    controller: _emergencyNameController,
-                    labelText: 'Emergency Contact Name',
-                    hintText: 'e.g. Fatima Begum (Spouse)',
-                    prefixIcon: const Icon(Icons.contact_phone_outlined, color: AppColors.accentPink, size: 20),
-                  ),
-                  const SizedBox(height: 14),
-                  SoftTextField(
-                    controller: _emergencyPhoneController,
-                    labelText: 'Emergency Contact Phone',
-                    hintText: '017XXXXXXXX',
-                    keyboardType: TextInputType.phone,
-                    prefixIcon: const Icon(Icons.phone_in_talk_outlined, color: AppColors.accentPink, size: 20),
                   ),
                 ],
               ),
