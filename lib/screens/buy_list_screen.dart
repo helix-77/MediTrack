@@ -349,8 +349,8 @@ class _BuyListScreenState extends State<BuyListScreen> {
                     // Grouped View: Auto Low-Stock Refills Section
                     if (lowStockItems.isNotEmpty) ...[
                       SectionHeader(
-                        title: '⚠️ Low-Stock Refills',
-                        subtitle: 'Auto-detected from your active medicines',
+                        title: 'Low-Stock Refills',
+                        // subtitle: 'Auto-detected from your active medicines',
                         trailing: StatusPill(
                           label: '${lowStockItems.where((i) => !i.isPurchased).length} to buy',
                           type: PillType.warning,
@@ -363,8 +363,8 @@ class _BuyListScreenState extends State<BuyListScreen> {
 
                     // Grouped View: Custom Shopping Items Section
                     SectionHeader(
-                      title: '📝 General Supplies & Custom',
-                      subtitle: 'Supplements, first-aid & OTC items',
+                      title: 'General Supplies & Custom',
+                      // subtitle: 'Supplements, first-aid & OTC items',
                       trailing: StatusPill(
                         label: '${customItems.where((i) => !i.isPurchased).length} to buy',
                         type: PillType.primary,
@@ -509,9 +509,9 @@ class _BuyListScreenState extends State<BuyListScreen> {
   }) {
     final filters = [
       {'label': 'All ($allCount)', 'index': 0},
-      {'label': '⚠️ Low Stock ($lowStockCount)', 'index': 1},
-      {'label': '📝 Custom ($customCount)', 'index': 2},
-      {'label': '✅ Purchased ($purchasedCount)', 'index': 3},
+      {'label': 'Low Stock ($lowStockCount)', 'index': 1},
+      {'label': 'Custom ($customCount)', 'index': 2},
+      {'label': 'Purchased ($purchasedCount)', 'index': 3},
     ];
 
     return SingleChildScrollView(
