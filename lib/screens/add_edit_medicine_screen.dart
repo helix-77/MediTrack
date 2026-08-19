@@ -444,6 +444,76 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     }
   }
 
+  void _confirmDelete() {
+    if (widget.medicine == null) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: AppColors.dangerLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.delete_forever_rounded, color: AppColors.danger, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Text('Delete Medicine', style: AppTypography.headingMedium),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete "${widget.medicine!.name}"? All schedule and reminder data for this medicine will be permanently removed.',
+          style: AppTypography.bodySmall.copyWith(
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              setState(() => _isSaving = true);
+              try {
+                await _medicineService.deleteMedicine(widget.medicine!.id);
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('"${widget.medicine!.name}" deleted successfully.'),
+                      backgroundColor: AppColors.danger,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  setState(() => _isSaving = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to delete: $e'), backgroundColor: AppColors.danger),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.medicine != null;
@@ -462,6 +532,17 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
           ),
         ),
         actions: [
+          if (isEdit)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: SoftIconButton(
+                icon: Icons.delete_outline_rounded,
+                iconColor: AppColors.danger,
+                size: 40,
+                tooltip: 'Delete Medicine',
+                onPressed: _isSaving ? null : _confirmDelete,
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: SoftIconButton(
@@ -673,6 +754,23 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 isLoading: _isSaving,
                 onPressed: _isSaving ? null : _saveMedicine,
               ),
+
+              if (isEdit) ...[
+                const SizedBox(height: 14),
+                Center(
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
+                    label: Text(
+                      'Delete Medicine',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    onPressed: _isSaving ? null : _confirmDelete,
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
             ],
           ),
