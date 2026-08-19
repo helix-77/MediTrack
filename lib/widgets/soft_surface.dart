@@ -68,7 +68,6 @@ class SoftSurface extends StatelessWidget {
       ),
       child: Material(
         color: effectiveBg,
-        borderRadius: effectiveRadius,
         shape: RoundedRectangleBorder(
           borderRadius: effectiveRadius,
           side: effectiveBorderSide,
