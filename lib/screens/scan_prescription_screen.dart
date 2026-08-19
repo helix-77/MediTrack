@@ -249,6 +249,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
         await _prescriptionService.confirmAndPersistMedicines(
           prescriptionId: savedRx.id,
           items: _extractedReviewItems,
+          prescriptionImageUrl: savedRx.imageUrl,
         );
       }
 
@@ -452,6 +453,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                     label: 'Retake Camera',
                     icon: Icons.camera_alt_outlined,
                     height: 42,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     onPressed: () => _pickAndAnalyzeImage(ImageSource.camera),
                   ),
                 ),
@@ -461,6 +463,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                     label: 'From Gallery',
                     icon: Icons.photo_library_outlined,
                     height: 42,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     onPressed: () => _pickAndAnalyzeImage(ImageSource.gallery),
                   ),
                 ),
@@ -472,7 +475,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
     }
 
     return SoftSurface(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
       borderRadius: AppRadii.cardRadius,
       child: Center(
         child: Column(
@@ -506,15 +509,17 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                     label: 'Take Photo',
                     icon: Icons.camera_alt_rounded,
                     height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     onPressed: () => _pickAndAnalyzeImage(ImageSource.camera),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: SoftSecondaryButton(
                     label: 'Choose Gallery',
                     icon: Icons.image_outlined,
                     height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     onPressed: () => _pickAndAnalyzeImage(ImageSource.gallery),
                   ),
                 ),

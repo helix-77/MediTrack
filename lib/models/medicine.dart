@@ -13,6 +13,7 @@ class Medicine {
   final String? batchNumber;
   final String? manufacturer;
   final String? imageUrl;
+  final String? prescriptionId;
   final int lowStockThreshold;
   final String? familyMemberId;
   final MedicineSchedule schedule;
@@ -31,6 +32,7 @@ class Medicine {
     this.batchNumber,
     this.manufacturer,
     this.imageUrl,
+    this.prescriptionId,
     this.lowStockThreshold = 5,
     this.familyMemberId,
     required this.schedule,
@@ -50,6 +52,7 @@ class Medicine {
       'batchNumber': batchNumber,
       'manufacturer': manufacturer,
       'imageUrl': imageUrl,
+      'prescriptionId': prescriptionId,
       'lowStockThreshold': lowStockThreshold,
       'familyMemberId': familyMemberId,
       'schedule': schedule.toMap(),
@@ -72,6 +75,7 @@ class Medicine {
       batchNumber: data['batchNumber'] as String?,
       manufacturer: data['manufacturer'] as String?,
       imageUrl: data['imageUrl'] as String?,
+      prescriptionId: data['prescriptionId'] as String?,
       lowStockThreshold: data['lowStockThreshold'] as int? ?? 5,
       familyMemberId: data['familyMemberId'] as String?,
       schedule: MedicineSchedule.fromMap(

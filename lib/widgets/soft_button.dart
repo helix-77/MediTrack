@@ -13,6 +13,7 @@ class SoftPrimaryButton extends StatelessWidget {
   final double? width;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final EdgeInsetsGeometry? padding;
 
   const SoftPrimaryButton({
     super.key,
@@ -24,6 +25,7 @@ class SoftPrimaryButton extends StatelessWidget {
     this.width,
     this.backgroundColor,
     this.foregroundColor,
+    this.padding,
   });
 
   @override
@@ -56,7 +58,7 @@ class SoftPrimaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: AppRadii.standardRadius,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: padding ?? const EdgeInsets.symmetric(horizontal: 16),
         ),
         onPressed: isLoading ? null : onPressed,
         child: isLoading
@@ -76,9 +78,13 @@ class SoftPrimaryButton extends StatelessWidget {
                     Icon(icon, size: 18, color: fg),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    label,
-                    style: AppTypography.buttonText.copyWith(color: fg),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: AppTypography.buttonText.copyWith(color: fg),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
@@ -96,6 +102,7 @@ class SoftSecondaryButton extends StatelessWidget {
   final double? width;
   final Color? borderColor;
   final Color? textColor;
+  final EdgeInsetsGeometry? padding;
 
   const SoftSecondaryButton({
     super.key,
@@ -106,6 +113,7 @@ class SoftSecondaryButton extends StatelessWidget {
     this.width,
     this.borderColor,
     this.textColor,
+    this.padding,
   });
 
   @override
@@ -125,7 +133,7 @@ class SoftSecondaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: AppRadii.standardRadius,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: padding ?? const EdgeInsets.symmetric(horizontal: 16),
         ),
         onPressed: onPressed,
         child: Row(
@@ -136,9 +144,13 @@ class SoftSecondaryButton extends StatelessWidget {
               Icon(icon, size: 18, color: text),
               const SizedBox(width: 8),
             ],
-            Text(
-              label,
-              style: AppTypography.buttonText.copyWith(color: text),
+            Flexible(
+              child: Text(
+                label,
+                style: AppTypography.buttonText.copyWith(color: text),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

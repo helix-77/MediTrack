@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/medicine.dart';
@@ -274,6 +275,57 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+
+              // Attached Prescription / Document
+              if (medicine.imageUrl != null && medicine.imageUrl!.isNotEmpty) ...[
+                const SectionHeader(
+                  title: 'Attached Prescription',
+                  subtitle: 'Prescription or package photo on record',
+                ),
+                SoftSurface(
+                  padding: const EdgeInsets.all(12),
+                  borderRadius: AppRadii.cardRadius,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: medicine.imageUrl!.startsWith('http')
+                        ? Image.network(
+                            medicine.imageUrl!,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              height: 120,
+                              color: AppColors.canvas,
+                              child: const Center(
+                                child: Icon(Icons.receipt_long, size: 36, color: AppColors.primaryBlue),
+                              ),
+                            ),
+                          )
+                        : (File(medicine.imageUrl!).existsSync()
+                            ? Image.file(
+                                File(medicine.imageUrl!),
+                                height: 180,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  height: 120,
+                                  color: AppColors.canvas,
+                                  child: const Center(
+                                    child: Icon(Icons.receipt_long, size: 36, color: AppColors.primaryBlue),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                height: 120,
+                                color: AppColors.canvas,
+                                child: const Center(
+                                  child: Icon(Icons.receipt_long, size: 36, color: AppColors.primaryBlue),
+                                ),
+                              )),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
 
               // Recent Dose History
               const SectionHeader(

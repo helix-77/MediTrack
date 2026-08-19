@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/prescription.dart';
@@ -88,39 +89,11 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
               // Image Viewer
               ClipRRect(
                 borderRadius: AppRadii.cardRadius,
-                child: rx.imageUrl != null && rx.imageUrl!.isNotEmpty
-                    ? InteractiveViewer(
-                        minScale: 1.0,
-                        maxScale: 4.0,
-                        child: Image.network(
-                          rx.imageUrl!,
-                          fit: BoxFit.contain,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              height: 250,
-                              color: AppColors.canvas,
-                              child: const Center(
-                                child: CircularProgressIndicator(color: AppColors.primaryBlue),
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 200,
-                            color: AppColors.canvas,
-                            child: const Center(
-                              child: Icon(Icons.broken_image_outlined, size: 48, color: AppColors.textMuted),
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        height: 180,
-                        color: AppColors.canvas,
-                        child: const Center(
-                          child: Text('No image attached'),
-                        ),
-                      ),
+                child: _buildPrescriptionImage(
+                  rx.imageUrl,
+                  fit: BoxFit.contain,
+                  interactive: true,
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -327,19 +300,11 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-                  child: rx.imageUrl != null && rx.imageUrl!.isNotEmpty
-                      ? Image.network(
-                          rx.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, error, stackTrace) => Container(
-                            color: AppColors.canvas,
-                            child: const Icon(Icons.receipt_long, size: 36, color: AppColors.primaryBlue),
-                          ),
-                        )
-                      : Container(
-                          color: AppColors.canvas,
-                          child: const Icon(Icons.receipt_long, size: 36, color: AppColors.primaryBlue),
-                        ),
+                  child: _buildPrescriptionImage(
+                    rx.imageUrl,
+                    fit: BoxFit.cover,
+                    interactive: false,
+                  ),
                 ),
                 Positioned(
                   top: 6,
@@ -394,5 +359,79 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildPrescriptionImage(
+    String? imageUrl, {
+    BoxFit fit = BoxFit.cover,
+    bool interactive = false,
+  }) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return Container(
+        height: interactive ? 180 : null,
+        color: AppColors.canvas,
+        child: const Center(
+          child: Icon(Icons.receipt_long, size: 40, color: AppColors.primaryBlue),
+        ),
+      );
+    }
+
+    Widget imageWidget;
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      imageWidget = Image.network(
+        imageUrl,
+        fit: fit,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            height: interactive ? 250 : null,
+            color: AppColors.canvas,
+            child: const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryBlue),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => Container(
+          height: interactive ? 200 : null,
+          color: AppColors.canvas,
+          child: const Center(
+            child: Icon(Icons.broken_image_outlined, size: 40, color: AppColors.textMuted),
+          ),
+        ),
+      );
+    } else {
+      final file = File(imageUrl);
+      if (file.existsSync()) {
+        imageWidget = Image.file(
+          file,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => Container(
+            height: interactive ? 200 : null,
+            color: AppColors.canvas,
+            child: const Center(
+              child: Icon(Icons.broken_image_outlined, size: 40, color: AppColors.textMuted),
+            ),
+          ),
+        );
+      } else {
+        imageWidget = Container(
+          height: interactive ? 180 : null,
+          color: AppColors.canvas,
+          child: const Center(
+            child: Icon(Icons.receipt_long, size: 40, color: AppColors.primaryBlue),
+          ),
+        );
+      }
+    }
+
+    if (interactive) {
+      return InteractiveViewer(
+        minScale: 1.0,
+        maxScale: 4.0,
+        child: imageWidget,
+      );
+    }
+
+    return imageWidget;
   }
 }

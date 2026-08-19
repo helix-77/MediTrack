@@ -131,6 +131,7 @@ class PrescriptionService {
   Future<void> confirmAndPersistMedicines({
     required String prescriptionId,
     required List<PrescriptionItem> items,
+    String? prescriptionImageUrl,
   }) async {
     final user = _authenticatedUser();
     final medicinesRef = _firestore
@@ -181,6 +182,8 @@ class PrescriptionService {
         quantityCurrent: totalStock,
         quantityTotal: totalStock,
         lowStockThreshold: 5,
+        imageUrl: prescriptionImageUrl,
+        prescriptionId: prescriptionId,
         schedule: schedule,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

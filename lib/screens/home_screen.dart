@@ -55,7 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, profileSnapshot) {
             final profile = profileSnapshot.data;
             final fullName = profile?.displayName.trim() ?? 'User';
-            final firstName = fullName.split(' ').first;
             final userInitial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
 
             return StreamBuilder<List<Medicine>>(
@@ -104,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         // 1. Top Header: Greeting + Headline + Avatar
                         _buildTopHeader(
                           greeting: _getGreetingSubtitle(),
-                          name: firstName,
+                          name: fullName,
                           initial: userInitial,
                           isDark: isDark,
                         ),
@@ -172,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Stay on top of your\nhealth',
+                'Stay on top of your health',
                 style: AppTypography.displayLarge.copyWith(
                   fontSize: 22,
                   height: 1.2,
@@ -234,12 +233,6 @@ class _HomeScreenState extends State<HomeScreen> {
     required bool isDark,
   }) {
     final percentInt = (progress * 100).round();
-    final encouragingText = total == 0
-        ? 'No doses scheduled for today.'
-        : (percentInt == 100
-            ? 'All caught up! Fantastic job.'
-            : (percentInt >= 50 ? 'You are doing great.' : 'Keep up the healthy habit.'));
-
     final subtext = total == 0
         ? 'Add your active medications below'
         : '$completed of $total doses completed today';
@@ -292,15 +285,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      encouragingText,
-                      style: AppTypography.headingMedium.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
                     Text(
                       subtext,
                       style: AppTypography.bodySmall.copyWith(

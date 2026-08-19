@@ -383,6 +383,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         manufacturer: _manufacturerController.text.trim().isEmpty
             ? null
             : _manufacturerController.text.trim(),
+        imageUrl: widget.medicine?.imageUrl,
+        prescriptionId: widget.medicine?.prescriptionId,
         lowStockThreshold:
             int.tryParse(_lowStockThresholdController.text) ?? 5,
         familyMemberId: _selectedFamilyMemberId,
