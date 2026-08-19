@@ -18,6 +18,7 @@ import '../widgets/section_header.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/soft_text_field.dart';
+import '../widgets/soft_modal_sheet.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicine;
@@ -73,10 +74,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
     );
     _strengthController = TextEditingController(text: med?.strength ?? '');
     _quantityCurrentController = TextEditingController(
-      text: med?.quantityCurrent.toString() ?? '30',
+      text: med?.quantityCurrent.toString() ?? '5',
     );
     _quantityTotalController = TextEditingController(
-      text: med?.quantityTotal.toString() ?? '30',
+      text: med?.quantityTotal.toString() ?? '10',
     );
     _batchNumberController = TextEditingController(
       text: med?.batchNumber ?? '',
@@ -132,39 +133,35 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
   void _showDescribeWithAiModal() {
     final textController = TextEditingController();
     bool isProcessing = false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    showModalBottomSheet(
+    showAppModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      heightFactor: 0.70,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Container(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.darkSurface
-                : AppColors.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.divider,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+        builder: (modalCtx, setModalState) => Column(
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkDivider : AppColors.divider,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 8,
+                  bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
+                ),
+                physics: const BouncingScrollPhysics(),
+                children: [
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -175,7 +172,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Type or dictate a description (e.g. "Napa 500mg, 1 tablet twice daily, 30 tablets"). Gemini AI will auto-populate the form.',
+                'Type or dictate a description (e.g. "Napa 500mg, 1 tablet twice daily, 10 tablets"). Gemini AI will auto-populate the form.',
                 style: AppTypography.bodySmall,
               ),
               const SizedBox(height: 16),
@@ -277,8 +274,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
             ],
           ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);
   }
 
   Future<void> _scanBoxPhoto() async {
@@ -555,7 +554,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           child: SoftTextField(
                             controller: _quantityCurrentController,
                             labelText: 'Current Stock',
-                            hintText: '30',
+                            hintText: '5',
                             keyboardType: TextInputType.number,
                           ),
                         ),
@@ -564,7 +563,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                           child: SoftTextField(
                             controller: _quantityTotalController,
                             labelText: 'Pack Size (Total)',
-                            hintText: '30',
+                            hintText: '10',
                             keyboardType: TextInputType.number,
                           ),
                         ),

@@ -55,14 +55,14 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
         ),
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12.0),
-          child: SoftIconButton(
-            icon: Icons.arrow_back_rounded,
-            size: 40,
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
+        // leading: Padding(
+        //   padding: const EdgeInsets.only(left: 12.0),
+        //   child: SoftIconButton(
+        //     icon: Icons.arrow_back_rounded,
+        //     size: 40,
+        //     onPressed: () => Navigator.pop(context),
+        //   ),
+        // ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),

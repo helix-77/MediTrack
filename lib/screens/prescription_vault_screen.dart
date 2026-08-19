@@ -12,6 +12,7 @@ import '../widgets/section_header.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/status_pill.dart';
+import '../widgets/soft_modal_sheet.dart';
 import 'scan_prescription_screen.dart';
 
 class PrescriptionVaultScreen extends StatefulWidget {
@@ -25,150 +26,156 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
   final PrescriptionService _prescriptionService = PrescriptionService();
 
   void _showPrescriptionViewer(Prescription rx) {
-    showModalBottomSheet(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showAppModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
-        builder: (ctx, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.darkSurface
-                : AppColors.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      heightFactor: 0.70,
+      builder: (ctx) => Column(
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkDivider : AppColors.divider,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
           ),
-          child: ListView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(20),
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.divider,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      rx.title,
-                      style: AppTypography.headingMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              if (rx.doctorName != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  'Doctor: Dr. ${rx.doctorName!}',
-                  style: AppTypography.caption.copyWith(color: AppColors.primaryBlue, fontWeight: FontWeight.w600),
-                ),
-              ],
-              const SizedBox(height: 4),
-              Text(
-                'Consultation Date: ${DateFormat('dd MMMM yyyy').format(rx.date)}',
-                style: AppTypography.caption,
-              ),
-              const Divider(height: 24),
-
-              // Image Viewer
-              ClipRRect(
-                borderRadius: AppRadii.cardRadius,
-                child: _buildPrescriptionImage(
-                  rx.imageUrl,
-                  fit: BoxFit.contain,
-                  interactive: true,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Extracted Items from subcollection
-              StreamBuilder<List<PrescriptionItem>>(
-                stream: _prescriptionService.streamPrescriptionItems(rx.id),
-                builder: (context, itemSnapshot) {
-                  final items = itemSnapshot.data ?? [];
-                  if (items.isEmpty) {
-                    if (rx.extractedText.isNotEmpty) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SectionHeader(
-                            title: 'Extracted Notes',
-                            subtitle: 'Transcribed text from prescription',
-                          ),
-                          SoftSurface(
-                            padding: const EdgeInsets.all(14),
-                            child: Text(
-                              rx.extractedText,
-                              style: AppTypography.bodySmall,
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  }
-
-                  return Column(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SectionHeader(
-                        title: 'Extracted Medicines (${items.length})',
-                        subtitle: 'Medicines transcribed by AI',
+                      Text(
+                        rx.title,
+                        style: AppTypography.headingMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      ...items.map(
-                        (m) => Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: SoftSurface(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.medication_rounded, color: AppColors.primaryBlue, size: 20),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(m.extractedName, style: AppTypography.headingSmall.copyWith(fontSize: 14)),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '${m.extractedForm ?? "Tablet"} • ${m.extractedStrength ?? "N/A"} • ${m.extractedFrequencyPerDay ?? 2} times/day',
-                                        style: AppTypography.caption,
-                                      ),
-                                    ],
+                      if (rx.doctorName != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Doctor: Dr. ${rx.doctorName!}',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.primaryBlue,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                SoftIconButton(
+                  icon: Icons.close_rounded,
+                  size: 36,
+                  iconSize: 18,
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 12),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                Text(
+                  'Consultation Date: ${DateFormat('dd MMMM yyyy').format(rx.date)}',
+                  style: AppTypography.caption,
+                ),
+                const SizedBox(height: 12),
+
+                // Image Viewer
+                ClipRRect(
+                  borderRadius: AppRadii.cardRadius,
+                  child: _buildPrescriptionImage(
+                    rx.imageUrl,
+                    fit: BoxFit.contain,
+                    interactive: true,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Extracted Items from subcollection
+                StreamBuilder<List<PrescriptionItem>>(
+                  stream: _prescriptionService.streamPrescriptionItems(rx.id),
+                  builder: (context, itemSnapshot) {
+                    final items = itemSnapshot.data ?? [];
+                    if (items.isEmpty) {
+                      if (rx.extractedText.isNotEmpty) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SectionHeader(
+                              title: 'Extracted Notes',
+                              subtitle: 'Transcribed text from prescription',
+                            ),
+                            SoftSurface(
+                              padding: const EdgeInsets.all(14),
+                              child: Text(
+                                rx.extractedText,
+                                style: AppTypography.bodySmall,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SectionHeader(
+                          title: 'Extracted Medicines (${items.length})',
+                          subtitle: 'Medicines transcribed by AI',
+                        ),
+                        ...items.map(
+                          (m) => Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: SoftSurface(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.medication_rounded, color: AppColors.primaryBlue, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(m.extractedName, style: AppTypography.headingSmall.copyWith(fontSize: 14)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${m.extractedForm ?? "Tablet"} • ${m.extractedStrength ?? "N/A"} • ${m.extractedFrequencyPerDay ?? 2} times/day',
+                                          style: AppTypography.caption,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                if (m.confirmed)
-                                  const StatusPill(label: 'Added', type: PillType.success),
-                              ],
+                                  if (m.confirmed)
+                                    const StatusPill(label: 'Added', type: PillType.success),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

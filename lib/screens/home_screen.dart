@@ -14,6 +14,7 @@ import '../utils/time_formatter.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/status_pill.dart';
+import '../widgets/soft_modal_sheet.dart';
 import 'prescription_vault_screen.dart';
 import 'scan_prescription_screen.dart';
 import 'calendar_routine_screen.dart';
@@ -545,84 +546,153 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openTimeSlotDetailModal(_TimeSlotData slot) {
-    showModalBottomSheet(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showAppModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? AppColors.darkSurface
-              : AppColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      heightFactor: 0.70,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (ctx, setModalState) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Drag handle
             Center(
               child: Container(
-                width: 36,
-                height: 4,
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 5,
                 decoration: BoxDecoration(
-                  color: AppColors.divider,
-                  borderRadius: BorderRadius.circular(2),
+                  color: isDark ? AppColors.darkDivider : AppColors.divider,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Icon(slot.icon, color: slot.accentColor, size: 22),
-                const SizedBox(width: 8),
-                Text('${slot.title} Routine', style: AppTypography.headingMedium),
-                const Spacer(),
-                Text(slot.timeRange, style: AppTypography.caption),
-              ],
-            ),
-            const Divider(height: 24),
-            if (slot.doses.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24.0),
-                child: Center(
-                  child: Text(
-                    'No doses scheduled for ${slot.title.toLowerCase()}',
-                    style: AppTypography.bodySmall,
+            // Header Row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: slot.accentColor.withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(slot.icon, color: slot.accentColor, size: 20),
                   ),
-                ),
-              )
-            else
-              ...slot.doses.map(
-                (item) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    item.log.status == DoseStatus.taken
-                        ? Icons.check_circle_rounded
-                        : Icons.medication_rounded,
-                    color: item.log.status == DoseStatus.taken
-                        ? AppColors.success
-                        : slot.accentColor,
-                  ),
-                  title: Text(item.medicine.name, style: AppTypography.headingSmall),
-                  subtitle: Text(
-                    '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
-                    style: AppTypography.caption,
-                  ),
-                  trailing: item.log.status == DoseStatus.taken
-                      ? const StatusPill(label: 'Taken', type: PillType.success)
-                      : SoftPrimaryButton(
-                          label: 'Take',
-                          height: 36,
-                          width: 80,
-                          backgroundColor: slot.accentColor,
-                          onPressed: () async {
-                            Navigator.pop(context);
-                            _handleTakeDose(item);
-                          },
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${slot.title} Routine',
+                          style: AppTypography.headingMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                ),
+                        Text(slot.timeRange, style: AppTypography.caption),
+                      ],
+                    ),
+                  ),
+                  SoftIconButton(
+                    icon: Icons.close_rounded,
+                    size: 36,
+                    iconSize: 18,
+                    onPressed: () => Navigator.pop(sheetContext),
+                  ),
+                ],
               ),
+            ),
+            const Divider(height: 16),
+            // Dose List (Scrollable, takes remaining height of 70% sheet)
+            Expanded(
+              child: slot.doses.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No doses scheduled for ${slot.title.toLowerCase()}',
+                        style: AppTypography.bodySmall,
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: slot.doses.length,
+                      separatorBuilder: (context, index) => const Divider(height: 12),
+                      itemBuilder: (listCtx, index) {
+                        final item = slot.doses[index];
+                        final isTaken = item.log.status == DoseStatus.taken;
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isTaken
+                                      ? AppColors.successLight
+                                      : slot.accentColor.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isTaken
+                                      ? Icons.check_circle_rounded
+                                      : Icons.medication_rounded,
+                                  color: isTaken ? AppColors.success : slot.accentColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.medicine.name,
+                                      style: AppTypography.headingSmall.copyWith(
+                                        decoration: isTaken ? TextDecoration.lineThrough : null,
+                                        color: isTaken
+                                            ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
+                                            : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
+                                      style: AppTypography.caption,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              isTaken
+                                  ? const StatusPill(label: 'Taken', type: PillType.success)
+                                  : SoftPrimaryButton(
+                                      label: 'Take',
+                                      height: 36,
+                                      width: 80,
+                                      backgroundColor: slot.accentColor,
+                                      onPressed: () {
+                                        setModalState(() {
+                                          item.log = DoseLog(
+                                            id: item.log.id,
+                                            medicineId: item.log.medicineId,
+                                            medicineName: item.log.medicineName,
+                                            scheduledAt: item.log.scheduledAt,
+                                            status: DoseStatus.taken,
+                                            respondedAt: DateTime.now(),
+                                          );
+                                        });
+                                        _handleTakeDose(item);
+                                      },
+                                    ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ],
         ),
       ),
@@ -945,7 +1015,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _DoseItem {
   final Medicine medicine;
-  final DoseLog log;
+  DoseLog log;
   final String timeString;
 
   _DoseItem({
