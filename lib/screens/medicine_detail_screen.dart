@@ -5,6 +5,7 @@ import '../models/medicine.dart';
 import '../models/medicine_schedule.dart';
 import '../models/dose_log.dart';
 import '../services/medicine_service.dart';
+import '../services/buy_list_service.dart';
 import '../logic/refill_calculator.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
@@ -16,6 +17,7 @@ import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/status_pill.dart';
 import 'add_edit_medicine_screen.dart';
+import 'buy_list_screen.dart';
 
 class MedicineDetailScreen extends StatefulWidget {
   final String medicineId;
@@ -239,6 +241,46 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
                               style: AppTypography.caption,
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () async {
+                          await BuyListService().addOrUpdateLowStockItem(medicine);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('🛒 ${medicine.name} added to Buy List!'),
+                                backgroundColor: AppColors.success,
+                                action: SnackBarAction(
+                                  label: 'View',
+                                  textColor: Colors.white,
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const BuyListScreen()),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            '+ Buy List',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ),
                     ],

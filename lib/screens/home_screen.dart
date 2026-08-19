@@ -10,6 +10,7 @@ import '../services/routine_schedule_service.dart';
 import '../services/medicine_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/family_service.dart';
+import '../logic/refill_calculator.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -25,6 +26,7 @@ import 'medicine_search_screen.dart';
 import 'nearby_pharmacies_screen.dart';
 import 'doctor_summary_screen.dart';
 import 'profile_settings_screen.dart';
+import 'buy_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -98,6 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? ((completedTodayDoses / totalTodayDoses) * 100).round()
                         : 100;
 
+                    final lowStockMedicines = filteredMedicines
+                        .where((m) => RefillCalculator.isLowStock(m.quantityCurrent, m.lowStockThreshold))
+                        .toList();
+
                     return ListView(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -125,10 +131,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           activeMedicinesCount: filteredMedicines.length,
                           isDark: isDark,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 18),
+
+                        // Contextual Low-Stock Alert Banner (if any running low)
+                        if (lowStockMedicines.isNotEmpty) ...[
+                          _buildLowStockRefillBanner(lowStockMedicines, isDark),
+                        ],
 
                         // 3. "Smart Health Tools"
-                        _buildSmartHealthToolsCard(isDark),
+                        _buildSmartHealthToolsCard(isDark, lowStockCount: lowStockMedicines.length),
                         const SizedBox(height: 28),
 
                         // 4. "Ongoing Routine" (4 Time Slot Cards Grid)
@@ -570,6 +581,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openTimeSlotDetailModal(_TimeSlotData slot) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Initial sort: pending doses first, taken doses at the bottom
+    slot.doses.sort((a, b) {
+      final aTaken = a.log.status == DoseStatus.taken ? 1 : 0;
+      final bTaken = b.log.status == DoseStatus.taken ? 1 : 0;
+      if (aTaken != bTaken) return aTaken.compareTo(bTaken);
+      return a.timeString.compareTo(b.timeString);
+    });
+
     showAppModalBottomSheet(
       context: context,
       maxHeightFactor: 0.85,
@@ -712,6 +731,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                         status: DoseStatus.taken,
                                         respondedAt: DateTime.now(),
                                       );
+                                      // Dynamically move taken dose to bottom
+                                      slot.doses.sort((a, b) {
+                                        final aTaken = a.log.status == DoseStatus.taken ? 1 : 0;
+                                        final bTaken = b.log.status == DoseStatus.taken ? 1 : 0;
+                                        if (aTaken != bTaken) return aTaken.compareTo(bTaken);
+                                        return a.timeString.compareTo(b.timeString);
+                                      });
                                     });
                                     _handleTakeDose(item);
                                   },
@@ -729,9 +755,111 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ---------------------------------------------------------------------------
+  // CONTEXTUAL LOW-STOCK ALERT BANNER
+  // ---------------------------------------------------------------------------
+  Widget _buildLowStockRefillBanner(List<Medicine> lowStockMeds, bool isDark) {
+    final count = lowStockMeds.length;
+    final medNames = lowStockMeds
+        .map((m) => '${m.name} (${m.quantityCurrent} left)')
+        .take(3)
+        .join(', ');
+    final moreText = count > 3 ? ' +${count - 3} more' : '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2D1E10) : const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFF97316).withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF97316).withValues(alpha: isDark ? 0.12 : 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF97316).withValues(alpha: 0.16),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFF97316), size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Refill Alert ($count low stock)',
+                  style: AppTypography.headingSmall.copyWith(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? const Color(0xFFFFB74D) : const Color(0xFFC2410C),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$medNames$moreText',
+                  style: AppTypography.caption.copyWith(
+                    fontSize: 11.5,
+                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF7C2D12),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BuyListScreen()),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF97316),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text(
+                    'Buy List',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(width: 2),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 13),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // 6. "SMART HEALTH TOOLS" (Image 2 reference)
   // ---------------------------------------------------------------------------
-  Widget _buildSmartHealthToolsCard(bool isDark) {
+  Widget _buildSmartHealthToolsCard(bool isDark, {int lowStockCount = 0}) {
     return SoftSurface(
       padding: const EdgeInsets.all(20),
       borderRadius: BorderRadius.circular(24),
@@ -814,6 +942,20 @@ class _HomeScreenState extends State<HomeScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
+                _buildQuickActionChip(
+                  icon: Icons.shopping_basket_outlined,
+                  label: lowStockCount > 0 ? 'Buy List ($lowStockCount)' : 'Buy List',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const BuyListScreen(),
+                      ),
+                    );
+                  },
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 8),
                 _buildQuickActionChip(
                   icon: Icons.search_rounded,
                   label: 'Price & Generic Lookup',

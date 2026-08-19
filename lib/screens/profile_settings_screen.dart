@@ -20,6 +20,7 @@ import 'nearby_pharmacies_screen.dart';
 import 'subscription_offer_screen.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
+import 'buy_list_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -657,6 +658,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   child: Column(
                     children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.shopping_basket_outlined, color: AppColors.primaryBlue),
+                        title: Text('Medicine Buy & Restock List', style: AppTypography.bodyMedium),
+                        subtitle: Text('Track purchases, refills & medical supplies', style: AppTypography.caption),
+                        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const BuyListScreen()),
+                          );
+                        },
+                      ),
+                      const Divider(height: 6),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.primaryBlue),
