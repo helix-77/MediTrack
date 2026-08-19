@@ -207,7 +207,7 @@ users/{uid}/medicines/{medicineId}
   batchNumber          String?
   manufacturer         String?
   imageUrl             String?              -- Firebase Storage download URL
-  lowStockThreshold    int (default 5)
+  lowStockThreshold    int (default 3)
   schedule             Map                  -- embedded, see below
   createdAt            Timestamp
   updatedAt            Timestamp
@@ -567,7 +567,7 @@ dailyDoseUnits(schedule) = schedule.doseAmount * schedule.timesPerDay
 daysRemaining(quantityCurrent, schedule) = floor(quantityCurrent / dailyDoseUnits(schedule))
 
 isRefillDue = daysRemaining <= refillAlertDaysBefore   // default 3, user-configurable 1-14 (not yet exposed in Settings — Section 5.6)
-isLowStock  = quantityCurrent <= lowStockThreshold     // default 5
+isLowStock  = quantityCurrent <= lowStockThreshold     // default 3
 isExpiringSoon = (expiryDate - today).days <= expiryAlertDaysBefore  // default 30, range 7-90 (not yet exposed in Settings)
 ```
 

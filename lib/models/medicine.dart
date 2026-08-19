@@ -33,7 +33,7 @@ class Medicine {
     this.manufacturer,
     this.imageUrl,
     this.prescriptionId,
-    this.lowStockThreshold = 5,
+    this.lowStockThreshold = 3,
     this.familyMemberId,
     required this.schedule,
     required this.createdAt,
@@ -76,7 +76,7 @@ class Medicine {
       manufacturer: data['manufacturer'] as String?,
       imageUrl: data['imageUrl'] as String?,
       prescriptionId: data['prescriptionId'] as String?,
-      lowStockThreshold: data['lowStockThreshold'] as int? ?? 5,
+      lowStockThreshold: data['lowStockThreshold'] as int? ?? 3,
       familyMemberId: data['familyMemberId'] as String?,
       schedule: MedicineSchedule.fromMap(
         Map<String, dynamic>.from(data['schedule'] ?? {}),

@@ -168,10 +168,14 @@ class NotificationService {
     }
 
     if (refillEnabled &&
-        RefillCalculator.isRefillDue(
-          medicine.quantityCurrent,
-          medicine.schedule,
-        )) {
+        (RefillCalculator.isLowStock(
+              medicine.quantityCurrent,
+              medicine.lowStockThreshold,
+            ) ||
+            RefillCalculator.isRefillDue(
+              medicine.quantityCurrent,
+              medicine.schedule,
+            ))) {
       await _showRefillNotification(medicine);
     }
   }
