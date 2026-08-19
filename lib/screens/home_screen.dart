@@ -958,7 +958,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 _buildQuickActionChip(
                   icon: Icons.search_rounded,
-                  label: 'Price & Generic Lookup',
+                  label: 'Price & Generic',
                   onTap: () {
                     Navigator.push(
                       context,

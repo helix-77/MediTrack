@@ -40,43 +40,43 @@ class SoftSurface extends StatelessWidget {
     final effectiveRadius = borderRadius ?? AppRadii.cardRadius;
     final effectiveBg = color ?? (isDark ? AppColors.darkSurface : AppColors.surface);
     final effectiveShadow = boxShadow ?? (isDark ? AppShadows.darkCard : AppShadows.softCard);
-    final effectiveBorder = borderColor != null
-        ? Border.all(color: borderColor!, width: borderWidth ?? 0.8)
-        : null;
+    final effectiveBorderSide = borderColor != null
+        ? BorderSide(color: borderColor!, width: borderWidth ?? 0.8)
+        : BorderSide.none;
 
-    Widget container = Container(
+    Widget content = Padding(
+      padding: padding ?? EdgeInsets.zero,
+      child: child,
+    );
+
+    if (onTap != null) {
+      content = InkWell(
+        onTap: onTap,
+        borderRadius: effectiveRadius,
+        child: content,
+      );
+    }
+
+    return Container(
       width: width,
       height: height,
       margin: margin,
       alignment: alignment,
       decoration: BoxDecoration(
-        color: effectiveBg,
         borderRadius: effectiveRadius,
-        border: effectiveBorder,
         boxShadow: effectiveShadow,
       ),
-      child: ClipRRect(
+      child: Material(
+        color: effectiveBg,
         borderRadius: effectiveRadius,
-        child: Padding(
-          padding: padding ?? EdgeInsets.zero,
-          child: child,
+        shape: RoundedRectangleBorder(
+          borderRadius: effectiveRadius,
+          side: effectiveBorderSide,
         ),
+        clipBehavior: Clip.antiAlias,
+        child: content,
       ),
     );
-
-    if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        borderRadius: effectiveRadius,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: effectiveRadius,
-          child: container,
-        ),
-      );
-    }
-
-    return container;
   }
 }
 
