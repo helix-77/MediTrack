@@ -335,6 +335,14 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
               StreamBuilder<List<DoseLog>>(
                 stream: _medicineService.streamRecentDoseLogs(medicine.id),
                 builder: (context, logSnapshot) {
+                  if (logSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(color: AppColors.primaryBlue),
+                      ),
+                    );
+                  }
                   final logs = logSnapshot.data ?? [];
                   if (logs.isEmpty) {
                     return SoftCard(

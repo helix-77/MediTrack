@@ -77,16 +77,17 @@ class MedicineService {
           .doc(user.uid)
           .collection('doseLogs')
           .where('medicineId', isEqualTo: medicineId)
-          .where(
-            'scheduledAt',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(start),
-          )
-          .orderBy('scheduledAt', descending: true)
           .snapshots()
-          .map(
-            (snapshot) =>
-                snapshot.docs.map((doc) => DoseLog.fromSnapshot(doc)).toList(),
-          );
+          .map((snapshot) {
+            final logs = snapshot.docs
+                .map((doc) => DoseLog.fromSnapshot(doc))
+                .where((log) =>
+                    log.scheduledAt.isAfter(start) ||
+                    log.scheduledAt.isAtSameMomentAs(start))
+                .toList();
+            logs.sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+            return logs;
+          });
     });
   }
 
@@ -205,15 +206,19 @@ class MedicineService {
         .doc(user.uid)
         .collection('doseLogs');
     final twoHoursAgo = DateTime.now().subtract(const Duration(hours: 2));
-    final overdueLogs = await doseLogsRef
+    final pendingLogs = await doseLogsRef
         .where('status', isEqualTo: DoseStatus.pending.name)
-        .where('scheduledAt', isLessThan: Timestamp.fromDate(twoHoursAgo))
         .get();
 
-    if (overdueLogs.docs.isEmpty) return;
+    final overdueDocs = pendingLogs.docs.where((doc) {
+      final scheduledAt = (doc.data()['scheduledAt'] as Timestamp?)?.toDate();
+      return scheduledAt != null && scheduledAt.isBefore(twoHoursAgo);
+    }).toList();
+
+    if (overdueDocs.isEmpty) return;
 
     final batch = _firestore.batch();
-    for (var doc in overdueLogs.docs) {
+    for (var doc in overdueDocs) {
       batch.update(doc.reference, {
         'status': DoseStatus.missed.name,
         'respondedAt': Timestamp.fromDate(DateTime.now()),
