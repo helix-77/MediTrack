@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 /// Cool pale blue-gray canvas + raised white/pale surfaces + deep navy text + primary blue with pink/orange accents.
 class AppColors {
   // Light Canvas & Surfaces
-  static const Color canvas = Color(0xFFEFF1F5);
-  static const Color background = Color(0xFFEFF1F5);
-  static const Color surface = Color(0xFFF7FAFB);
+  static const Color canvas = Color(0xFFFCFDFF);
+  static const Color background = Color(0xFFFCFDFF);
+  static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceWhite = Color(0xFFFFFFFF);
   static const Color surfaceElevated = Color(0xFFFFFFFF);
 

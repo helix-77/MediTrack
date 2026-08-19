@@ -354,106 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 18),
-
-          // Adherence & Medicines in a Clean Row
-          Row(
-            children: [
-              // Stat 1: Adherence
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE0EDFE),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.access_time_rounded,
-                        color: AppColors.primaryBlue,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Adherence',
-                          style: AppTypography.caption.copyWith(
-                            fontSize: 11,
-                            color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          '$adherenceRate%',
-                          style: AppTypography.headingSmall.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Vertical subtle separator
-              Container(
-                width: 1,
-                height: 28,
-                color: isDark ? AppColors.darkDivider : const Color(0xFFCBD5E1),
-              ),
-              const SizedBox(width: 16),
-
-              // Stat 2: Active Medicines
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFEF3C7),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.medication_rounded,
-                        color: Color(0xFFF59E0B),
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Medicines',
-                          style: AppTypography.caption.copyWith(
-                            fontSize: 11,
-                            color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          '$activeMedicinesCount active',
-                          style: AppTypography.headingSmall.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+        ]
       ),
     );
   }
@@ -602,22 +503,14 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Main Card Body (Compact height, top gradient blends invisibly with canvas bg)
+          // Main Card Body (Compact height, solid surface with soft drop shadow)
           Positioned.fill(
             top: 20,
             child: Container(
               padding: const EdgeInsets.only(top: 32, bottom: 14, left: 10, right: 10),
               decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    (isDark ? AppColors.darkCanvas : AppColors.canvas).withValues(alpha: 0.0),
-                    isDark ? AppColors.darkSurface : Colors.white,
-                  ],
-                  stops: const [0.0, 0.40],
-                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
