@@ -550,9 +550,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showAppModalBottomSheet(
       context: context,
-      heightFactor: 0.70,
+      maxHeightFactor: 0.85,
       builder: (sheetContext) => StatefulBuilder(
         builder: (ctx, setModalState) => Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Drag handle
@@ -605,94 +606,100 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const Divider(height: 16),
-            // Dose List (Scrollable, takes remaining height of 70% sheet)
-            Expanded(
-              child: slot.doses.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No doses scheduled for ${slot.title.toLowerCase()}',
-                        style: AppTypography.bodySmall,
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: slot.doses.length,
-                      separatorBuilder: (context, index) => const Divider(height: 12),
-                      itemBuilder: (listCtx, index) {
-                        final item = slot.doses[index];
-                        final isTaken = item.log.status == DoseStatus.taken;
+            // Dose List (Dynamic height: ~25-30% for empty, ~40-50% for few, up to 85% scrollable for many)
+            if (slot.doses.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20),
+                child: Center(
+                  child: Text(
+                    'No doses scheduled for ${slot.title.toLowerCase()}',
+                    style: AppTypography.bodySmall,
+                  ),
+                ),
+              )
+            else
+              Flexible(
+                fit: FlexFit.loose,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: slot.doses.length,
+                  separatorBuilder: (context, index) => const Divider(height: 12),
+                  itemBuilder: (listCtx, index) {
+                    final item = slot.doses[index];
+                    final isTaken = item.log.status == DoseStatus.taken;
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: isTaken
-                                      ? AppColors.successLight
-                                      : slot.accentColor.withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  isTaken
-                                      ? Icons.check_circle_rounded
-                                      : Icons.medication_rounded,
-                                  color: isTaken ? AppColors.success : slot.accentColor,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.medicine.name,
-                                      style: AppTypography.headingSmall.copyWith(
-                                        decoration: isTaken ? TextDecoration.lineThrough : null,
-                                        color: isTaken
-                                            ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
-                                            : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
-                                      style: AppTypography.caption,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isTaken
+                                  ? AppColors.successLight
+                                  : slot.accentColor.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
                               isTaken
-                                  ? const StatusPill(label: 'Taken', type: PillType.success)
-                                  : SoftPrimaryButton(
-                                      label: 'Take',
-                                      height: 36,
-                                      width: 80,
-                                      backgroundColor: slot.accentColor,
-                                      onPressed: () {
-                                        setModalState(() {
-                                          item.log = DoseLog(
-                                            id: item.log.id,
-                                            medicineId: item.log.medicineId,
-                                            medicineName: item.log.medicineName,
-                                            scheduledAt: item.log.scheduledAt,
-                                            status: DoseStatus.taken,
-                                            respondedAt: DateTime.now(),
-                                          );
-                                        });
-                                        _handleTakeDose(item);
-                                      },
-                                    ),
-                            ],
+                                  ? Icons.check_circle_rounded
+                                  : Icons.medication_rounded,
+                              color: isTaken ? AppColors.success : slot.accentColor,
+                              size: 20,
+                            ),
                           ),
-                        );
-                      },
-                    ),
-            ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.medicine.name,
+                                  style: AppTypography.headingSmall.copyWith(
+                                    decoration: isTaken ? TextDecoration.lineThrough : null,
+                                    color: isTaken
+                                        ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
+                                        : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${TimeFormatter.format24To12Hour(item.timeString)} • ${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit"}',
+                                  style: AppTypography.caption,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          isTaken
+                              ? const StatusPill(label: 'Taken', type: PillType.success)
+                              : SoftPrimaryButton(
+                                  label: 'Take',
+                                  height: 36,
+                                  width: 80,
+                                  backgroundColor: slot.accentColor,
+                                  onPressed: () {
+                                    setModalState(() {
+                                      item.log = DoseLog(
+                                        id: item.log.id,
+                                        medicineId: item.log.medicineId,
+                                        medicineName: item.log.medicineName,
+                                        scheduledAt: item.log.scheduledAt,
+                                        status: DoseStatus.taken,
+                                        respondedAt: DateTime.now(),
+                                      );
+                                    });
+                                    _handleTakeDose(item);
+                                  },
+                                ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
       ),

@@ -137,9 +137,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
 
     showAppModalBottomSheet(
       context: context,
-      heightFactor: 0.70,
+      maxHeightFactor: 0.85,
       builder: (ctx) => StatefulBuilder(
         builder: (modalCtx, setModalState) => Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Center(
               child: Container(
@@ -152,8 +153,10 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                 ),
               ),
             ),
-            Expanded(
+            Flexible(
+              fit: FlexFit.loose,
               child: ListView(
+                shrinkWrap: true,
                 padding: EdgeInsets.only(
                   left: 20,
                   right: 20,

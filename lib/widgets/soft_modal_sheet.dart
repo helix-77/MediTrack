@@ -2,16 +2,19 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 
-/// Standard modal bottom sheet for MediTrack:
-/// - Occupies at most [heightFactor] (default 70%) of the screen height.
-/// - Keeps the background above the sheet blurred with a subtle backdrop filter.
+/// Standard dynamic modal bottom sheet for MediTrack:
+/// - Occupies dynamically based on content size, capped at [maxHeightFactor] (default 85%) of screen height.
+/// - Empty / short content naturally wraps (~25-30% height).
+/// - Moderate content sizes to fit (~40-55% height).
+/// - Large content expands up to 85% and scrolls smoothly with bouncing physics.
+/// - Keeps the background above the sheet blurred with a backdrop filter.
 /// - Allows gesture dismissals (swiping/dragging down or tapping the blurred backdrop).
 Future<T?> showAppModalBottomSheet<T>({
   required BuildContext context,
   required Widget Function(BuildContext context) builder,
   bool isDismissible = true,
   bool enableDrag = true,
-  double heightFactor = 0.70,
+  double maxHeightFactor = 0.85,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -24,7 +27,7 @@ Future<T?> showAppModalBottomSheet<T>({
     barrierColor: Colors.transparent,
     builder: (modalContext) {
       final screenHeight = MediaQuery.of(modalContext).size.height;
-      final targetHeight = screenHeight * heightFactor;
+      final maxTargetHeight = screenHeight * maxHeightFactor;
 
       return Stack(
         children: [
@@ -41,30 +44,35 @@ Future<T?> showAppModalBottomSheet<T>({
               ),
             ),
           ),
-          // 70% height bottom sheet container
+          // Dynamic height bottom sheet container (capped at maxHeightFactor, default 85%)
           Align(
             alignment: Alignment.bottomCenter,
             child: GestureDetector(
               onTap: () {}, // Prevent taps inside the bottom sheet from dismissing it
-              child: Container(
-                height: targetHeight,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : AppColors.surface,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.22),
-                      blurRadius: 28,
-                      offset: const Offset(0, -6),
-                    ),
-                  ],
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: maxTargetHeight,
+                  minWidth: double.infinity,
                 ),
-                child: SafeArea(
-                  top: false,
-                  child: ClipRRect(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface : AppColors.surface,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                    child: builder(modalContext),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.22),
+                        blurRadius: 28,
+                        offset: const Offset(0, -6),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                      child: builder(modalContext),
+                    ),
                   ),
                 ),
               ),

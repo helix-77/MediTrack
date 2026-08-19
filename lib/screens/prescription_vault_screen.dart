@@ -30,8 +30,9 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
 
     showAppModalBottomSheet(
       context: context,
-      heightFactor: 0.70,
+      maxHeightFactor: 0.85,
       builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Center(
             child: Container(
@@ -82,8 +83,10 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
             ),
           ),
           const Divider(height: 12),
-          Expanded(
+          Flexible(
+            fit: FlexFit.loose,
             child: ListView(
+              shrinkWrap: true,
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               physics: const BouncingScrollPhysics(),
               children: [
