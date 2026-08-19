@@ -481,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
           itemCount: 4,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.22,
+            childAspectRatio: 1.18,
             crossAxisSpacing: 14,
             mainAxisSpacing: 14,
           ),
@@ -498,98 +498,51 @@ class _HomeScreenState extends State<HomeScreen> {
     final taken = slot.doses.where((d) => d.log.status == DoseStatus.taken).length;
     final countText = '$taken/$total';
 
-    return GestureDetector(
+    return SoftSurface(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      borderRadius: BorderRadius.circular(24),
+      color: isDark ? AppColors.darkSurface : Colors.white,
       onTap: () => _openTimeSlotDetailModal(slot),
-      child: Stack(
-        clipBehavior: Clip.none,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Main Card Body (Compact height, solid surface with soft drop shadow)
-          Positioned.fill(
-            top: 20,
-            child: Container(
-              padding: const EdgeInsets.only(top: 32, bottom: 14, left: 10, right: 10),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Title
-                  Text(
-                    slot.title,
-                    style: AppTypography.headingMedium.copyWith(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1E293B),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 3),
-                  // Dose Count (e.g. 10/14)
-                  Text(
-                    countText,
-                    style: AppTypography.caption.copyWith(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+          // Circular Icon Container inside the box
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: slot.accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              slot.icon,
+              color: slot.accentColor,
+              size: 22,
             ),
           ),
+          const SizedBox(height: 10),
 
-          // Floating Circular Icon in Top Middle
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: slot.accentColor.withValues(alpha: isDark ? 0.25 : 0.16),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: slot.accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      slot.icon,
-                      color: slot.accentColor,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
+          // Title
+          Text(
+            slot.title,
+            style: AppTypography.headingMedium.copyWith(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1E293B),
             ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 3),
+
+          // Dose Count (e.g. 10/14)
+          Text(
+            countText,
+            style: AppTypography.caption.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
