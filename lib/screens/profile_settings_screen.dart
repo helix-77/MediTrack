@@ -2,19 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../models/family_member.dart';
-import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/family_service.dart';
 import '../services/entitlement_service.dart';
-import '../features/bdapps/bd_apps_service.dart';
-import '../theme/theme_notifier.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
-import '../l10n/locale_notifier.dart';
-import '../l10n/app_strings.dart';
 import '../widgets/section_header.dart';
 import '../widgets/soft_button.dart';
+import '../widgets/soft_modal_sheet.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/soft_text_field.dart';
 import 'doctor_summary_screen.dart';
@@ -22,7 +18,8 @@ import 'prescription_vault_screen.dart';
 import 'medicine_search_screen.dart';
 import 'nearby_pharmacies_screen.dart';
 import 'subscription_offer_screen.dart';
-import 'welcome_screen.dart';
+import 'edit_profile_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -32,192 +29,197 @@ class ProfileSettingsScreen extends StatefulWidget {
 }
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
-  final AuthService _authService = AuthService();
   final UserProfileService _profileService = UserProfileService();
   final FamilyService _familyService = FamilyService();
 
-  bool _doseReminders = true;
-  bool _expiryAlerts = true;
-  bool _refillAlerts = true;
+  int _selectedFilterIndex = 0;
 
-  void _showEditProfileDialog(UserProfile profile) {
-    final nameCtrl = TextEditingController(text: profile.displayName);
-    final phoneCtrl = TextEditingController(text: profile.bdMobile ?? '');
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
-        title: Text('Edit Profile', style: AppTypography.headingMedium),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SoftTextField(
-              controller: nameCtrl,
-              labelText: 'Display Name',
-              hintText: 'e.g. John Doe',
-            ),
-            const SizedBox(height: 12),
-            SoftTextField(
-              controller: phoneCtrl,
-              labelText: 'Phone Number (BD Mobile)',
-              hintText: '018XXXXXXXX',
-              keyboardType: TextInputType.phone,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-            onPressed: () async {
-              final updated = profile.copyWith(
-                displayName: nameCtrl.text.trim(),
-                bdMobile: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
-              );
-              Navigator.pop(ctx);
-              await _profileService.saveProfile(updated);
-            },
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditHealthProfileDialog(UserProfile profile) {
+  void _showEditHealthProfileBottomSheet(UserProfile profile) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bloodCtrl = TextEditingController(text: profile.bloodGroup ?? '');
     final allergiesCtrl = TextEditingController(text: profile.allergies ?? '');
     final emNameCtrl = TextEditingController(text: profile.emergencyContactName ?? '');
     final emPhoneCtrl = TextEditingController(text: profile.emergencyContactPhone ?? '');
 
-    showDialog(
+    final bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+    showAppModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
-        title: Text('Emergency Health Profile', style: AppTypography.headingMedium),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      maxHeightFactor: 0.85,
+      builder: (ctx) => StatefulBuilder(
+        builder: (modalCtx, setModalState) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: ListView(
+            shrinkWrap: true,
             children: [
-              SoftTextField(
-                controller: bloodCtrl,
-                labelText: 'Blood Group',
-                hintText: 'e.g. O+, A+, B-',
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkDivider : AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+              Text(
+                'Emergency Health Profile',
+                style: AppTypography.headingMedium.copyWith(
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Important data for clinical emergencies and doctor visits',
+                style: AppTypography.caption,
+              ),
+              const SizedBox(height: 20),
+
+              // Blood Group Quick Chips
+              Text('Blood Group', style: AppTypography.caption),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: bloodGroups.map((bg) {
+                  final isSelected = bloodCtrl.text == bg;
+                  return ChoiceChip(
+                    label: Text(bg),
+                    selected: isSelected,
+                    selectedColor: AppColors.primaryBlue,
+                    backgroundColor: isDark ? AppColors.darkSurfaceElevated : AppColors.canvas,
+                    labelStyle: AppTypography.caption.copyWith(
+                      color: isSelected ? Colors.white : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                    side: BorderSide.none,
+                    onSelected: (selected) {
+                      setModalState(() {
+                        bloodCtrl.text = selected ? bg : '';
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+
               SoftTextField(
                 controller: allergiesCtrl,
-                labelText: 'Allergies',
-                hintText: 'e.g. Penicillin, Peanuts',
+                labelText: 'Known Allergies',
+                hintText: 'e.g. Penicillin, Peanuts, Sulfa',
+                prefixIcon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               SoftTextField(
                 controller: emNameCtrl,
                 labelText: 'Emergency Contact Name',
-                hintText: 'e.g. Jane Doe (Spouse)',
+                hintText: 'e.g. Fatima Begum (Spouse)',
+                prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.accentPink, size: 20),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               SoftTextField(
                 controller: emPhoneCtrl,
                 labelText: 'Emergency Contact Phone',
                 hintText: '017XXXXXXXX',
                 keyboardType: TextInputType.phone,
+                prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.accentPink, size: 20),
               ),
+              const SizedBox(height: 24),
+              SoftPrimaryButton(
+                label: 'Save Health Profile',
+                height: 46,
+                onPressed: () async {
+                  final updated = profile.copyWith(
+                    bloodGroup: bloodCtrl.text.trim().isEmpty ? null : bloodCtrl.text.trim(),
+                    allergies: allergiesCtrl.text.trim().isEmpty ? null : allergiesCtrl.text.trim(),
+                    emergencyContactName: emNameCtrl.text.trim().isEmpty ? null : emNameCtrl.text.trim(),
+                    emergencyContactPhone: emPhoneCtrl.text.trim().isEmpty ? null : emPhoneCtrl.text.trim(),
+                  );
+                  Navigator.pop(ctx);
+                  await _profileService.saveProfile(updated);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Health profile updated!'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-            onPressed: () async {
-              final updated = profile.copyWith(
-                bloodGroup: bloodCtrl.text.trim().isEmpty ? null : bloodCtrl.text.trim(),
-                allergies: allergiesCtrl.text.trim().isEmpty ? null : allergiesCtrl.text.trim(),
-                emergencyContactName: emNameCtrl.text.trim().isEmpty ? null : emNameCtrl.text.trim(),
-                emergencyContactPhone: emPhoneCtrl.text.trim().isEmpty ? null : emPhoneCtrl.text.trim(),
-              );
-              Navigator.pop(ctx);
-              await _profileService.saveProfile(updated);
-            },
-            child: const Text('Save Profile', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
 
-  void _showAddFamilyMemberDialog() {
+  void _showAddFamilyMemberBottomSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final nameCtrl = TextEditingController();
 
-    showDialog(
+    showAppModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
-        title: Text('Add Family Member', style: AppTypography.headingMedium),
-        content: SoftTextField(
-          controller: nameCtrl,
-          labelText: 'Full Name',
-          hintText: 'e.g. Fatima Begum (Mother)',
+      maxHeightFactor: 0.5,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkDivider : AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Add Family Member',
+              style: AppTypography.headingMedium.copyWith(
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Manage prescriptions and dose alarms for loved ones',
+              style: AppTypography.caption,
+            ),
+            const SizedBox(height: 18),
+            SoftTextField(
+              controller: nameCtrl,
+              labelText: 'Full Name & Relation',
+              hintText: 'e.g. Fatima Begum (Mother)',
+              prefixIcon: const Icon(Icons.family_restroom_rounded, color: AppColors.primaryBlue, size: 20),
+            ),
+            const SizedBox(height: 20),
+            SoftPrimaryButton(
+              label: 'Add Member',
+              height: 44,
+              onPressed: () async {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) return;
+                Navigator.pop(ctx);
+                await _familyService.addFamilyMember(name);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('✅ Added $name to family profiles!'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-            onPressed: () async {
-              final name = nameCtrl.text.trim();
-              if (name.isEmpty) return;
-
-              Navigator.pop(ctx);
-              await _familyService.addFamilyMember(name);
-            },
-            child: const Text('Add Member', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmSignOut() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
-        title: Text('Sign Out', style: AppTypography.headingMedium),
-        content: Text(
-          'Are you sure you want to sign out of MediTrack?',
-          style: AppTypography.bodySmall,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              await _authService.signOut();
-              if (!mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                (route) => false,
-              );
-            },
-            child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
@@ -225,16 +227,56 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final themeNotifier = context.watch<ThemeNotifier>();
-    final localeNotifier = context.watch<LocaleNotifier>();
     final entitlement = context.watch<EntitlementService>();
-    final bdService = context.watch<BdAppsService>();
     final isPro = entitlement.isSubscribed;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
-        title: const Text('Profile & Settings'),
+        title: const Text('My Profile'),
+        actions: [
+          // Streak / Adherence Badge
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('⚡', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 4),
+                Text(
+                  '98%',
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryBlue,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Settings Gear Icon (Opens Settings Screen)
+          Padding(
+            padding: const EdgeInsets.only(right: 14.0),
+            child: SoftIconButton(
+              icon: Icons.settings_outlined,
+              size: 38,
+              iconSize: 20,
+              iconColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              tooltip: 'Settings',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       body: StreamBuilder<UserProfile?>(
         stream: _profileService.streamProfile(),
@@ -246,60 +288,148 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 email: '',
               );
 
+          final initial = profile.displayName.isNotEmpty
+              ? profile.displayName[0].toUpperCase()
+              : 'U';
+
           return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             children: [
-              // User Profile Header Card
-              SoftSurface(
-                padding: const EdgeInsets.all(18),
-                borderRadius: AppRadii.cardRadius,
-                child: Row(
+              // 1. HERO USER PROFILE HEADER (Reimagined from Image 2)
+              Center(
+                child: Column(
                   children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryBlueLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          profile.displayName.isNotEmpty
-                              ? profile.displayName[0].toUpperCase()
-                              : 'U',
-                          style: AppTypography.headingLarge.copyWith(
-                            color: AppColors.primaryBlue,
-                            fontWeight: FontWeight.w700,
+                    // Large Avatar with Glow and Verified Badge (Tap to Edit)
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EditProfileScreen(profile: profile),
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        );
+                      },
+                      child: Stack(
                         children: [
-                          Text(profile.displayName, style: AppTypography.headingMedium),
-                          const SizedBox(height: 2),
-                          Text(
-                            profile.bdMobile ?? 'No mobile linked',
-                            style: AppTypography.caption,
+                          Container(
+                            width: 88,
+                            height: 88,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0EDFE),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryBlue.withValues(alpha: isDark ? 0.25 : 0.15),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                initial,
+                                style: AppTypography.displayLarge.copyWith(
+                                  color: AppColors.primaryBlue,
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 2,
+                            right: 2,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkSurface : Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.verified_rounded,
+                                color: AppColors.primaryBlue,
+                                size: 20,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    SoftIconButton(
-                      icon: Icons.edit_outlined,
-                      size: 38,
-                      iconColor: AppColors.primaryBlue,
-                      onPressed: () => _showEditProfileDialog(profile),
+                    const SizedBox(height: 12),
+
+                    // User Full Name with Verification
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            profile.displayName,
+                            style: AppTypography.headingLarge.copyWith(fontSize: 20),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.verified, color: AppColors.primaryBlue, size: 18),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Phone / Email subtitle
+                    Text(
+                      profile.bdMobile ?? (profile.email.isNotEmpty ? profile.email : 'Bangladesh'),
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Quick Health Badges / Chips Row
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildFilterChip(
+                            index: 0,
+                            icon: Icons.edit_outlined,
+                            label: 'Edit Profile',
+                            isDark: isDark,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => EditProfileScreen(profile: profile),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _buildFilterChip(
+                            index: 1,
+                            icon: Icons.shield_outlined,
+                            label: 'Emergency',
+                            isDark: isDark,
+                            onTap: () => _showEditHealthProfileBottomSheet(profile),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildFilterChip(
+                            index: 2,
+                            icon: Icons.group_outlined,
+                            label: 'Family',
+                            isDark: isDark,
+                            onTap: _showAddFamilyMemberBottomSheet,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
 
-              // MediTrack Premium Status Card
+              // 5. MEDITRACK PREMIUM / BD APPS STATUS
               SoftSurface(
                 padding: const EdgeInsets.all(18),
                 borderRadius: AppRadii.cardRadius,
@@ -332,7 +462,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           const SizedBox(height: 2),
                           Text(
                             isPro
-                                ? 'Full access to AI, OCR & Family SMS alerts'
+                                ? 'Full AI, OCR & Family SMS alerts active'
                                 : 'Upgrade for ৳2/day via Robi/Airtel',
                             style: AppTypography.caption,
                           ),
@@ -354,63 +484,56 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
-              // App Preferences (Language & Dark Mode)
-              const SectionHeader(title: 'App Preferences'),
+              // 2. HEALTH & EMERGENCY PROFILE CARD (Image 1 Exact Layout)
               SoftSurface(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                borderRadius: AppRadii.cardRadius,
                 child: Column(
                   children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.language_rounded, color: AppColors.primaryBlue),
-                      title: Text('Language / ভাষা', style: AppTypography.bodyMedium),
-                      subtitle: Text(
-                        localeNotifier.isBangla ? 'বাংলা (Bangla)' : 'English',
-                        style: AppTypography.caption,
-                      ),
-                      trailing: Switch(
-                        value: localeNotifier.isBangla,
-                        activeThumbColor: AppColors.primaryBlue,
-                        onChanged: (val) {
-                          localeNotifier.setLanguage(val ? AppLanguage.bangla : AppLanguage.english);
-                        },
-                      ),
+                    _buildHealthItemRow(
+                      label: 'Blood Group',
+                      value: profile.bloodGroup ?? 'Not set',
+                      isDark: isDark,
                     ),
-                    const Divider(height: 8),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.dark_mode_outlined, color: AppColors.primaryBlue),
-                      title: Text('Dark Mode', style: AppTypography.bodyMedium),
-                      subtitle: Text(
-                        themeNotifier.isDarkMode ? 'Enabled' : 'Disabled (Light theme)',
-                        style: AppTypography.caption,
-                      ),
-                      trailing: Switch(
-                        value: themeNotifier.isDarkMode,
-                        activeThumbColor: AppColors.primaryBlue,
-                        onChanged: (val) {
-                          themeNotifier.toggleDarkMode(val);
-                        },
-                      ),
+                    Divider(
+                      height: 20,
+                      thickness: 0.8,
+                      color: isDark ? AppColors.darkDivider : const Color(0xFFF1F5F9),
+                    ),
+                    _buildHealthItemRow(
+                      label: 'Allergies',
+                      value: profile.allergies ?? 'None reported',
+                      isDark: isDark,
+                    ),
+                    Divider(
+                      height: 20,
+                      thickness: 0.8,
+                      color: isDark ? AppColors.darkDivider : const Color(0xFFF1F5F9),
+                    ),
+                    _buildHealthItemRow(
+                      label: 'Emergency Contact',
+                      value: profile.emergencyContactName != null
+                          ? '${profile.emergencyContactName} (${profile.emergencyContactPhone ?? "N/A"})'
+                          : 'Not set (N/A)',
+                      isDark: isDark,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // Medical Tools & Reports Shortcuts
-              const SectionHeader(title: 'Medical Tools & Clinical Vault'),
+              // 3. CLINICAL VAULT & MEDICAL TOOLS (Smart Shortcuts)
               SoftSurface(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: Column(
                   children: [
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.primaryBlue),
                       title: Text('Generate Doctor Visit Summary', style: AppTypography.bodyMedium),
-                      subtitle: Text('Adherence, active doses & health summary', style: AppTypography.caption),
+                      subtitle: Text('Export adherence report for physician', style: AppTypography.caption),
                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                       onTap: () {
                         Navigator.push(
@@ -419,7 +542,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         );
                       },
                     ),
-                    const Divider(height: 8),
+                    const Divider(height: 6),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.folder_shared_outlined, color: AppColors.primaryBlue),
@@ -433,12 +556,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         );
                       },
                     ),
-                    const Divider(height: 8),
+                    const Divider(height: 6),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.search_rounded, color: AppColors.primaryBlue),
                       title: Text('Medicine Price & Generic Lookup', style: AppTypography.bodyMedium),
-                      subtitle: Text('DGDA Bangladesh database & cheaper alternatives', style: AppTypography.caption),
+                      subtitle: Text('DGDA Bangladesh database & cheaper brands', style: AppTypography.caption),
                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                       onTap: () {
                         Navigator.push(
@@ -447,12 +570,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         );
                       },
                     ),
-                    const Divider(height: 8),
+                    const Divider(height: 6),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.local_pharmacy_outlined, color: AppColors.primaryBlue),
-                      title: Text('Find Nearby Pharmacies', style: AppTypography.bodyMedium),
-                      subtitle: Text('24/7 pharmacies, GPS routing & model shops', style: AppTypography.caption),
+                      title: Text('Find Nearby 24/7 Pharmacies', style: AppTypography.bodyMedium),
+                      subtitle: Text('GPS directions to licensed drugstores', style: AppTypography.caption),
                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                       onTap: () {
                         Navigator.push(
@@ -464,16 +587,22 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
 
-              // Family Profiles Manager
+              // 4. FAMILY PROFILES SECTION
               SectionHeader(
-                title: 'Family Profiles',
-                subtitle: 'Manage prescriptions and SMS alerts for family members',
+                title: 'Family Members',
+                subtitle: 'Manage prescriptions and SMS alerts for family',
                 trailing: TextButton.icon(
                   icon: const Icon(Icons.add, size: 16, color: AppColors.primaryBlue),
-                  label: Text('Add Member', style: AppTypography.caption.copyWith(color: AppColors.primaryBlue, fontWeight: FontWeight.w700)),
-                  onPressed: _showAddFamilyMemberDialog,
+                  label: Text(
+                    'Add Member',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.primaryBlue,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  onPressed: _showAddFamilyMemberBottomSheet,
                 ),
               ),
               StreamBuilder<List<FamilyMember>>(
@@ -485,7 +614,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Center(
                         child: Text(
-                          'No family members added yet. Tap "Add Member" to manage medications for your parents or children.',
+                          'No family members added yet. Tap "+ Add Member" to manage medications for parents or children.',
                           textAlign: TextAlign.center,
                           style: AppTypography.bodySmall,
                         ),
@@ -523,149 +652,87 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 24),
-
-              // Health & Emergency Profile Summary
-              SectionHeader(
-                title: 'Health & Emergency Profile',
-                subtitle: 'Important data for clinical emergencies',
-                trailing: TextButton(
-                  onPressed: () => _showEditHealthProfileDialog(profile),
-                  child: Text('Edit', style: AppTypography.caption.copyWith(color: AppColors.primaryBlue, fontWeight: FontWeight.w700)),
-                ),
-              ),
-              SoftSurface(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildHealthRow('Blood Group', profile.bloodGroup ?? 'Not set'),
-                    const Divider(height: 16),
-                    _buildHealthRow('Allergies', profile.allergies ?? 'None reported'),
-                    const Divider(height: 16),
-                    _buildHealthRow('Emergency Contact', '${profile.emergencyContactName ?? "Not set"} (${profile.emergencyContactPhone ?? "N/A"})'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Notification Reminders Settings
-              const SectionHeader(title: 'Notification Reminders'),
-              SoftSurface(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Dose Intake Reminders', style: AppTypography.bodyMedium),
-                      subtitle: Text('Alarms when it is time to take your dose', style: AppTypography.caption),
-                      value: _doseReminders,
-                      activeThumbColor: AppColors.primaryBlue,
-                      onChanged: (val) => setState(() => _doseReminders = val),
-                    ),
-                    const Divider(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Expiry Date Alerts', style: AppTypography.bodyMedium),
-                      subtitle: Text('Warns 30 days before medication expires', style: AppTypography.caption),
-                      value: _expiryAlerts,
-                      activeThumbColor: AppColors.primaryBlue,
-                      onChanged: (val) => setState(() => _expiryAlerts = val),
-                    ),
-                    const Divider(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Low Stock Alerts', style: AppTypography.bodyMedium),
-                      subtitle: Text('Reminds to buy refills when inventory drops', style: AppTypography.caption),
-                      value: _refillAlerts,
-                      activeThumbColor: AppColors.primaryBlue,
-                      onChanged: (val) => setState(() => _refillAlerts = val),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // BD Apps SMS Service Test (Diagnostic)
-              const SectionHeader(
-                title: 'BD Apps SMS Service',
-                subtitle: 'Diagnostic test for Bangladesh SMS alerts',
-              ),
-              SoftSurface(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Test SMS Dispatch', style: AppTypography.headingSmall.copyWith(fontSize: 14)),
-                          const SizedBox(height: 2),
-                          Text('Sends an adherence test SMS to your number', style: AppTypography.caption),
-                        ],
-                      ),
-                    ),
-                    SoftPrimaryButton(
-                      label: 'Send Test',
-                      height: 36,
-                      width: 96,
-                      isLoading: bdService.isSendingSms,
-                      onPressed: bdService.isSendingSms
-                          ? null
-                          : () async {
-                              final phone = profile.bdMobile;
-                              if (phone == null || phone.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please link a BD mobile number in your profile first'),
-                                    backgroundColor: AppColors.warning,
-                                  ),
-                                );
-                                return;
-                              }
-                              bdService.updateBdMobile(phone);
-                              final success = await bdService.sendSms(
-                                message: 'MediTrack Alert: Reminder to take your scheduled Napa 500mg dose on time.',
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      success
-                                          ? '✅ Test SMS queued successfully!'
-                                          : (bdService.errorMessage ?? 'Failed to send SMS'),
-                                    ),
-                                    backgroundColor: success ? AppColors.success : AppColors.danger,
-                                  ),
-                                );
-                              }
-                            },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Account Actions & Sign Out
-              SoftSecondaryButton(
-                label: 'Sign Out',
-                icon: Icons.logout_rounded,
-                textColor: AppColors.danger,
-                onPressed: _confirmSignOut,
-              ),
-              const SizedBox(height: 36),
-            ],
+              const SizedBox(height: 22),
+            ]
           );
         },
       ),
     );
   }
 
-  Widget _buildHealthRow(String label, String value) {
+  Widget _buildFilterChip({
+    required int index,
+    required IconData icon,
+    required String label,
+    required bool isDark,
+    VoidCallback? onTap,
+  }) {
+    final isSelected = _selectedFilterIndex == index;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() => _selectedFilterIndex = index);
+          if (onTap != null) onTap();
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primaryBlue
+                : (isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? Colors.white : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: AppTypography.caption.copyWith(
+                  color: isSelected ? Colors.white : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthItemRow({
+    required String label,
+    required String value,
+    required bool isDark,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: AppTypography.caption),
-        Text(value, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: AppTypography.bodySmall.copyWith(
+            color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+          ),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: AppTypography.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.darkTextPrimary : const Color(0xFF334155),
+            ),
+          ),
+        ),
       ],
     );
   }
