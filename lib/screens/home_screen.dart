@@ -174,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 'Stay on top of your\nhealth',
                 style: AppTypography.displayLarge.copyWith(
-                  fontSize: 28,
+                  fontSize: 22,
                   height: 1.2,
                   fontWeight: FontWeight.w800,
                   color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -498,10 +498,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final taken = slot.doses.where((d) => d.log.status == DoseStatus.taken).length;
     final countText = '$taken/$total';
 
+    final cardBg = isDark
+        ? Color.alphaBlend(slot.accentColor.withValues(alpha: 0.10), AppColors.darkSurface)
+        : Color.alphaBlend(slot.accentColor.withValues(alpha: 0.06), Colors.white);
+
     return SoftSurface(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       borderRadius: BorderRadius.circular(24),
-      color: isDark ? AppColors.darkSurface : Colors.white,
+      color: cardBg,
       onTap: () => _openTimeSlotDetailModal(slot),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -511,8 +515,15 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: slot.accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
+              color: isDark ? slot.accentColor.withValues(alpha: 0.20) : Colors.white,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: slot.accentColor.withValues(alpha: isDark ? 0.20 : 0.12),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Icon(
               slot.icon,
