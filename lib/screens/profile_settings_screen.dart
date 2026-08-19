@@ -8,7 +8,6 @@ import '../services/entitlement_service.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
-import '../widgets/section_header.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_modal_sheet.dart';
 import '../widgets/soft_surface.dart';
@@ -156,69 +155,200 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
-  void _showAddFamilyMemberBottomSheet() {
+  void _showFamilyMembersBottomSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final nameCtrl = TextEditingController();
+    bool isAdding = false;
 
     showAppModalBottomSheet(
       context: context,
-      maxHeightFactor: 0.5,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkDivider : AppColors.divider,
-                  borderRadius: BorderRadius.circular(2),
+      maxHeightFactor: 0.85,
+      builder: (ctx) => StatefulBuilder(
+        builder: (modalCtx, setModalState) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkDivider : AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Add Family Member',
-              style: AppTypography.headingMedium.copyWith(
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Manage prescriptions and dose alarms for loved ones',
-              style: AppTypography.caption,
-            ),
-            const SizedBox(height: 18),
-            SoftTextField(
-              controller: nameCtrl,
-              labelText: 'Full Name & Relation',
-              hintText: 'e.g. Fatima Begum (Mother)',
-              prefixIcon: const Icon(Icons.family_restroom_rounded, color: AppColors.primaryBlue, size: 20),
-            ),
-            const SizedBox(height: 20),
-            SoftPrimaryButton(
-              label: 'Add Member',
-              height: 44,
-              onPressed: () async {
-                final name = nameCtrl.text.trim();
-                if (name.isEmpty) return;
-                Navigator.pop(ctx);
-                await _familyService.addFamilyMember(name);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('✅ Added $name to family profiles!'),
-                      backgroundColor: AppColors.success,
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Family Members',
+                          style: AppTypography.headingMedium.copyWith(
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Manage prescriptions and SMS alerts for family',
+                          style: AppTypography.caption,
+                        ),
+                      ],
                     ),
-                  );
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+                  ),
+                  TextButton.icon(
+                    icon: Icon(isAdding ? Icons.close : Icons.add, size: 16, color: AppColors.primaryBlue),
+                    label: Text(
+                      isAdding ? 'Cancel' : 'Add Member',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    onPressed: () {
+                      setModalState(() {
+                        isAdding = !isAdding;
+                        if (!isAdding) nameCtrl.clear();
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Inline Add Member Field if expanded
+              if (isAdding) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceElevated : AppColors.primaryBlueLight.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      SoftTextField(
+                        controller: nameCtrl,
+                        labelText: 'Member Name & Relation',
+                        hintText: 'e.g. Fatima Begum (Mother)',
+                        prefixIcon: const Icon(Icons.person_add_outlined, color: AppColors.primaryBlue, size: 20),
+                      ),
+                      const SizedBox(height: 12),
+                      SoftPrimaryButton(
+                        label: 'Save Member',
+                        height: 40,
+                        onPressed: () async {
+                          final name = nameCtrl.text.trim();
+                          if (name.isEmpty) return;
+                          nameCtrl.clear();
+                          setModalState(() => isAdding = false);
+                          await _familyService.addFamilyMember(name);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Stream of Family Members
+              Flexible(
+                child: StreamBuilder<List<FamilyMember>>(
+                  stream: _familyService.streamFamilyMembers(),
+                  builder: (context, fSnapshot) {
+                    final members = fSnapshot.data ?? [];
+                    if (members.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24.0),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkSurfaceElevated : AppColors.primaryBlueLight,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.family_restroom_rounded, color: AppColors.primaryBlue, size: 32),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No family members added yet',
+                                style: AppTypography.headingSmall.copyWith(fontSize: 15),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Add your parents, spouse, or children to track their routines.',
+                                textAlign: TextAlign.center,
+                                style: AppTypography.caption,
+                              ),
+                              const SizedBox(height: 14),
+                              SoftPrimaryButton(
+                                label: '+ Add First Member',
+                                height: 38,
+                                width: 180,
+                                onPressed: () => setModalState(() => isAdding = true),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: members.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final m = members[index];
+                        return SoftSurface(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          borderRadius: BorderRadius.circular(18),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.family_restroom_rounded,
+                                  color: AppColors.primaryBlue,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  m.displayName,
+                                  style: AppTypography.headingSmall.copyWith(
+                                    fontSize: 15,
+                                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
+                                onPressed: () => _familyService.deleteFamilyMember(m.id),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
         ),
       ),
     );
@@ -419,7 +549,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             icon: Icons.group_outlined,
                             label: 'Family',
                             isDark: isDark,
-                            onTap: _showAddFamilyMemberBottomSheet,
+                            onTap: _showFamilyMembersBottomSheet,
                           ),
                         ],
                       ),
@@ -587,73 +717,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 22),
-
-              // 4. FAMILY PROFILES SECTION
-              SectionHeader(
-                title: 'Family Members',
-                subtitle: 'Manage prescriptions and SMS alerts for family',
-                trailing: TextButton.icon(
-                  icon: const Icon(Icons.add, size: 16, color: AppColors.primaryBlue),
-                  label: Text(
-                    'Add Member',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.primaryBlue,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  onPressed: _showAddFamilyMemberBottomSheet,
-                ),
-              ),
-              StreamBuilder<List<FamilyMember>>(
-                stream: _familyService.streamFamilyMembers(),
-                builder: (context, fSnapshot) {
-                  final members = fSnapshot.data ?? [];
-                  if (members.isEmpty) {
-                    return SoftCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Center(
-                        child: Text(
-                          'No family members added yet. Tap "+ Add Member" to manage medications for parents or children.',
-                          textAlign: TextAlign.center,
-                          style: AppTypography.bodySmall,
-                        ),
-                      ),
-                    );
-                  }
-
-                  return Column(
-                    children: members
-                        .map(
-                          (m) => Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: SoftSurface(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.family_restroom_rounded, color: AppColors.primaryBlue, size: 20),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(m.displayName, style: AppTypography.headingSmall.copyWith(fontSize: 14)),
-                                  ),
-                                  SoftIconButton(
-                                    icon: Icons.delete_outline,
-                                    size: 32,
-                                    iconSize: 16,
-                                    iconColor: AppColors.danger,
-                                    onPressed: () => _familyService.deleteFamilyMember(m.id),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  );
-                },
-              ),
-              const SizedBox(height: 22),
-            ]
+              const SizedBox(height: 32),
+            ],
           );
         },
       ),
