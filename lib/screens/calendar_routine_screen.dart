@@ -23,7 +23,75 @@ class CalendarRoutineScreen extends StatefulWidget {
 
 class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
   final MedicineService _medicineService = MedicineService();
+  late final ScrollController _dateScrollController;
+
+  late final DateTime _startDate;
+  late final int _totalDays;
   DateTime _selectedDate = DateTime.now();
+
+  static const double _itemWidth = 58.0;
+  static const double _itemMargin = 8.0;
+  static const double _totalItemWidth = _itemWidth + _itemMargin;
+
+  int _daysBetween(DateTime from, DateTime to) {
+    final fromUtc = DateTime.utc(from.year, from.month, from.day);
+    final toUtc = DateTime.utc(to.year, to.month, to.day);
+    return toUtc.difference(fromUtc).inDays;
+  }
+
+  DateTime _getDateForIndex(int index) {
+    return DateTime(_startDate.year, _startDate.month, _startDate.day + index);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    _selectedDate = today;
+    _startDate = DateTime(today.year, today.month, today.day - 90);
+    final endDate = DateTime(today.year, today.month, today.day + 90);
+    _totalDays = _daysBetween(_startDate, endDate) + 1;
+
+    final initialIndex = _daysBetween(_startDate, _selectedDate);
+    const estimatedViewportWidth = 360.0;
+    final initialOffset = ((initialIndex * _totalItemWidth) + (_itemWidth / 2) - (estimatedViewportWidth / 2))
+        .clamp(0.0, double.infinity);
+    _dateScrollController = ScrollController(initialScrollOffset: initialOffset);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToDate(_selectedDate, animate: false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _dateScrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToDate(DateTime date, {bool animate = true}) {
+    if (!_dateScrollController.hasClients) return;
+    final index = _daysBetween(_startDate, date);
+    if (index < 0 || index >= _totalDays) return;
+
+    final screenWidth = MediaQuery.of(context).size.width - 40;
+    final targetOffset = (index * _totalItemWidth) + (_itemWidth / 2) - (screenWidth / 2);
+    final maxScroll = _dateScrollController.position.maxScrollExtent;
+    final clampedOffset = maxScroll > 0
+        ? targetOffset.clamp(0.0, maxScroll)
+        : (targetOffset < 0 ? 0.0 : targetOffset);
+
+    if (animate) {
+      _dateScrollController.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      _dateScrollController.jumpTo(clampedOffset);
+    }
+  }
 
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
@@ -33,11 +101,13 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 90)),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
+      firstDate: _startDate,
+      lastDate: _getDateForIndex(_totalDays - 1),
     );
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      final normalizedPicked = DateTime(picked.year, picked.month, picked.day);
+      setState(() => _selectedDate = normalizedPicked);
+      _scrollToDate(normalizedPicked, animate: true);
     }
   }
 
@@ -55,14 +125,6 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
         ),
-        // leading: Padding(
-        //   padding: const EdgeInsets.only(left: 12.0),
-        //   child: SoftIconButton(
-        //     icon: Icons.arrow_back_rounded,
-        //     size: 40,
-        //     onPressed: () => Navigator.pop(context),
-        //   ),
-        // ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
@@ -88,7 +150,7 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
           final medicines = medSnapshot.data ?? [];
 
           return StreamBuilder<List<DoseLog>>(
-            stream: _medicineService.streamTodayDoseLogs(),
+            stream: _medicineService.streamDateDoseLogs(_selectedDate),
             builder: (context, logSnapshot) {
               final logs = logSnapshot.data ?? [];
               final dayItems = _generateDayDoseItems(medicines, logs, _selectedDate);
@@ -138,36 +200,46 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
   }
 
   Widget _buildDateSelectorBar(bool isDark) {
-    final today = DateTime.now();
-    final days = List.generate(14, (index) => today.subtract(Duration(days: 7 - index)));
-
     return SizedBox(
       height: 76,
       child: ListView.builder(
+        controller: _dateScrollController,
         scrollDirection: Axis.horizontal,
-        itemCount: days.length,
+        itemCount: _totalDays,
         itemBuilder: (context, index) {
-          final date = days[index];
+          final date = _getDateForIndex(index);
           final isSelected = _isSameDay(date, _selectedDate);
+          final isToday = _isSameDay(date, DateTime.now());
 
           return GestureDetector(
-            onTap: () => setState(() => _selectedDate = date),
+            onTap: () {
+              setState(() => _selectedDate = date);
+              _scrollToDate(date, animate: true);
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 58,
-              margin: const EdgeInsets.only(right: 8),
+              width: _itemWidth,
+              margin: const EdgeInsets.only(right: _itemMargin),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primaryBlue
                     : (isDark ? AppColors.darkSurface : AppColors.surface),
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: isSelected ? AppShadows.subtle : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: isToday && !isSelected
+                    ? Border.all(
+                        color: AppColors.primaryBlue.withValues(alpha: 0.5),
+                        width: 1.5,
+                      )
+                    : null,
+                boxShadow: isSelected
+                    ? AppShadows.subtle
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -203,8 +275,6 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
   }
 
   Widget _buildProgressCard(int taken, int total, double progress, bool isToday, bool isDark) {
-    final percentage = (progress * 100).toInt();
-
     return SoftSurface(
       padding: const EdgeInsets.all(20),
       borderRadius: AppRadii.cardRadius,
@@ -224,15 +294,10 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$taken of $total doses completed',
-                    style: AppTypography.caption,
-                  ),
                 ],
               ),
               StatusPill(
-                label: '$percentage%',
+                label: '$taken / $total',
                 type: progress >= 1.0 ? PillType.success : PillType.primary,
               ),
             ],

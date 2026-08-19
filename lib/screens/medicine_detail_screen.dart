@@ -250,7 +250,7 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
               // Schedule Info Card
               const SectionHeader(
                 title: 'Schedule & Usage',
-                subtitle: 'Prescribed dosage frequency and pack details',
+                // subtitle: 'Prescribed dosage frequency and pack details',
               ),
               SoftSurface(
                 padding: const EdgeInsets.all(18),
@@ -329,8 +329,8 @@ class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
 
               // Recent Dose History
               const SectionHeader(
-                title: 'Recent Dose Logs',
-                subtitle: 'Intake history from the past 7 days',
+                title: 'Dose Logs (Past 7 days)',
+                // subtitle: 'Intake history from the past 7 days',
               ),
               StreamBuilder<List<DoseLog>>(
                 stream: _medicineService.streamRecentDoseLogs(medicine.id),

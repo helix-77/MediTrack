@@ -33,9 +33,13 @@ class MedicineService {
 
   // Stream today's dose logs safely
   Stream<List<DoseLog>> streamTodayDoseLogs() {
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    return streamDateDoseLogs(DateTime.now());
+  }
+
+  // Stream dose logs for a specific date safely
+  Stream<List<DoseLog>> streamDateDoseLogs(DateTime date) {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
     return _auth.authStateChanges().asyncExpand((user) {
       if (user == null) {
