@@ -15,10 +15,14 @@ class RoutineScheduleNotifier extends ChangeNotifier {
   static const String _keyNight = 'meditrack_schedule_night_min';
 
   // Default start times in minutes from midnight (00:00)
+  // 🌅 Morning: 05:00 AM - 11:29 AM -> Start at 05:00 AM
+  // ☀️ Noon:    11:30 AM - 03:59 PM -> Start at 11:30 AM
+  // 🌇 Evening: 04:00 PM - 07:59 PM -> Start at 04:00 PM (16:00)
+  // 🌙 Night:   08:00 PM - 04:59 AM -> Start at 08:00 PM (20:00)
   static const int defaultMorningMinutes = 5 * 60; // 05:00 AM (300 min)
-  static const int defaultNoonMinutes = 12 * 60;   // 12:00 PM (720 min)
-  static const int defaultEveningMinutes = 17 * 60; // 05:00 PM (1020 min)
-  static const int defaultNightMinutes = 21 * 60;   // 09:00 PM (1260 min)
+  static const int defaultNoonMinutes = 11 * 60 + 30; // 11:30 AM (690 min)
+  static const int defaultEveningMinutes = 16 * 60; // 04:00 PM (960 min)
+  static const int defaultNightMinutes = 20 * 60; // 08:00 PM (1200 min)
 
   int _morningMinutes = defaultMorningMinutes;
   int _noonMinutes = defaultNoonMinutes;

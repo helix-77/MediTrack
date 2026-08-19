@@ -379,9 +379,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPressed: () {
                         setModalState(() {
                           currentMorning = const TimeOfDay(hour: 5, minute: 0);
-                          currentNoon = const TimeOfDay(hour: 12, minute: 0);
-                          currentEvening = const TimeOfDay(hour: 17, minute: 0);
-                          currentNight = const TimeOfDay(hour: 21, minute: 0);
+                          currentNoon = const TimeOfDay(hour: 11, minute: 30);
+                          currentEvening = const TimeOfDay(hour: 16, minute: 0);
+                          currentNight = const TimeOfDay(hour: 20, minute: 0);
                         });
                       },
                       child: Text(
