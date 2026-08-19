@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/avatar_service.dart';
+import '../services/routine_schedule_service.dart';
 import '../services/user_profile_service.dart';
 import '../features/bdapps/bd_apps_service.dart';
 import '../theme/theme_notifier.dart';
@@ -211,6 +212,249 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 16),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showRoutineScheduleModal() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final schedule = context.read<RoutineScheduleNotifier>();
+
+    var currentMorning = schedule.morningStart;
+    var currentNoon = schedule.noonStart;
+    var currentEvening = schedule.eveningStart;
+    var currentNight = schedule.nightStart;
+
+    showAppModalBottomSheet(
+      context: context,
+      maxHeightFactor: 0.88,
+      builder: (ctx) => StatefulBuilder(
+        builder: (modalCtx, setModalState) {
+          int toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
+          String formatTime(TimeOfDay tod) {
+            final hourOfPeriod = tod.hourOfPeriod == 0 ? 12 : tod.hourOfPeriod;
+            final minuteStr = tod.minute.toString().padLeft(2, '0');
+            final period = tod.period == DayPeriod.am ? 'AM' : 'PM';
+            return '$hourOfPeriod:$minuteStr $period';
+          }
+
+          String formatRange(TimeOfDay start, TimeOfDay next) {
+            var endMin = toMinutes(next) - 1;
+            if (endMin < 0) endMin += 24 * 60;
+            final endTod = TimeOfDay(hour: endMin ~/ 60, minute: endMin % 60);
+            return '${formatTime(start)} - ${formatTime(endTod)}';
+          }
+
+          Widget buildSlotCard({
+            required String title,
+            required IconData icon,
+            required Color accentColor,
+            required TimeOfDay start,
+            required TimeOfDay next,
+            required ValueChanged<TimeOfDay> onTimeChanged,
+          }) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppColors.darkDivider : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: accentColor, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: AppTypography.headingSmall.copyWith(
+                            fontSize: 14.5,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          formatRange(start, next),
+                          style: AppTypography.caption.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: accentColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: start,
+                      );
+                      if (picked != null) {
+                        setModalState(() => onTimeChanged(picked));
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            formatTime(start),
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryBlue,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.edit_outlined, size: 14, color: AppColors.primaryBlue),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkDivider : AppColors.divider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Routine Time Ranges',
+                            style: AppTypography.headingMedium.copyWith(
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Set start times for the 4 home screen routine grid slots',
+                            style: AppTypography.caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setModalState(() {
+                          currentMorning = const TimeOfDay(hour: 5, minute: 0);
+                          currentNoon = const TimeOfDay(hour: 12, minute: 0);
+                          currentEvening = const TimeOfDay(hour: 17, minute: 0);
+                          currentNight = const TimeOfDay(hour: 21, minute: 0);
+                        });
+                      },
+                      child: Text(
+                        'Reset',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                buildSlotCard(
+                  title: 'Morning Routine',
+                  icon: Icons.wb_sunny_rounded,
+                  accentColor: const Color(0xFFF97316),
+                  start: currentMorning,
+                  next: currentNoon,
+                  onTimeChanged: (t) => currentMorning = t,
+                ),
+                buildSlotCard(
+                  title: 'Noon Routine',
+                  icon: Icons.wb_twilight_rounded,
+                  accentColor: const Color(0xFFEC4899),
+                  start: currentNoon,
+                  next: currentEvening,
+                  onTimeChanged: (t) => currentNoon = t,
+                ),
+                buildSlotCard(
+                  title: 'Evening Routine',
+                  icon: Icons.nights_stay_outlined,
+                  accentColor: const Color(0xFFA855F7),
+                  start: currentEvening,
+                  next: currentNight,
+                  onTimeChanged: (t) => currentEvening = t,
+                ),
+                buildSlotCard(
+                  title: 'Night Routine',
+                  icon: Icons.nightlight_round,
+                  accentColor: const Color(0xFF3B82F6),
+                  start: currentNight,
+                  next: currentMorning,
+                  onTimeChanged: (t) => currentNight = t,
+                ),
+                const SizedBox(height: 14),
+                SoftPrimaryButton(
+                  label: 'Save Schedule',
+                  height: 46,
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    Navigator.pop(ctx);
+                    await schedule.updateSchedule(
+                      morning: currentMorning,
+                      noon: currentNoon,
+                      evening: currentEvening,
+                      night: currentNight,
+                    );
+                    if (mounted) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Routine schedule updated successfully!'),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -614,6 +858,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                       onTap: _showLanguageModal,
+                    ),
+                    const Divider(height: 4),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.access_time_rounded, color: AppColors.primaryBlue),
+                      title: Text('Routine Time Schedule', style: AppTypography.bodyMedium),
+                      subtitle: Text(
+                        'Set Morning, Noon, Evening & Night home grid ranges',
+                        style: AppTypography.caption,
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: _showRoutineScheduleModal,
                     ),
                     const Divider(height: 4),
                     ListTile(

@@ -18,6 +18,7 @@ import 'theme/theme_notifier.dart';
 import 'l10n/locale_notifier.dart';
 import 'services/auth_service.dart';
 import 'services/avatar_service.dart';
+import 'services/routine_schedule_service.dart';
 import 'services/entitlement_service.dart';
 import 'services/notification_service.dart';
 import 'screens/account_upgrade_screen.dart';
@@ -143,6 +144,9 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
         ),
         ChangeNotifierProvider<AvatarNotifier>(
           create: (_) => AvatarNotifier(),
+        ),
+        ChangeNotifierProvider<RoutineScheduleNotifier>(
+          create: (_) => RoutineScheduleNotifier(),
         ),
         ChangeNotifierProvider<EntitlementService>.value(
           value: _entitlementService,

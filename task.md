@@ -21,4 +21,7 @@ I/flutter (22345): Firebase AI Gemini Error: [firebase_app_check/unknown] com.go
 [x] Subscription service
 [x] ai service
 [x] prescription ocr
-[] Ui revamp
+[x] Ui revamp
+[] add buy list, automatically add low stock product in buy list with separate field
+[] add medicine dataset integration
+[x] add options to set morning, noon, evening, night time schedule

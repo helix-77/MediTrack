@@ -6,6 +6,7 @@ import '../models/dose_log.dart';
 import '../models/user_profile.dart';
 import '../models/family_member.dart';
 import '../services/avatar_service.dart';
+import '../services/routine_schedule_service.dart';
 import '../services/medicine_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/family_service.dart';
@@ -390,29 +391,34 @@ class _HomeScreenState extends State<HomeScreen> {
     required List<_DoseItem> doseItems,
     required bool isDark,
   }) {
+    final schedule = context.watch<RoutineScheduleNotifier>();
     final morningDoses = <_DoseItem>[];
     final noonDoses = <_DoseItem>[];
     final eveningDoses = <_DoseItem>[];
     final nightDoses = <_DoseItem>[];
 
     for (var item in doseItems) {
-      final parts = item.timeString.split(':');
-      final hour = int.tryParse(parts[0]) ?? 8;
-      if (hour >= 5 && hour < 12) {
-        morningDoses.add(item);
-      } else if (hour >= 12 && hour < 17) {
-        noonDoses.add(item);
-      } else if (hour >= 17 && hour < 21) {
-        eveningDoses.add(item);
-      } else {
-        nightDoses.add(item);
+      final slot = schedule.getSlotForTime(item.timeString);
+      switch (slot) {
+        case RoutineSlotType.morning:
+          morningDoses.add(item);
+          break;
+        case RoutineSlotType.noon:
+          noonDoses.add(item);
+          break;
+        case RoutineSlotType.evening:
+          eveningDoses.add(item);
+          break;
+        case RoutineSlotType.night:
+          nightDoses.add(item);
+          break;
       }
     }
 
     final slots = [
       _TimeSlotData(
         title: 'Morning',
-        timeRange: '5:00 AM - 11:59 AM',
+        timeRange: schedule.getMorningRange(),
         icon: Icons.wb_sunny_rounded,
         accentColor: const Color(0xFFF97316),
         bgColor: isDark ? AppColors.darkSurface : Colors.white,
@@ -420,7 +426,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       _TimeSlotData(
         title: 'Noon',
-        timeRange: '12:00 PM - 4:59 PM',
+        timeRange: schedule.getNoonRange(),
         icon: Icons.wb_twilight_rounded,
         accentColor: const Color(0xFFEC4899),
         bgColor: isDark ? AppColors.darkSurface : Colors.white,
@@ -428,7 +434,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       _TimeSlotData(
         title: 'Evening',
-        timeRange: '5:00 PM - 8:59 PM',
+        timeRange: schedule.getEveningRange(),
         icon: Icons.nights_stay_outlined,
         accentColor: const Color(0xFFA855F7),
         bgColor: isDark ? AppColors.darkSurface : Colors.white,
@@ -436,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       _TimeSlotData(
         title: 'Night',
-        timeRange: '9:00 PM - 4:59 AM',
+        timeRange: schedule.getNightRange(),
         icon: Icons.nightlight_round,
         accentColor: const Color(0xFF3B82F6),
         bgColor: isDark ? AppColors.darkSurface : Colors.white,
