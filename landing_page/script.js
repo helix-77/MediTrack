@@ -25,11 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
       navMenu.style.flexDirection = 'column';
       navMenu.style.position = 'absolute';
       navMenu.style.top = '100%';
-      navMenu.style.left = '0';
-      navMenu.style.right = '0';
-      navMenu.style.background = '#FBF6F1';
+      navMenu.style.left = '16px';
+      navMenu.style.right = '16px';
+      navMenu.style.background = '#FFFFFF';
       navMenu.style.padding = '1.5rem';
-      navMenu.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)';
+      navMenu.style.borderRadius = '20px';
+      navMenu.style.border = '1px solid #E2E8F0';
+      navMenu.style.boxShadow = '0 15px 35px rgba(24, 35, 61, 0.12)';
     }
   });
 
@@ -56,24 +58,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 3. Interactive Phone Dose Logger Checkboxes
-  const medCards = document.querySelectorAll('.med-card-item');
-  medCards.forEach((card) => {
-    const checkBtn = card.querySelector('.med-check-btn');
-    checkBtn?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      card.classList.toggle('taken');
-      const isTaken = card.classList.contains('taken');
+  // 3. Interactive Phone Dose Items
+  const dose1 = document.getElementById('demoDose1');
+  const dosePill1 = document.getElementById('dosePill1');
+  let dose1Taken = false;
 
-      if (isTaken) {
-        checkBtn.innerHTML = `
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>`;
-      } else {
-        checkBtn.innerHTML = '';
+  dose1?.addEventListener('click', () => {
+    dose1Taken = !dose1Taken;
+    if (dose1Taken) {
+      if (dosePill1) {
+        dosePill1.textContent = 'Taken ✓';
+        dosePill1.className = 'med-action-pill med-action-taken';
       }
-    });
+      dose1.style.borderColor = '#10B981';
+      dose1.style.background = '#F0FDF4';
+    } else {
+      if (dosePill1) {
+        dosePill1.textContent = 'Take now';
+        dosePill1.className = 'med-action-pill med-action-pink';
+      }
+      dose1.style.borderColor = '#E2E8F0';
+      dose1.style.background = '#FFFFFF';
+    }
   });
 
   // 4. Bento Grid: Interactive Medicine Price & Generic Alternative Simulator
@@ -81,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     napa: {
       brand: 'Napa 500mg Tablet',
       manufacturer: 'Beximco Pharmaceuticals Ltd.',
-      price: 'MRP: ৳1.20 / tablet',
+      price: 'MRP: ৳1.20 / tab',
       generic: 'Paracetamol 500mg',
       alternatives: [
         { name: 'Ace 500mg', mfg: 'Square Pharmaceuticals', price: '৳0.80', saving: 'Save 33%' },
@@ -93,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     seclo: {
       brand: 'Seclo 20mg Capsule',
       manufacturer: 'Square Pharmaceuticals PLC',
-      price: 'MRP: ৳7.00 / capsule',
+      price: 'MRP: ৳7.00 / cap',
       generic: 'Omeprazole 20mg',
       alternatives: [
         { name: 'Proceptin 20mg', mfg: 'Beximco Pharmaceuticals', price: '৳5.00', saving: 'Save 28%' },
@@ -105,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     montene: {
       brand: 'Montene 10mg Tablet',
       manufacturer: 'Incepta Pharmaceuticals Ltd.',
-      price: 'MRP: ৳16.00 / tablet',
+      price: 'MRP: ৳16.00 / tab',
       generic: 'Montelukast 10mg',
       alternatives: [
         { name: 'Romilast 10mg', mfg: 'Popular Pharmaceuticals', price: '৳12.00', saving: 'Save 25%' },
@@ -117,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sergel: {
       brand: 'Sergel 20mg Capsule',
       manufacturer: 'Healthcare Pharmaceuticals Ltd.',
-      price: 'MRP: ৳10.00 / capsule',
+      price: 'MRP: ৳10.00 / cap',
       generic: 'Esomeprazole 20mg',
       alternatives: [
         { name: 'Opton 20mg', mfg: 'Incepta Pharmaceuticals', price: '৳7.00', saving: 'Save 30%' },
@@ -217,7 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
         streakCountDisplay.textContent = `${currentStreak} Day Streak 🔥`;
       }
       logDoseBtn.textContent = '✓ Dose Logged for Today';
-      logDoseBtn.style.backgroundColor = '#5B8C5A';
+      logDoseBtn.style.backgroundColor = '#10B981';
+      logDoseBtn.style.boxShadow = '0 6px 18px rgba(16, 185, 129, 0.35)';
     } else {
       currentStreak -= 1;
       loggedToday = false;
@@ -225,11 +232,23 @@ document.addEventListener('DOMContentLoaded', () => {
         streakCountDisplay.textContent = `${currentStreak} Day Streak 🔥`;
       }
       logDoseBtn.textContent = '+ Log Afternoon Dose';
-      logDoseBtn.style.backgroundColor = '#47594E';
+      logDoseBtn.style.backgroundColor = 'var(--primary-blue)';
+      logDoseBtn.style.boxShadow = '0 6px 18px rgba(91, 143, 245, 0.35)';
     }
   });
 
-  // 7. Interactive Adherence & Generic Savings Calculator
+  // 7. Clinical Summary Copy Button
+  const copySummaryBtn = document.getElementById('copySummaryBtn');
+  copySummaryBtn?.addEventListener('click', () => {
+    const textToCopy = `=== MEDITRACK CLINICAL SUMMARY ===\nPatient: Rahi | Adherence: 94.2% (Last 30 Days)\nActive Meds: Napa Extra (500mg, 1+0+1), Seclo (20mg, 1+0+0)\nRefill Status: All active stocks sufficient for 14+ days\nVerified on: 25 August 2026 via MediTrack`;
+    navigator.clipboard?.writeText(textToCopy);
+    copySummaryBtn.textContent = '✓ Copied to Clipboard!';
+    setTimeout(() => {
+      copySummaryBtn.textContent = '📋 Copy Summary to Clipboard';
+    }, 2500);
+  });
+
+  // 8. Interactive Adherence & Generic Savings Calculator
   const medsSlider = document.getElementById('medsSlider');
   const spendSlider = document.getElementById('spendSlider');
   const medsValueBadge = document.getElementById('medsValueBadge');
@@ -266,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
   spendSlider?.addEventListener('input', updateCalculator);
   updateCalculator();
 
-  // 8. Frequently Asked Questions (FAQ) Accordion
+  // 9. Frequently Asked Questions (FAQ) Accordion
   const faqItems = document.querySelectorAll('.faq-item');
   faqItems.forEach((item) => {
     const questionBtn = item.querySelector('.faq-question');
@@ -280,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 9. Scroll Reveal Animation using IntersectionObserver
+  // 10. Scroll Reveal Animation using IntersectionObserver
   const observerOptions = {
     threshold: 0.08,
     rootMargin: '0px 0px -40px 0px'
@@ -296,10 +315,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }, observerOptions);
 
   document
-    .querySelectorAll('.bento-card, .review-card, .metric-item, .calc-card, .pricing-card, .faq-item')
+    .querySelectorAll('.pillar-card, .bento-card, .review-card, .calc-card, .pricing-card, .faq-item')
     .forEach((el) => {
       el.style.opacity = '0';
-      el.style.transform = 'translateY(20px)';
+      el.style.transform = 'translateY(24px)';
       el.style.transition =
         'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
       revealObserver.observe(el);

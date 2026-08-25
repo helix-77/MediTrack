@@ -478,8 +478,9 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                             ),
                             lastDate: DateTime.now(),
                           );
-                          if (picked != null)
+                          if (picked != null) {
                             setState(() => _visitDate = picked);
+                          }
                         },
                       ),
                     ),
