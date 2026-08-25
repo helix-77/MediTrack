@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -8,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/buy_list_item.dart';
 import '../models/medicine.dart';
 import '../models/medicine_schedule.dart';
+import '../logic/entitlement_guard.dart';
 import '../services/buy_list_service.dart';
 import '../services/entitlement_service.dart';
 import '../services/gemini_ai_service.dart';
@@ -83,7 +85,15 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source, imageQuality: 85);
+    final pickedFile = await picker.pickImage(
+      source: source,
+      // Cap resolution before it ever touches the network — an
+      // uncompressed camera photo sent inline to Gemini is the single
+      // biggest driver of slow AI responses for image messages.
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 85,
+    );
     if (pickedFile != null) {
       setState(() => _selectedImage = File(pickedFile.path));
     }
@@ -115,14 +125,18 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             Text(
               'Attach Image',
               style: AppTypography.headingMedium.copyWith(
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'Capture or select a prescription or medicine strip',
               style: AppTypography.bodySmall.copyWith(
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 20),
@@ -176,7 +190,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     required bool isDark,
   }) {
     return Material(
-      color: isDark ? AppColors.darkSurfaceElevated : bgColor.withValues(alpha: 0.6),
+      color: isDark
+          ? AppColors.darkSurfaceElevated
+          : bgColor.withValues(alpha: 0.6),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -200,14 +216,18 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 label,
                 style: AppTypography.headingSmall.copyWith(
                   fontSize: 14,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: AppTypography.caption.copyWith(
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
                   fontSize: 11,
                 ),
               ),
@@ -221,6 +241,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   Future<void> _sendMessage([String? promptOverride]) async {
     final text = promptOverride ?? _inputController.text.trim();
     if (text.isEmpty && _selectedImage == null) return;
+
+    final entitlement = context.read<EntitlementService>();
+    final allowed = await entitlement.requirePremium(
+      context,
+      feature: EntitlementFeature.aiAssistant,
+    );
+    if (!allowed || !mounted) return;
 
     final userImage = _selectedImage;
     _inputController.clear();
@@ -244,6 +271,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         imageFile: userImage,
       );
 
+      unawaited(entitlement.recordAiUsage());
+
       setState(() {
         _messages.add(response);
       });
@@ -252,7 +281,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         _messages.add(
           GeminiChatMessage(
             role: 'model',
-            content: 'I apologize, but I encountered an error: $e\nPlease try again.',
+            content:
+                'I apologize, but I encountered an error: $e\nPlease try again.',
           ),
         );
       });
@@ -285,9 +315,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         ),
         actions: [
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+            ),
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Understood', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Understood',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -300,7 +335,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       final name = data['name'] as String? ?? 'New Medicine';
       final form = data['form'] as String? ?? 'tablet';
       final dosage = data['dosage'] as String?;
-      final times = (data['doseTimes'] as List<dynamic>?)?.cast<String>() ?? ['08:00', '20:00'];
+      final times =
+          (data['doseTimes'] as List<dynamic>?)?.cast<String>() ??
+          ['08:00', '20:00'];
 
       final newMed = Medicine(
         id: '',
@@ -376,13 +413,19 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 color: AppColors.primaryBlueLight,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.auto_awesome, color: AppColors.primaryBlue, size: 18),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: AppColors.primaryBlue,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
               'AI Assistant',
               style: AppTypography.headingMedium.copyWith(
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
               ),
             ),
           ],
@@ -405,10 +448,16 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           // Safety Disclaimer Banner
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: isDark ? const Color(0xFF1E242F) : AppColors.primaryBlueLight.withValues(alpha: 0.5),
+            color: isDark
+                ? const Color(0xFF1E242F)
+                : AppColors.primaryBlueLight.withValues(alpha: 0.5),
             child: Row(
               children: [
-                const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primaryBlue),
+                const Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: AppColors.primaryBlue,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -420,7 +469,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             ),
           ),
 
-          // Quota Banner for Free tier
+          // Quota Banner: AI Assistant is a Premium-only feature
+          // (no free-tier allowance), plus a live daily-cap readout for
+          // already-subscribed users.
           if (!isPro)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -428,17 +479,24 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Free Tier: 5 AI requests/day remaining',
-                    style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600, color: AppColors.warning),
+                  Expanded(
+                    child: Text(
+                      'MediTrack AI is a Premium feature (৳2.00/day)',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.warning,
+                      ),
+                    ),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const SubscriptionOfferScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const SubscriptionOfferScreen(),
+                      ),
                     ),
                     child: Text(
-                      'Upgrade Unlimited ⚡',
+                      'Subscribe ⚡',
                       style: AppTypography.caption.copyWith(
                         fontWeight: FontWeight.w700,
                         color: AppColors.primaryBlue,
@@ -447,6 +505,26 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   ),
                 ],
               ),
+            )
+          else
+            Builder(
+              builder: (context) {
+                final quota = entitlement.checkAiQuota();
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    quota.statusMessage,
+                    style: AppTypography.caption.copyWith(
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                );
+              },
             ),
 
           // Messages List
@@ -476,8 +554,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ActionChip(
                       label: Text(_quickPrompts[index]),
-                      backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
-                      labelStyle: AppTypography.caption.copyWith(fontWeight: FontWeight.w500),
+                      backgroundColor: isDark
+                          ? AppColors.darkSurface
+                          : AppColors.surface,
+                      labelStyle: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
                       side: BorderSide.none,
                       onPressed: () => _sendMessage(_quickPrompts[index]),
                     ),
@@ -503,7 +585,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.file(_selectedImage!, width: 42, height: 42, fit: BoxFit.cover),
+                    child: Image.file(
+                      _selectedImage!,
+                      width: 42,
+                      height: 42,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -514,13 +601,17 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                           'Prescription Image',
                           style: AppTypography.bodySmall.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
                           ),
                         ),
                         Text(
                           'Ready to analyze with AI',
                           style: AppTypography.caption.copyWith(
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.textSecondary,
                             fontSize: 11,
                           ),
                         ),
@@ -529,7 +620,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 20),
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
                     onPressed: () => setState(() => _selectedImage = null),
                   ),
                 ],
@@ -549,7 +642,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14.0),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -561,16 +656,25 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 color: AppColors.primaryBlueLight,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.auto_awesome, color: AppColors.primaryBlue, size: 16),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: AppColors.primaryBlue,
+                size: 16,
+              ),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: isUser
                         ? AppColors.primaryBlue
@@ -586,10 +690,15 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (msg.imagePath != null && File(msg.imagePath!).existsSync()) ...[
+                      if (msg.imagePath != null &&
+                          File(msg.imagePath!).existsSync()) ...[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(10),
-                          child: Image.file(File(msg.imagePath!), height: 140, fit: BoxFit.cover),
+                          child: Image.file(
+                            File(msg.imagePath!),
+                            height: 140,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                         const SizedBox(height: 8),
                       ],
@@ -612,17 +721,25 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   const SizedBox(height: 8),
                   SoftSurface(
                     padding: const EdgeInsets.all(12),
-                    color: isDark ? const Color(0xFF16253A) : AppColors.primaryBlueLight,
+                    color: isDark
+                        ? const Color(0xFF16253A)
+                        : AppColors.primaryBlueLight,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.touch_app_rounded, color: AppColors.primaryBlue, size: 18),
+                        const Icon(
+                          Icons.touch_app_rounded,
+                          color: AppColors.primaryBlue,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           msg.action!.type == GeminiActionType.addMedicine
                               ? 'Action: Add ${msg.action!.data["name"] ?? "Medicine"} to Routine'
                               : 'Action: Add to Buy List',
-                          style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+                          style: AppTypography.caption.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         SoftPrimaryButton(
@@ -644,8 +761,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Widget _buildFormattedMarkdown(String content, bool isDark) {
-    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final secondaryTextColor = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final textColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.textPrimary;
+    final secondaryTextColor = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.textSecondary;
     final dividerColor = isDark ? AppColors.darkDivider : AppColors.divider;
 
     return MarkdownBody(
@@ -660,10 +781,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         }
       },
       styleSheet: MarkdownStyleSheet(
-        p: AppTypography.bodyMedium.copyWith(
-          color: textColor,
-          height: 1.55,
-        ),
+        p: AppTypography.bodyMedium.copyWith(color: textColor, height: 1.55),
         pPadding: const EdgeInsets.only(bottom: 8),
         h1: AppTypography.headingLarge.copyWith(
           color: textColor,
@@ -695,12 +813,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         listBulletPadding: const EdgeInsets.only(right: 6),
         listIndent: 18,
         horizontalRuleDecoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: dividerColor,
-              width: 1.0,
-            ),
-          ),
+          border: Border(top: BorderSide(color: dividerColor, width: 1.0)),
         ),
         blockquote: AppTypography.bodySmall.copyWith(
           color: secondaryTextColor,
@@ -708,20 +821,24 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           fontStyle: FontStyle.italic,
         ),
         blockquoteDecoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : AppColors.primaryBlueLight.withValues(alpha: 0.6),
+          color: isDark
+              ? const Color(0xFF1E293B)
+              : AppColors.primaryBlueLight.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(8),
           border: const Border(
-            left: BorderSide(
-              color: AppColors.primaryBlue,
-              width: 3.5,
-            ),
+            left: BorderSide(color: AppColors.primaryBlue, width: 3.5),
           ),
         ),
-        blockquotePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        blockquotePadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 8,
+        ),
         code: GoogleFonts.firaCode(
           fontSize: 12,
           color: AppColors.primaryBlueDark,
-          backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+          backgroundColor: isDark
+              ? const Color(0xFF1E293B)
+              : const Color(0xFFF1F5F9),
         ),
         codeblockDecoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
@@ -763,7 +880,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF0F4F9),
+          color: isDark
+              ? AppColors.darkSurfaceElevated
+              : const Color(0xFFF0F4F9),
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : const Color(0xFFE5EBF2),
@@ -786,7 +905,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                     angle: -0.5,
                     child: Icon(
                       Icons.attach_file_rounded,
-                      color: isDark ? AppColors.darkTextSecondary : const Color(0xFF718096),
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : const Color(0xFF718096),
                       size: 22,
                     ),
                   ),
@@ -803,16 +924,23 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 maxLines: 4,
                 textCapitalization: TextCapitalization.sentences,
                 style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Send message...',
                   hintStyle: AppTypography.bodyMedium.copyWith(
-                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF94A3B8),
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : const Color(0xFF94A3B8),
                   ),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 8,
+                  ),
                 ),
               ),
             ),
@@ -825,7 +953,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 onTap: () {
                   _voiceHelper.startListening(
                     onResult: (text) => _inputController.text = text,
-                    onError: (e) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e))),
+                    onError: (e) => ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(e))),
                   );
                 },
                 customBorder: const CircleBorder(),
@@ -833,7 +963,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   padding: const EdgeInsets.all(6.0),
                   child: Icon(
                     Icons.mic_none_rounded,
-                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF94A3B8),
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : const Color(0xFF94A3B8),
                     size: 20,
                   ),
                 ),
@@ -872,4 +1004,3 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     );
   }
 }
-

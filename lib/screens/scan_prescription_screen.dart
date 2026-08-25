@@ -1,15 +1,20 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../logic/entitlement_guard.dart';
 import '../models/prescription.dart';
 import '../models/prescription_extraction.dart';
+import '../services/entitlement_service.dart';
 import '../services/prescription_service.dart';
 import '../services/prescription_extraction_service.dart';
 import '../logic/image_preflight.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/premium_gate.dart';
 import '../widgets/section_header.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
@@ -25,7 +30,8 @@ class ScanPrescriptionScreen extends StatefulWidget {
 
 class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
   final PrescriptionService _prescriptionService = PrescriptionService();
-  final PrescriptionExtractionService _aiService = PrescriptionExtractionService();
+  final PrescriptionExtractionService _aiService =
+      PrescriptionExtractionService();
 
   File? _capturedImage;
   bool _isAnalyzing = false;
@@ -47,6 +53,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
   }
 
   Future<void> _pickAndAnalyzeImage(ImageSource source) async {
+    final entitlementService = context.read<EntitlementService>();
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
       source: source,
@@ -77,6 +84,8 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
 
       final draft = await _aiService.extractPrescription(imageFile: imageFile);
 
+      unawaited(entitlementService.recordPrescriptionScanUsage());
+
       setState(() {
         if (draft.doctorName != null && draft.doctorName!.isNotEmpty) {
           _doctorNameController.text = draft.doctorName!;
@@ -86,8 +95,11 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
           if (parsedDate != null) _visitDate = parsedDate;
         }
         if (_titleController.text.isEmpty) {
-          final doc = draft.doctorName != null ? ' - Dr. ${draft.doctorName}' : '';
-          _titleController.text = 'Prescription ${DateFormat("MMM d, yyyy").format(_visitDate)}$doc';
+          final doc = draft.doctorName != null
+              ? ' - Dr. ${draft.doctorName}'
+              : '';
+          _titleController.text =
+              'Prescription ${DateFormat("MMM d, yyyy").format(_visitDate)}$doc';
         }
 
         _extractedReviewItems = List.from(draft.medicines);
@@ -111,8 +123,12 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
     final nameCtrl = TextEditingController(text: med.extractedName);
     final dosageCtrl = TextEditingController(text: med.extractedStrength ?? '');
     final formCtrl = TextEditingController(text: med.extractedForm ?? 'tablet');
-    final durationCtrl = TextEditingController(text: med.extractedDurationDays?.toString() ?? '7');
-    final instructionsCtrl = TextEditingController(text: med.extractedInstructions ?? '');
+    final durationCtrl = TextEditingController(
+      text: med.extractedDurationDays?.toString() ?? '7',
+    );
+    final instructionsCtrl = TextEditingController(
+      text: med.extractedInstructions ?? '',
+    );
     int timesPerDay = med.extractedFrequencyPerDay ?? 2;
 
     showDialog(
@@ -120,7 +136,10 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
-          title: Text('Edit Extracted Medicine', style: AppTypography.headingMedium),
+          title: Text(
+            'Edit Extracted Medicine',
+            style: AppTypography.headingMedium,
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -157,17 +176,31 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Times per day', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600)),
+                          Text(
+                            'Times per day',
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           DropdownButtonFormField<int>(
                             initialValue: timesPerDay,
                             decoration: const InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
                             ),
                             items: [1, 2, 3, 4]
-                                .map((v) => DropdownMenuItem(value: v, child: Text('$v times')))
+                                .map(
+                                  (v) => DropdownMenuItem(
+                                    value: v,
+                                    child: Text('$v times'),
+                                  ),
+                                )
                                 .toList(),
-                            onChanged: (v) => setDialogState(() => timesPerDay = v ?? 2),
+                            onChanged: (v) =>
+                                setDialogState(() => timesPerDay = v ?? 2),
                           ),
                         ],
                       ),
@@ -195,25 +228,39 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryBlue,
+              ),
               onPressed: () {
                 final updatedMed = med.copyWith(
                   extractedName: nameCtrl.text.trim(),
-                  extractedForm: formCtrl.text.trim().isEmpty ? null : formCtrl.text.trim(),
-                  extractedStrength: dosageCtrl.text.trim().isEmpty ? null : dosageCtrl.text.trim(),
+                  extractedForm: formCtrl.text.trim().isEmpty
+                      ? null
+                      : formCtrl.text.trim(),
+                  extractedStrength: dosageCtrl.text.trim().isEmpty
+                      ? null
+                      : dosageCtrl.text.trim(),
                   extractedFrequencyPerDay: timesPerDay,
                   extractedDurationDays: int.tryParse(durationCtrl.text),
-                  extractedInstructions: instructionsCtrl.text.trim().isEmpty ? null : instructionsCtrl.text.trim(),
+                  extractedInstructions: instructionsCtrl.text.trim().isEmpty
+                      ? null
+                      : instructionsCtrl.text.trim(),
                 );
                 setState(() {
                   _extractedReviewItems[index] = updatedMed;
                 });
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Save Changes', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Save Changes',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -235,7 +282,9 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
             ? _doctorNameController.text.trim()
             : null,
         date: _visitDate,
-        extractedText: _extractedReviewItems.map((m) => '${m.extractedName} ${m.extractedStrength ?? ""}').join(', '),
+        extractedText: _extractedReviewItems
+            .map((m) => '${m.extractedName} ${m.extractedStrength ?? ""}')
+            .join(', '),
         createdAt: DateTime.now(),
       );
 
@@ -269,7 +318,10 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Save failed: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Save failed: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -279,6 +331,13 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return PremiumGate(
+      feature: EntitlementFeature.prescriptionOcr,
+      builder: _buildScreen,
+    );
+  }
+
+  Widget _buildScreen(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -316,7 +375,9 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                 child: Center(
                   child: Column(
                     children: [
-                      const CircularProgressIndicator(color: AppColors.primaryBlue),
+                      const CircularProgressIndicator(
+                        color: AppColors.primaryBlue,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Analyzing Prescription with Gemini AI...',
@@ -338,10 +399,13 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
             if (_extractedReviewItems.isNotEmpty) ...[
               SectionHeader(
                 title: 'Extracted Medicines (${_extractedReviewItems.length})',
-                subtitle: 'Review and confirm medicines to add to your daily schedule',
+                subtitle:
+                    'Review and confirm medicines to add to your daily schedule',
                 trailing: TextButton(
                   onPressed: () {
-                    final allSelected = _extractedReviewItems.every((i) => i.confirmed);
+                    final allSelected = _extractedReviewItems.every(
+                      (i) => i.confirmed,
+                    );
                     setState(() {
                       _extractedReviewItems = _extractedReviewItems
                           .map((item) => item.copyWith(confirmed: !allSelected))
@@ -349,8 +413,13 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                     });
                   },
                   child: Text(
-                    _extractedReviewItems.every((i) => i.confirmed) ? 'Deselect All' : 'Select All',
-                    style: AppTypography.caption.copyWith(color: AppColors.primaryBlue, fontWeight: FontWeight.w700),
+                    _extractedReviewItems.every((i) => i.confirmed)
+                        ? 'Deselect All'
+                        : 'Select All',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.primaryBlue,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -386,8 +455,16 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                     const SizedBox(height: 14),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text('Consultation Date', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
-                      subtitle: Text(DateFormat('dd MMMM yyyy').format(_visitDate), style: AppTypography.caption),
+                      title: Text(
+                        'Consultation Date',
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        DateFormat('dd MMMM yyyy').format(_visitDate),
+                        style: AppTypography.caption,
+                      ),
                       trailing: SoftIconButton(
                         icon: Icons.calendar_today_rounded,
                         iconColor: AppColors.primaryBlue,
@@ -396,10 +473,13 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                           final picked = await showDatePicker(
                             context: context,
                             initialDate: _visitDate,
-                            firstDate: DateTime.now().subtract(const Duration(days: 730)),
+                            firstDate: DateTime.now().subtract(
+                              const Duration(days: 730),
+                            ),
                             lastDate: DateTime.now(),
                           );
-                          if (picked != null) setState(() => _visitDate = picked);
+                          if (picked != null)
+                            setState(() => _visitDate = picked);
                         },
                       ),
                     ),
@@ -413,13 +493,17 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                 SoftPrimaryButton(
                   label: 'Save & Add Confirmed to Routine',
                   isLoading: _isSaving,
-                  onPressed: _isSaving ? null : () => _saveAll(saveToInventory: true),
+                  onPressed: _isSaving
+                      ? null
+                      : () => _saveAll(saveToInventory: true),
                 ),
                 const SizedBox(height: 12),
               ],
               SoftSecondaryButton(
                 label: 'Save Photo to Vault Only',
-                onPressed: _isSaving ? null : () => _saveAll(saveToInventory: false),
+                onPressed: _isSaving
+                    ? null
+                    : () => _saveAll(saveToInventory: false),
               ),
               const SizedBox(height: 32),
             ],
@@ -545,7 +629,9 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            isPassed ? Icons.check_circle_outline_rounded : Icons.warning_amber_rounded,
+            isPassed
+                ? Icons.check_circle_outline_rounded
+                : Icons.warning_amber_rounded,
             color: border,
             size: 22,
           ),
@@ -556,13 +642,17 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
               children: [
                 Text(
                   isPassed ? 'Image Quality Passed' : 'Image Quality Warning',
-                  style: AppTypography.headingSmall.copyWith(fontSize: 14, color: border),
+                  style: AppTypography.headingSmall.copyWith(
+                    fontSize: 14,
+                    color: border,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   isPassed
                       ? 'Image is sharp and clear for extraction.'
-                      : (quality.warningMessage ?? 'Please retake with good lighting to avoid OCR mistakes.'),
+                      : (quality.warningMessage ??
+                            'Please retake with good lighting to avoid OCR mistakes.'),
                   style: AppTypography.caption,
                 ),
               ],
@@ -593,10 +683,14 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
             Checkbox(
               value: med.confirmed,
               activeColor: AppColors.primaryBlue,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
               onChanged: (val) {
                 setState(() {
-                  _extractedReviewItems[index] = med.copyWith(confirmed: val ?? true);
+                  _extractedReviewItems[index] = med.copyWith(
+                    confirmed: val ?? true,
+                  );
                 });
               },
             ),
@@ -611,7 +705,9 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                       Expanded(
                         child: Text(
                           med.extractedName,
-                          style: AppTypography.headingSmall.copyWith(fontSize: 14),
+                          style: AppTypography.headingSmall.copyWith(
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                       StatusPill(
@@ -625,18 +721,25 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                     '${med.extractedForm ?? "Tablet"} • ${med.extractedStrength ?? "N/A"} • ${med.extractedFrequencyPerDay ?? 2} times/day • ${med.extractedDurationDays ?? "Ongoing"} days',
                     style: AppTypography.caption,
                   ),
-                  if (med.extractedInstructions != null && med.extractedInstructions!.isNotEmpty) ...[
+                  if (med.extractedInstructions != null &&
+                      med.extractedInstructions!.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       'Instructions: ${med.extractedInstructions}',
-                      style: AppTypography.caption.copyWith(color: AppColors.primaryBlue),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.primaryBlue,
+                      ),
                     ),
                   ],
                 ],
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.primaryBlue),
+              icon: const Icon(
+                Icons.edit_outlined,
+                size: 18,
+                color: AppColors.primaryBlue,
+              ),
               onPressed: () => _editExtractedMedicine(index),
             ),
           ],

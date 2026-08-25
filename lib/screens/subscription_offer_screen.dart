@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../features/bdapps/bd_apps_service.dart';
 import '../features/bdapps/subscription_offer_config.dart';
+import '../logic/bd_mobile_validator.dart';
 import '../services/entitlement_service.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
@@ -16,7 +17,8 @@ class SubscriptionOfferScreen extends StatefulWidget {
   const SubscriptionOfferScreen({super.key});
 
   @override
-  State<SubscriptionOfferScreen> createState() => _SubscriptionOfferScreenState();
+  State<SubscriptionOfferScreen> createState() =>
+      _SubscriptionOfferScreenState();
 }
 
 class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
@@ -77,16 +79,54 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     );
   }
 
-  void _sendOtp(BdAppsService bdService) async {
+  void _sendOtp(BdAppsService bdService, EntitlementService entitlement) async {
     final phone = _phoneController.text.trim();
-    if (phone.isEmpty || phone.length < 11) {
+    final validationError = BdMobileValidator.validateRobiAirtel(phone);
+    if (validationError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid 11-digit Robi or Airtel number (018/016)'),
+        SnackBar(
+          content: Text(validationError),
           backgroundColor: AppColors.warning,
         ),
       );
       return;
+    }
+
+    // Check BD Apps first: if this number is already an active subscriber,
+    // skip the OTP round-trip entirely instead of sending an SMS the user
+    // doesn't need.
+    final checkResult = await bdService.checkNumberBeforeOtp(
+      mobileNumber: phone,
+    );
+    if (!mounted) return;
+
+    switch (checkResult) {
+      case BdNumberCheckResult.invalidNumber:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              bdService.errorMessage ?? 'Please enter a valid mobile number',
+            ),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+        return;
+      case BdNumberCheckResult.alreadyActive:
+        await entitlement.refreshEntitlement(forceCarrierCheck: true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                '✅ This number is already a MediTrack Premium subscriber. Activating your account...',
+              ),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          Navigator.pop(context, true);
+        }
+        return;
+      case BdNumberCheckResult.notRegistered:
+        break;
     }
 
     final success = await bdService.sendOtp(mobileNumber: phone);
@@ -114,7 +154,10 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     }
   }
 
-  void _verifyOtp(BdAppsService bdService, EntitlementService entitlement) async {
+  void _verifyOtp(
+    BdAppsService bdService,
+    EntitlementService entitlement,
+  ) async {
     final otp = _otpController.text.trim();
     if (otp.isEmpty || otp.length < 4) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -156,7 +199,11 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bdService = context.watch<BdAppsService>();
     final entitlement = context.watch<EntitlementService>();
-    final isBusy = bdService.isSendingOtp || bdService.isVerifyingOtp || bdService.isRequestingSubscription;
+    final isBusy =
+        bdService.isSendingOtp ||
+        bdService.isVerifyingOtp ||
+        bdService.isRequestingSubscription ||
+        bdService.isCheckingSubscription;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
@@ -233,7 +280,9 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                       Text(
                         ' / day',
                         style: AppTypography.headingSmall.copyWith(
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -251,7 +300,12 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
             // Carrier Badges
             Row(
               children: [
-                Text('Supported Carriers:', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Supported Carriers:',
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(width: 8),
                 const StatusPill(label: 'Robi (018)', type: PillType.primary),
                 const SizedBox(width: 6),
@@ -269,18 +323,33 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
               (feat) => Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 child: SoftSurface(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.success,
+                        size: 20,
+                      ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(feat['title']!, style: AppTypography.headingSmall.copyWith(fontSize: 14)),
+                            Text(
+                              feat['title']!,
+                              style: AppTypography.headingSmall.copyWith(
+                                fontSize: 14,
+                              ),
+                            ),
                             const SizedBox(height: 2),
-                            Text(feat['subtitle'] ?? '', style: AppTypography.caption),
+                            Text(
+                              feat['subtitle'] ?? '',
+                              style: AppTypography.caption,
+                            ),
                           ],
                         ),
                       ),
@@ -307,7 +376,11 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                     hintText: '018XXXXXXXX or 016XXXXXXXX',
                     keyboardType: TextInputType.phone,
                     enabled: !_otpSent,
-                    prefixIcon: const Icon(Icons.phone_android_rounded, color: AppColors.primaryBlue, size: 20),
+                    prefixIcon: const Icon(
+                      Icons.phone_android_rounded,
+                      color: AppColors.primaryBlue,
+                      size: 20,
+                    ),
                   ),
                   if (_otpSent) ...[
                     const SizedBox(height: 14),
@@ -316,7 +389,11 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                       labelText: '6-Digit OTP Code',
                       hintText: 'Enter code from SMS',
                       keyboardType: TextInputType.number,
-                      prefixIcon: const Icon(Icons.lock_clock_outlined, color: AppColors.primaryBlue, size: 20),
+                      prefixIcon: const Icon(
+                        Icons.lock_clock_outlined,
+                        color: AppColors.primaryBlue,
+                        size: 20,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 14),
@@ -328,8 +405,11 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                       Checkbox(
                         value: _agreedToTerms,
                         activeColor: AppColors.primaryBlue,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                        onChanged: (val) => setState(() => _agreedToTerms = val ?? false),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        onChanged: (val) =>
+                            setState(() => _agreedToTerms = val ?? false),
                       ),
                       Expanded(
                         child: Padding(
@@ -339,7 +419,9 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                             children: [
                               Text(
                                 'I agree to subscribe to MediTrack Premium at ৳2.00/day ${SubscriptionOfferConfig.taxSuffix} and accept the terms below.',
-                                style: AppTypography.caption.copyWith(height: 1.35),
+                                style: AppTypography.caption.copyWith(
+                                  height: 1.35,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Row(
@@ -383,7 +465,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                       label: 'Send Activation OTP',
                       isLoading: isBusy,
                       onPressed: _agreedToTerms && !isBusy
-                          ? () => _sendOtp(bdService)
+                          ? () => _sendOtp(bdService, entitlement)
                           : null,
                     )
                   else

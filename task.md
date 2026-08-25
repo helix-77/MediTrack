@@ -18,7 +18,7 @@ I/flutter (22345): Firebase AI Gemini Error: [firebase_app_check/unknown] com.go
 # List (working or not )
 
 [x] Test SMS service
-[x] Subscription service
+[] Subscription service
 [x] ai service
 [x] prescription ocr
 [x] Ui revamp
@@ -26,3 +26,4 @@ I/flutter (22345): Firebase AI Gemini Error: [firebase_app_check/unknown] com.go
 [] add medicine dataset integration
 [x] add options to set morning, noon, evening, night time schedule
 [x] after marking as taken, medicine should move to the bottom in routine dashboard
+[] migrate from firebase storeg to supabase storeg, other backend stuffs should remain in firebase (later)

@@ -11,6 +11,7 @@ import '../models/prescription_extraction.dart';
 
 class PrescriptionExtractionService {
   final GenerativeModel? _customModel;
+  GenerativeModel? _cachedModel;
 
   PrescriptionExtractionService({GenerativeModel? model})
     : _customModel = model;
@@ -41,7 +42,10 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
 
   GenerativeModel _getModel() {
     if (_customModel != null) return _customModel;
+    return _cachedModel ??= _buildModel();
+  }
 
+  GenerativeModel _buildModel() {
     final googleAI = FirebaseAI.googleAI(
       auth: FirebaseAuth.instance,
       appCheck: FirebaseAppCheck.instance,
@@ -50,6 +54,12 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
     return googleAI.generativeModel(
       model: ApiConfig.geminiModel,
       systemInstruction: Content.system(_systemPrompt),
+      generationConfig: GenerationConfig(
+        // See the note in GeminiAiService._buildModel: disabling "thinking"
+        // via ThinkingConfig would help latency further but requires
+        // upgrading firebase_ai past the currently pinned 2.3.0.
+        maxOutputTokens: 2048,
+      ),
     );
   }
 

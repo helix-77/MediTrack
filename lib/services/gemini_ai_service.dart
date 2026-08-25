@@ -50,6 +50,7 @@ class GeminiChatMessage {
 
 class GeminiAiService {
   final GenerativeModel? _customModel;
+  GenerativeModel? _cachedModel;
 
   GeminiAiService({GenerativeModel? model}) : _customModel = model;
 
@@ -84,7 +85,12 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
 
   GenerativeModel _getModel() {
     if (_customModel != null) return _customModel;
+    // Reused across calls: constructing a GenerativeModel is not free, and
+    // there's no reason to rebuild it on every message.
+    return _cachedModel ??= _buildModel();
+  }
 
+  GenerativeModel _buildModel() {
     final googleAI = FirebaseAI.googleAI(
       auth: FirebaseAuth.instance,
       appCheck: FirebaseAppCheck.instance,
@@ -92,6 +98,16 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
     return googleAI.generativeModel(
       model: ApiConfig.geminiModel,
       systemInstruction: Content.system(_systemInstructionText),
+      generationConfig: GenerationConfig(
+        // Bounds reply length so a runaway/verbose generation can't drag out
+        // latency indefinitely. NOTE: this pinned firebase_ai version
+        // (2.3.0) doesn't publicly export `ThinkingConfig`, which is the
+        // bigger latency lever for "thinking" Flash models — upgrading to
+        // firebase_ai >=3.x (which does export it) and setting
+        // `thinkingConfig: ThinkingConfig(thinkingBudget: 0)` here is the
+        // most impactful next step if replies are still slow.
+        maxOutputTokens: 1024,
+      ),
     );
   }
 

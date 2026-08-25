@@ -12,12 +12,22 @@ import 'data/models/unsubscribe_response.dart';
 import 'data/models/verify_otp_response.dart';
 import 'data/sms_api_client.dart';
 
-enum SubscriptionState {
-  idle,
-  requesting,
-  pending,
-  registered,
-  failed,
+enum SubscriptionState { idle, requesting, pending, registered, failed }
+
+/// Result of checking a mobile number's BD Apps status before starting the
+/// OTP flow (see [BdAppsService.checkNumberBeforeOtp]).
+enum BdNumberCheckResult {
+  /// The number is already an active BD Apps subscriber — no OTP is
+  /// needed, and [BdAppsService] has already applied the registered state.
+  alreadyActive,
+
+  /// The number isn't registered yet (or status couldn't be confirmed) —
+  /// the caller should proceed with the normal [BdAppsService.sendOtp] flow.
+  notRegistered,
+
+  /// The number failed local validation (not a valid Robi/Airtel number).
+  /// [BdAppsService.errorMessage] holds the user-facing reason.
+  invalidNumber,
 }
 
 /// Holds the BD Apps side of the Profile tab and Subscription Offer screens.
@@ -26,7 +36,7 @@ class BdAppsService extends ChangeNotifier {
     required BdAppsApiClient apiClient,
     required SmsApiClient smsApiClient,
     String? initialBdMobile,
-  })  : _bdMobile = initialBdMobile {
+  }) : _bdMobile = initialBdMobile {
     _apiClient = apiClient;
     _smsApiClient = smsApiClient;
   }
@@ -127,7 +137,8 @@ class BdAppsService extends ChangeNotifier {
         final maxAttempts = (totalSeconds / intervalSeconds).ceil();
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-          pollingSecondsRemaining = totalSeconds - ((attempt - 1) * intervalSeconds);
+          pollingSecondsRemaining =
+              totalSeconds - ((attempt - 1) * intervalSeconds);
           notifyListeners();
 
           await Future<void>.delayed(pollInterval);
@@ -143,7 +154,8 @@ class BdAppsService extends ChangeNotifier {
             return true;
           }
 
-          if (subscriptionStatus?.toUpperCase() == 'UNREGISTERED' && attempt > 1) {
+          if (subscriptionStatus?.toUpperCase() == 'UNREGISTERED' &&
+              attempt > 1) {
             // Explicit rejection
             subscriptionState = SubscriptionState.failed;
             errorMessage = 'Subscription was cancelled or declined by carrier.';
@@ -162,7 +174,8 @@ class BdAppsService extends ChangeNotifier {
       }
 
       subscriptionState = SubscriptionState.failed;
-      errorMessage = response.statusDetail ??
+      errorMessage =
+          response.statusDetail ??
           response.error ??
           'Failed to initiate subscription.';
       return false;
@@ -177,6 +190,58 @@ class BdAppsService extends ChangeNotifier {
     } finally {
       isRequestingSubscription = false;
       pollingSecondsRemaining = 0;
+      notifyListeners();
+    }
+  }
+
+  /// Checks whether [mobileNumber] is already an active BD Apps subscriber
+  /// *before* an OTP is requested, so the app can skip the OTP round-trip
+  /// entirely for numbers that are already paying subscribers (of this or a
+  /// prior MediTrack account) and give the user accurate messaging instead
+  /// of silently sending an SMS they don't need.
+  ///
+  /// On [BdNumberCheckResult.alreadyActive], the registered/bdMobile state
+  /// is already applied — callers just need to refresh entitlement and stop.
+  /// On [BdNumberCheckResult.notRegistered] (including a failed status
+  /// lookup, which shouldn't block the flow), callers should proceed to
+  /// [sendOtp] as normal; `sendOtp`/`send_otp.php` re-validates regardless.
+  Future<BdNumberCheckResult> checkNumberBeforeOtp({
+    required String mobileNumber,
+  }) async {
+    final validationError = BdMobileValidator.validateRobiAirtel(mobileNumber);
+    if (validationError != null) {
+      errorMessage = validationError;
+      notifyListeners();
+      return BdNumberCheckResult.invalidNumber;
+    }
+
+    final normalized = BdMobileValidator.normalize(mobileNumber);
+    isCheckingSubscription = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.checkSubscription(
+        userMobile: normalized,
+      );
+      lastCheckSubscriptionResponse = response;
+
+      if (response.subscriptionStatus?.toUpperCase() == 'REGISTERED') {
+        _bdMobile = normalized;
+        subscriptionStatus = 'REGISTERED';
+        subscriptionState = SubscriptionState.registered;
+        return BdNumberCheckResult.alreadyActive;
+      }
+
+      return BdNumberCheckResult.notRegistered;
+    } catch (e) {
+      // A failed status lookup shouldn't block subscribing — fall through
+      // to the normal OTP flow, which will surface a real error if the
+      // number itself is unreachable.
+      debugPrint('BD Apps pre-check notice: $e');
+      return BdNumberCheckResult.notRegistered;
+    } finally {
+      isCheckingSubscription = false;
       notifyListeners();
     }
   }
@@ -201,7 +266,8 @@ class BdAppsService extends ChangeNotifier {
         _bdMobile = mobileNumber;
         return true;
       }
-      errorMessage = response.statusDetail ??
+      errorMessage =
+          response.statusDetail ??
           response.error ??
           'Failed to send subscription OTP.';
       return false;
@@ -239,9 +305,8 @@ class BdAppsService extends ChangeNotifier {
         pendingReferenceNo = null;
         return true;
       }
-      errorMessage = response.statusDetail ??
-          response.error ??
-          'Failed to verify OTP.';
+      errorMessage =
+          response.statusDetail ?? response.error ?? 'Failed to verify OTP.';
       return false;
     } on DioException catch (e) {
       errorMessage = _messageForDioException(e);
@@ -302,7 +367,8 @@ class BdAppsService extends ChangeNotifier {
     try {
       final response = await _apiClient.unsubscribe(
         userMobile: mobile,
-        subscriberId: lastSendOtpResponse?.subscriberId ??
+        subscriberId:
+            lastSendOtpResponse?.subscriberId ??
             lastCheckSubscriptionResponse?.subscriberId,
         referenceNo: pendingReferenceNo ?? lastSendOtpResponse?.referenceNo,
       );
@@ -312,7 +378,8 @@ class BdAppsService extends ChangeNotifier {
         subscriptionState = SubscriptionState.idle;
         return true;
       }
-      errorMessage = response.statusDetail ??
+      errorMessage =
+          response.statusDetail ??
           response.error ??
           'Failed to cancel subscription via BD Apps (status: ${response.statusCode ?? 'unknown'}).';
       return false;
@@ -344,17 +411,15 @@ class BdAppsService extends ChangeNotifier {
       );
       lastSendSmsResponse = response;
       if (response.isSuccess) return true;
-      errorMessage = response.statusDetail ??
-          response.error ??
-          'Failed to send SMS.';
+      errorMessage =
+          response.statusDetail ?? response.error ?? 'Failed to send SMS.';
       return false;
     } on DioException catch (e) {
       final parsed = _tryParseSmsError(e);
       if (parsed != null) {
         lastSendSmsResponse = parsed;
-        errorMessage = parsed.statusDetail ??
-            parsed.error ??
-            'Failed to send SMS.';
+        errorMessage =
+            parsed.statusDetail ?? parsed.error ?? 'Failed to send SMS.';
       } else {
         errorMessage = _messageForDioException(e);
       }

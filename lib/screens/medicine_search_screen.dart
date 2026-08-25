@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../logic/entitlement_guard.dart';
 import '../models/buy_list_item.dart';
 import '../models/medicine_reference.dart';
 import '../services/buy_list_service.dart';
@@ -8,6 +9,7 @@ import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../widgets/empty_state_view.dart';
+import '../widgets/premium_gate.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
 
@@ -52,7 +54,10 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Search failed: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Search failed: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -61,7 +66,9 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
   }
 
   void _addToBuyList(MedicineReference med) async {
-    final priceStr = med.unitPriceBdt != null ? '${_currencyFormat.format(med.unitPriceBdt)}/unit' : 'Price N/A';
+    final priceStr = med.unitPriceBdt != null
+        ? '${_currencyFormat.format(med.unitPriceBdt)}/unit'
+        : 'Price N/A';
     final item = BuyListItem(
       id: '',
       name: '${med.brandName} ${med.strength ?? ""}'.trim(),
@@ -84,6 +91,13 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return PremiumGate(
+      feature: EntitlementFeature.priceLookup,
+      builder: _buildScreen,
+    );
+  }
+
+  Widget _buildScreen(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -113,11 +127,18 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                 textInputAction: TextInputAction.search,
                 style: AppTypography.bodyMedium,
                 decoration: InputDecoration(
-                  hintText: 'Search brand or generic (e.g. Napa, Seclo, Paracetamol)...',
+                  hintText:
+                      'Search brand or generic (e.g. Napa, Seclo, Paracetamol)...',
                   hintStyle: AppTypography.bodySmall.copyWith(
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textMuted,
                   ),
-                  prefixIcon: const Icon(Icons.search, color: AppColors.primaryBlue, size: 22),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.primaryBlue,
+                    size: 22,
+                  ),
                   suffixIcon: _queryController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.close, size: 18),
@@ -134,7 +155,10 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
                 ),
               ),
             ),
@@ -145,12 +169,18 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1B2330) : AppColors.primaryBlueLight.withValues(alpha: 0.6),
+              color: isDark
+                  ? const Color(0xFF1B2330)
+                  : AppColors.primaryBlueLight.withValues(alpha: 0.6),
               borderRadius: AppRadii.smallRadius,
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, size: 16, color: AppColors.primaryBlue),
+                const Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: AppColors.primaryBlue,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -166,31 +196,40 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
           // Results List
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue))
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryBlue,
+                    ),
+                  )
                 : _searchedQuery.isEmpty
-                    ? Center(
-                        child: EmptyStateView(
-                          icon: Icons.medication_liquid_outlined,
-                          title: 'Search Bangladesh Medicines',
-                          description: 'Enter a medicine brand name or generic compound to compare prices and find cheaper alternatives.',
-                        ),
-                      )
-                    : _results.isEmpty
-                        ? Center(
-                            child: EmptyStateView(
-                              icon: Icons.search_off_rounded,
-                              title: 'No Medicines Found',
-                              description: 'No matching DGDA medicine found for "$_searchedQuery". Check spelling and try again.',
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                            itemCount: _results.length,
-                            itemBuilder: (context, index) {
-                              final med = _results[index];
-                              return _buildMedicineResultCard(med, isDark);
-                            },
-                          ),
+                ? Center(
+                    child: EmptyStateView(
+                      icon: Icons.medication_liquid_outlined,
+                      title: 'Search Bangladesh Medicines',
+                      description:
+                          'Enter a medicine brand name or generic compound to compare prices and find cheaper alternatives.',
+                    ),
+                  )
+                : _results.isEmpty
+                ? Center(
+                    child: EmptyStateView(
+                      icon: Icons.search_off_rounded,
+                      title: 'No Medicines Found',
+                      description:
+                          'No matching DGDA medicine found for "$_searchedQuery". Check spelling and try again.',
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    itemCount: _results.length,
+                    itemBuilder: (context, index) {
+                      final med = _results[index];
+                      return _buildMedicineResultCard(med, isDark);
+                    },
+                  ),
           ),
         ],
       ),
@@ -217,7 +256,9 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                     children: [
                       Text(
                         '${med.brandName} ${med.strength ?? ""}',
-                        style: AppTypography.headingSmall.copyWith(fontSize: 15),
+                        style: AppTypography.headingSmall.copyWith(
+                          fontSize: 15,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -231,9 +272,13 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                   ),
                 ),
                 Text(
-                  med.unitPriceBdt != null ? _currencyFormat.format(med.unitPriceBdt!) : 'N/A',
+                  med.unitPriceBdt != null
+                      ? _currencyFormat.format(med.unitPriceBdt!)
+                      : 'N/A',
                   style: AppTypography.headingSmall.copyWith(
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -255,8 +300,12 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
               children: [
                 Expanded(
                   child: SoftSecondaryButton(
-                    label: isExpanded ? 'Hide Cheaper Brands' : 'Find Cheaper Brands',
-                    icon: isExpanded ? Icons.expand_less : Icons.swap_horiz_rounded,
+                    label: isExpanded
+                        ? 'Hide Cheaper Brands'
+                        : 'Find Cheaper Brands',
+                    icon: isExpanded
+                        ? Icons.expand_less
+                        : Icons.swap_horiz_rounded,
                     height: 36,
                     onPressed: () {
                       setState(() {
@@ -294,7 +343,10 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                     return const Padding(
                       padding: EdgeInsets.all(12.0),
                       child: Center(
-                        child: CircularProgressIndicator(color: AppColors.primaryBlue, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryBlue,
+                          strokeWidth: 2,
+                        ),
                       ),
                     );
                   }
@@ -315,15 +367,22 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                     children: [
                       Text(
                         'Alternative Brands for ${med.genericName}:',
-                        style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+                        style: AppTypography.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       ...alts.map(
                         (alt) => Container(
                           margin: const EdgeInsets.only(bottom: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkSurfaceElevated : AppColors.canvas,
+                            color: isDark
+                                ? AppColors.darkSurfaceElevated
+                                : AppColors.canvas,
                             borderRadius: AppRadii.smallRadius,
                           ),
                           child: Row(
@@ -335,19 +394,34 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                                   children: [
                                     Text(
                                       alt.brandName,
-                                      style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+                                      style: AppTypography.caption.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
-                                    Text(alt.manufacturer ?? 'Bangladesh', style: AppTypography.caption.copyWith(fontSize: 10)),
+                                    Text(
+                                      alt.manufacturer ?? 'Bangladesh',
+                                      style: AppTypography.caption.copyWith(
+                                        fontSize: 10,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
                               Row(
                                 children: [
                                   Text(
-                                    alt.unitPriceBdt != null ? _currencyFormat.format(alt.unitPriceBdt!) : 'N/A',
+                                    alt.unitPriceBdt != null
+                                        ? _currencyFormat.format(
+                                            alt.unitPriceBdt!,
+                                          )
+                                        : 'N/A',
                                     style: AppTypography.caption.copyWith(
                                       fontWeight: FontWeight.w700,
-                                      color: (alt.unitPriceBdt != null && med.unitPriceBdt != null && alt.unitPriceBdt! < med.unitPriceBdt!)
+                                      color:
+                                          (alt.unitPriceBdt != null &&
+                                              med.unitPriceBdt != null &&
+                                              alt.unitPriceBdt! <
+                                                  med.unitPriceBdt!)
                                           ? AppColors.success
                                           : null,
                                     ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import '../logic/entitlement_guard.dart';
 import '../services/pharmacy_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/premium_gate.dart';
 import '../widgets/section_header.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
@@ -22,7 +24,13 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
   String? _locationError;
   String _selectedCity = 'Dhaka';
 
-  final List<String> _bdCities = ['Dhaka', 'Chittagong', 'Sylhet', 'Rajshahi', 'Khulna'];
+  final List<String> _bdCities = [
+    'Dhaka',
+    'Chittagong',
+    'Sylhet',
+    'Rajshahi',
+    'Khulna',
+  ];
 
   @override
   void initState() {
@@ -51,7 +59,9 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
       final launched = await _pharmacyService.openNearbyPharmaciesInMaps(
         latitude: _currentPosition?.latitude,
         longitude: _currentPosition?.longitude,
-        query: _currentPosition != null ? query : '$query $_selectedCity Bangladesh',
+        query: _currentPosition != null
+            ? query
+            : '$query $_selectedCity Bangladesh',
       );
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -60,15 +70,22 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error launching Maps: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error launching Maps: $e')));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    return PremiumGate(
+      feature: EntitlementFeature.nearbyPharmacy,
+      builder: _buildScreen,
+    );
+  }
+
+  Widget _buildScreen(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -106,7 +123,8 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
           ),
           _buildCategoryCard(
             title: '24-Hour Emergency Pharmacies',
-            subtitle: 'Find open overnight pharmacies and critical medicine dispensaries',
+            subtitle:
+                'Find open overnight pharmacies and critical medicine dispensaries',
             icon: Icons.access_time_filled_rounded,
             color: AppColors.accentPink,
             onTap: () => _launchMaps('24 hour pharmacy'),
@@ -115,7 +133,8 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
           const SizedBox(height: 12),
           _buildCategoryCard(
             title: 'Hospital & Model Pharmacies',
-            subtitle: 'Verified government model pharmacies & hospital dispensaries',
+            subtitle:
+                'Verified government model pharmacies & hospital dispensaries',
             icon: Icons.local_hospital_rounded,
             color: AppColors.primaryBlue,
             onTap: () => _launchMaps('model pharmacy hospital'),
@@ -124,7 +143,8 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
           const SizedBox(height: 12),
           _buildCategoryCard(
             title: 'Medicine & Surgical Stores',
-            subtitle: 'Retail chemist shops, first aid supplies & surgical goods',
+            subtitle:
+                'Retail chemist shops, first aid supplies & surgical goods',
             icon: Icons.medical_services_rounded,
             color: AppColors.accentOrange,
             onTap: () => _launchMaps('medicine store chemist'),
@@ -145,12 +165,18 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: _currentPosition != null ? AppColors.successLight : AppColors.primaryBlueLight,
+              color: _currentPosition != null
+                  ? AppColors.successLight
+                  : AppColors.primaryBlueLight,
               shape: BoxShape.circle,
             ),
             child: Icon(
-              _currentPosition != null ? Icons.my_location_rounded : Icons.location_searching_rounded,
-              color: _currentPosition != null ? AppColors.success : AppColors.primaryBlue,
+              _currentPosition != null
+                  ? Icons.my_location_rounded
+                  : Icons.location_searching_rounded,
+              color: _currentPosition != null
+                  ? AppColors.success
+                  : AppColors.primaryBlue,
               size: 22,
             ),
           ),
@@ -162,14 +188,17 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
                 Text(
                   _currentPosition != null
                       ? 'GPS Location Active'
-                      : (_isLoadingLocation ? 'Locating device...' : 'Location Not Detected'),
+                      : (_isLoadingLocation
+                            ? 'Locating device...'
+                            : 'Location Not Detected'),
                   style: AppTypography.headingSmall.copyWith(fontSize: 14),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   _currentPosition != null
                       ? 'Using real-time coordinates (${_currentPosition!.latitude.toStringAsFixed(3)}, ${_currentPosition!.longitude.toStringAsFixed(3)})'
-                      : (_locationError ?? 'Defaulting to $_selectedCity center.'),
+                      : (_locationError ??
+                            'Defaulting to $_selectedCity center.'),
                   style: AppTypography.caption,
                 ),
               ],
@@ -240,14 +269,21 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
                   color: AppColors.primaryBlueLight,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.map_rounded, color: AppColors.primaryBlue, size: 24),
+                child: const Icon(
+                  Icons.map_rounded,
+                  color: AppColors.primaryBlue,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Open Google Maps', style: AppTypography.headingMedium),
+                    Text(
+                      'Open Google Maps',
+                      style: AppTypography.headingMedium,
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       'Turn-by-turn navigation, store hours, and contact numbers',
@@ -295,13 +331,20 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTypography.headingSmall.copyWith(fontSize: 14)),
+                Text(
+                  title,
+                  style: AppTypography.headingSmall.copyWith(fontSize: 14),
+                ),
                 const SizedBox(height: 2),
                 Text(subtitle, style: AppTypography.caption),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary),
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: AppColors.textSecondary,
+          ),
         ],
       ),
     );
