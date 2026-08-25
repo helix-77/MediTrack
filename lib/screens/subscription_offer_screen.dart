@@ -32,6 +32,35 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
   bool _otpSent = false;
 
   @override
+  void initState() {
+    super.initState();
+    _loadExistingMobile();
+  }
+
+  void _loadExistingMobile() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || user.isAnonymous) return;
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('profile')
+          .doc('main')
+          .get();
+      if (doc.exists && mounted) {
+        final mobile = doc.data()?['bdMobile'] as String?;
+        if (mobile != null &&
+            mobile.isNotEmpty &&
+            _phoneController.text.isEmpty) {
+          setState(() {
+            _phoneController.text = mobile;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
     _phoneController.dispose();
     _otpController.dispose();
@@ -140,7 +169,8 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
         context,
         MaterialPageRoute(builder: (_) => const AccountUpgradeScreen()),
       );
-      if (upgraded != true && (FirebaseAuth.instance.currentUser?.isAnonymous ?? true)) {
+      if (upgraded != true &&
+          (FirebaseAuth.instance.currentUser?.isAnonymous ?? true)) {
         return;
       }
     }
@@ -157,12 +187,11 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     if (checkResult == BdNumberCheckResult.alreadyActive) {
       await _persistSubscription(normalized);
       entitlement.updateSubscribedState(true);
-      await entitlement.refreshEntitlement(forceCarrierCheck: false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              '✅ This number is already a MediTrack Premium subscriber. Activating your account...',
+              '🎉 You are already a MediTrack Premium subscriber. Unlocking features...',
             ),
             backgroundColor: AppColors.success,
           ),
@@ -179,11 +208,12 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
       if (bdService.subscriptionStatus == 'REGISTERED') {
         await _persistSubscription(normalized);
         entitlement.updateSubscribedState(true);
-        await entitlement.refreshEntitlement(forceCarrierCheck: false);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('🎉 Your MediTrack Premium subscription is active!'),
+            content: Text(
+              '🎉 Your MediTrack Premium subscription is active! Unlocking features...',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -236,7 +266,6 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     if (success) {
       await _persistSubscription(normalized);
       entitlement.updateSubscribedState(true);
-      await entitlement.refreshEntitlement(forceCarrierCheck: false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

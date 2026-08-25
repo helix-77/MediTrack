@@ -26,7 +26,7 @@ class EntitlementService extends ChangeNotifier {
   StreamSubscription<User?>? _authSubscription;
 
   /// Cache freshness duration before forcing a carrier re-verification.
-  static const Duration freshnessWindow = Duration(minutes: 5);
+  static const Duration freshnessWindow = Duration(hours: 12);
 
   EntitlementService({
     FirebaseFirestore? firestore,
@@ -126,12 +126,13 @@ class EntitlementService extends ChangeNotifier {
               final response =
                   await client.checkSubscription(userMobile: bdMobile);
               final newStatus = response.subscriptionStatus ?? 'UNREGISTERED';
-              if (newStatus.toUpperCase() == 'UNKNOWN') {
+              if (newStatus.toUpperCase() == 'UNKNOWN' ||
+                  (!response.isSuccess && response.statusCode != 'S1000')) {
                 // BD Apps server error / timeout: retain existing cached Firestore status
                 _isSubscribed = status == 'REGISTERED';
                 _lastVerifiedAt = verifiedDate;
               } else {
-                _isSubscribed = (newStatus.toUpperCase() == 'REGISTERED');
+                _isSubscribed = response.isAlreadyActive;
                 _lastVerifiedAt = DateTime.now();
 
                 // Persist fresh verification timestamp and status to Firestore
@@ -141,7 +142,8 @@ class EntitlementService extends ChangeNotifier {
                     .collection('profile')
                     .doc('main')
                     .set({
-                  'subscriptionStatus': newStatus,
+                  'subscriptionStatus':
+                      _isSubscribed ? 'REGISTERED' : 'UNREGISTERED',
                   'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
                 }, SetOptions(merge: true));
               }
@@ -249,8 +251,10 @@ class EntitlementService extends ChangeNotifier {
     );
 
     if (subscribed == true) {
-      await refreshEntitlement(forceCarrierCheck: true);
-      return _isSubscribed;
+      _isSubscribed = true;
+      _lastVerifiedAt = DateTime.now();
+      notifyListeners();
+      return true;
     }
 
     return _isSubscribed;

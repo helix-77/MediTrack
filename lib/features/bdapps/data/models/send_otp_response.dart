@@ -25,7 +25,12 @@ class SendOtpResponse {
     return detail.contains('already register') ||
         err.contains('already register') ||
         detail.contains('already subscribe') ||
-        err.contains('already subscribe');
+        err.contains('already subscribe') ||
+        detail.contains('already active') ||
+        err.contains('already active') ||
+        detail.contains('already exist') ||
+        err.contains('already exist') ||
+        statusCode == 'E1351';
   }
 
   factory SendOtpResponse.fromJson(Map<String, dynamic> json) {

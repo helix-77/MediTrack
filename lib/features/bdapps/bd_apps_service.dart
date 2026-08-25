@@ -226,7 +226,7 @@ class BdAppsService extends ChangeNotifier {
       );
       lastCheckSubscriptionResponse = response;
 
-      if (response.subscriptionStatus?.toUpperCase() == 'REGISTERED') {
+      if (response.isAlreadyActive) {
         _bdMobile = normalized;
         subscriptionStatus = 'REGISTERED';
         subscriptionState = SubscriptionState.registered;

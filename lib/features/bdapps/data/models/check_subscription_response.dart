@@ -42,6 +42,24 @@ class CheckSubscriptionResponse {
   /// Additional details when [error] is present.
   final String? details;
 
+  /// Whether the subscriber is currently in an active / registered state.
+  bool get isAlreadyActive {
+    final status = (subscriptionStatus ?? '').toUpperCase();
+    final detail = (statusDetail ?? '').toLowerCase();
+    final err = (error ?? '').toLowerCase();
+    return isSubscribed ||
+        status == 'REGISTERED' ||
+        detail.contains('already register') ||
+        err.contains('already register') ||
+        detail.contains('already subscribe') ||
+        err.contains('already subscribe') ||
+        detail.contains('already active') ||
+        err.contains('already active');
+  }
+
+  /// Whether the response indicates a non-error carrier communication.
+  bool get isSuccess => statusCode == 'S1000' || error == null;
+
   factory CheckSubscriptionResponse.fromJson(Map<String, dynamic> json) {
     return CheckSubscriptionResponse(
       subscriptionStatus: json['subscriptionStatus'] as String?,
