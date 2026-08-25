@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +25,7 @@ import 'services/notification_service.dart';
 import 'screens/account_upgrade_screen.dart';
 import 'screens/main_navigation_shell.dart';
 import 'screens/medicine_detail_screen.dart';
+import 'screens/verify_email_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'firebase_options.dart';
 
@@ -165,8 +167,8 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeNotifier.themeMode,
-            home: StreamBuilder(
-              stream: _authService.authStateChanges,
+            home: StreamBuilder<User?>(
+              stream: _authService.userChanges,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Scaffold(
@@ -181,6 +183,7 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
                 return switch (authRouteFor(snapshot.data)) {
                   AuthRoute.welcome => const WelcomeScreen(),
                   AuthRoute.accountUpgrade => const AccountUpgradeScreen(),
+                  AuthRoute.verifyEmail => const VerifyEmailScreen(),
                   AuthRoute.app => const MainNavigationShell(),
                 };
               },

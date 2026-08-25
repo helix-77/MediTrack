@@ -12,6 +12,7 @@ class AuthService {
   final GoogleSignIn _googleSignIn;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<User?> get userChanges => _auth.userChanges();
 
   User? get currentUser => _auth.currentUser;
 
@@ -30,9 +31,32 @@ class AuthService {
         await credential.user?.updateDisplayName(displayName.trim());
       }
 
+      await credential.user?.sendEmailVerification();
+
       return credential;
     } on FirebaseAuthException catch (error) {
       throw Exception(_authErrorMessage(error));
+    }
+  }
+
+  Future<void> sendEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user == null) throw const UnauthenticatedException();
+    try {
+      await user.sendEmailVerification();
+    } on FirebaseAuthException catch (error) {
+      throw Exception(_authErrorMessage(error));
+    }
+  }
+
+  Future<bool> reloadUser() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    try {
+      await user.reload();
+      return _auth.currentUser?.emailVerified ?? false;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -148,6 +172,8 @@ class AuthService {
         return 'Too many failed attempts. Please try again later.';
       case 'operation-not-allowed':
         return 'This sign-in method is not enabled.';
+      case 'channel-error':
+        return 'Please ensure all email and password fields are filled correctly.';
       case 'network-request-failed':
         return 'A network connection is required. Check your connection and try again.';
       default:

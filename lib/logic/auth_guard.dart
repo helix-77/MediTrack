@@ -25,20 +25,24 @@ User requireAuthenticatedUser(FirebaseAuth auth) {
   return user;
 }
 
-enum AuthRoute { welcome, accountUpgrade, app }
+enum AuthRoute { welcome, accountUpgrade, verifyEmail, app }
 
 AuthRoute authRouteFor(User? user) {
   return authRouteForState(
     hasUser: user != null,
     isAnonymous: user?.isAnonymous ?? false,
+    isEmailVerified: user?.emailVerified ?? false,
   );
 }
 
 AuthRoute authRouteForState({
   required bool hasUser,
   required bool isAnonymous,
+  bool isEmailVerified = false,
 }) {
   if (!hasUser) return AuthRoute.welcome;
   if (isAnonymous) return AuthRoute.accountUpgrade;
+  if (!isEmailVerified) return AuthRoute.verifyEmail;
   return AuthRoute.app;
 }
+

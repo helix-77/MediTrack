@@ -98,6 +98,7 @@ class SoftSecondaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
+  final bool isLoading;
   final double height;
   final double? width;
   final Color? borderColor;
@@ -109,6 +110,7 @@ class SoftSecondaryButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.isLoading = false,
     this.height = 50.0,
     this.width,
     this.borderColor,
@@ -135,25 +137,34 @@ class SoftSecondaryButton extends StatelessWidget {
           ),
           padding: padding ?? const EdgeInsets.symmetric(horizontal: 16),
         ),
-        onPressed: onPressed,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 18, color: text),
-              const SizedBox(width: 8),
-            ],
-            Flexible(
-              child: Text(
-                label,
-                style: AppTypography.buttonText.copyWith(color: text),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+        onPressed: isLoading ? null : onPressed,
+        child: isLoading
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(text),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 18, color: text),
+                    const SizedBox(width: 8),
+                  ],
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: AppTypography.buttonText.copyWith(color: text),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

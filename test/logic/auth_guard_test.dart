@@ -17,9 +17,24 @@ void main() {
       );
     });
 
-    test('routes registered users into the app', () {
+    test('routes unverified registered users to verifyEmail', () {
       expect(
-        authRouteForState(hasUser: true, isAnonymous: false),
+        authRouteForState(
+          hasUser: true,
+          isAnonymous: false,
+          isEmailVerified: false,
+        ),
+        AuthRoute.verifyEmail,
+      );
+    });
+
+    test('routes registered and verified users into the app', () {
+      expect(
+        authRouteForState(
+          hasUser: true,
+          isAnonymous: false,
+          isEmailVerified: true,
+        ),
         AuthRoute.app,
       );
     });

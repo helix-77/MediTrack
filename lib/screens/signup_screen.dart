@@ -74,9 +74,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _showErrorSnackBar(String message) {
+    final cleanMessage = message.replaceFirst(RegExp(r'^Exception:\s*'), '');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(cleanMessage),
         backgroundColor: AppColors.danger,
       ),
     );
