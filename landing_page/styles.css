@@ -264,16 +264,14 @@ img, svg {
   letter-spacing: -0.5px;
 }
 
-.brand-logo .logo-icon {
+.brand-logo .logo-icon,
+.brand-logo .logo-icon-img {
   width: 36px;
   height: 36px;
-  background: var(--primary-blue);
-  color: #FFFFFF;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(91, 143, 245, 0.35);
+  border-radius: 10px;
+  display: block;
+  box-shadow: 0 4px 14px rgba(79, 107, 255, 0.35);
+  flex-shrink: 0;
 }
 
 .nav-menu {

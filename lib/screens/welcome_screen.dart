@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/soft_button.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
@@ -21,42 +22,11 @@ class WelcomeScreen extends StatelessWidget {
             children: [
               const Spacer(flex: 2),
 
-              // Soft Glowing Hero Icon Container
-              Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryBlue.withValues(alpha: 0.18),
-                      blurRadius: 30,
-                      spreadRadius: 4,
-                      offset: const Offset(0, 10),
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.9),
-                      blurRadius: 10,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Container(
-                    width: 88,
-                    height: 88,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primaryBlueLight,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.medication_liquid_rounded,
-                      size: 48,
-                      color: AppColors.primaryBlue,
-                      semanticLabel: 'MediTrack healthcare icon',
-                    ),
-                  ),
+              // Soft Glowing Hero App Icon
+              const Center(
+                child: AppLogo(
+                  size: 96,
+                  showShadow: true,
                 ),
               ),
               const SizedBox(height: 36),

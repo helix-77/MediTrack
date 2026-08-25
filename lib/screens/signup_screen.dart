@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_text_field.dart';
 import 'login_screen.dart';
@@ -107,6 +108,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const AppLogo(size: 56),
+                const SizedBox(height: 18),
                 Text(
                   'Create Account',
                   style: AppTypography.displayLarge.copyWith(

@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_text_field.dart';
 import 'signup_screen.dart';
@@ -161,6 +162,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const AppLogo(size: 56),
+                const SizedBox(height: 18),
                 Text(
                   'Welcome Back',
                   style: AppTypography.displayLarge.copyWith(

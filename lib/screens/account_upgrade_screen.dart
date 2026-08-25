@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/soft_text_field.dart';
@@ -19,7 +19,7 @@ class _AccountUpgradeScreenState extends State<AccountUpgradeScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = AuthService();
+  final AuthService _authService = AuthService();
 
   bool _isPasswordVisible = false;
   bool _isEmailLoading = false;
@@ -33,37 +33,47 @@ class _AccountUpgradeScreenState extends State<AccountUpgradeScreen> {
     super.dispose();
   }
 
-  Future<void> _linkEmail() async {
+  Future<void> _handleEmailUpgrade() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isEmailLoading = true);
+
     try {
       await _authService.linkAnonymousWithEmail(
         email: _emailController.text,
         password: _passwordController.text,
         displayName: _nameController.text,
       );
-    } catch (error) {
-      if (mounted) _showError(error);
+      if (!mounted) return;
+      Navigator.popUntil(context, (route) => route.isFirst);
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorSnackBar(e.toString());
     } finally {
       if (mounted) setState(() => _isEmailLoading = false);
     }
   }
 
-  Future<void> _linkGoogle() async {
+  Future<void> _handleGoogleUpgrade() async {
     setState(() => _isGoogleLoading = true);
+
     try {
-      await _authService.linkAnonymousWithGoogle();
-    } catch (error) {
-      if (mounted) _showError(error);
+      final credential = await _authService.linkAnonymousWithGoogle();
+      if (credential != null && mounted) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorSnackBar(e.toString());
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
-  void _showError(Object error) {
+  void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(error.toString().replaceFirst('Exception: ', '')),
+        content: Text(message.replaceFirst('Exception: ', '')),
         backgroundColor: AppColors.danger,
       ),
     );
@@ -86,20 +96,7 @@ class _AccountUpgradeScreenState extends State<AccountUpgradeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryBlueLight,
-                      shape: BoxShape.circle,
-                      boxShadow: AppShadows.subtle,
-                    ),
-                    child: const Icon(
-                      Icons.admin_panel_settings_outlined,
-                      color: AppColors.primaryBlue,
-                      size: 32,
-                    ),
-                  ),
+                  const AppLogo(size: 64),
                   const SizedBox(height: 20),
                   Text(
                     'Secure Your Account',
@@ -178,7 +175,7 @@ class _AccountUpgradeScreenState extends State<AccountUpgradeScreen> {
                   SoftPrimaryButton(
                     label: 'Create Account and Keep Data',
                     isLoading: _isEmailLoading,
-                    onPressed: isBusy ? null : _linkEmail,
+                    onPressed: isBusy ? null : _handleEmailUpgrade,
                   ),
                   const SizedBox(height: 20),
 
@@ -201,7 +198,7 @@ class _AccountUpgradeScreenState extends State<AccountUpgradeScreen> {
                   SoftSecondaryButton(
                     label: 'Link Google Account',
                     icon: Icons.g_mobiledata_rounded,
-                    onPressed: isBusy ? null : _linkGoogle,
+                    onPressed: isBusy ? null : _handleGoogleUpgrade,
                   ),
                   const SizedBox(height: 18),
 

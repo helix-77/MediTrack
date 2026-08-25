@@ -9,6 +9,7 @@ import '../services/entitlement_service.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_modal_sheet.dart';
 import '../widgets/soft_surface.dart';
@@ -730,7 +731,33 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+
+                // App Brand & Version Footer
+                Center(
+                  child: Column(
+                    children: [
+                      const AppLogo(size: 38, showShadow: false),
+                      const SizedBox(height: 8),
+                      Text(
+                        'MediTrack v0.0.3b (Build 3)',
+                        style: AppTypography.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Smart Health & Generic Companion • Bangladesh',
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 10.5,
+                          color: isDark ? AppColors.darkTextSecondary.withValues(alpha: 0.6) : AppColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 36),
               ],
             ),
           );
