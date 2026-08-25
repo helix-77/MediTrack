@@ -263,17 +263,17 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                     children: [
                       _buildStepRow(
                         stepNumber: '1',
-                        title: 'Check your Inbox',
+                        title: 'Check Inbox & Spam Folder',
                         description:
-                            'Look for an email from MediTrack / Firebase and click the verification link.',
+                            'Look for an email from noreply@meditrack-app-2026.firebaseapp.com. If not in Primary, check Spam/Junk or Promotions.',
                         isDark: isDark,
                       ),
                       const Divider(height: 20),
                       _buildStepRow(
                         stepNumber: '2',
-                        title: 'Pull down to Refresh',
+                        title: 'Click the Link & Pull Down',
                         description:
-                            'Swipe down anywhere on this screen or tap "Check Status" to enter the app.',
+                            'Click the verification link, then swipe down anywhere on this screen to open your dashboard.',
                         isDark: isDark,
                       ),
                     ],

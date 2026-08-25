@@ -42,6 +42,15 @@ class _FakeAuthService implements AuthService {
   }
 
   @override
+  bool get isPasswordAccount => false;
+
+  @override
+  bool get isGoogleAccount => false;
+
+  @override
+  Future<void> deleteAccount({String? password}) async {}
+
+  @override
   Future<UserCredential> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -99,8 +108,8 @@ void main() {
     );
 
     expect(find.text('Verify Your Email'), findsOneWidget);
-    expect(find.text('Check your Inbox'), findsOneWidget);
-    expect(find.text('Pull down to Refresh'), findsOneWidget);
+    expect(find.text('Check Inbox & Spam Folder'), findsOneWidget);
+    expect(find.text('Click the Link & Pull Down'), findsOneWidget);
     expect(find.text("I've Verified My Email"), findsOneWidget);
     expect(find.text('Resend Verification Email'), findsOneWidget);
     expect(find.byType(RefreshIndicator), findsOneWidget);

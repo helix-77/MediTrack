@@ -15,6 +15,7 @@ import '../l10n/app_strings.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_modal_sheet.dart';
 import '../widgets/soft_surface.dart';
+import '../widgets/soft_text_field.dart';
 import 'edit_profile_screen.dart';
 import 'welcome_screen.dart';
 
@@ -628,6 +629,166 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showDeleteAccountModal() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isPasswordAccount = _authService.isPasswordAccount;
+    final passwordController = TextEditingController();
+    bool isPasswordVisible = false;
+    bool isDeleting = false;
+    String? errorMessage;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+          backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
+          title: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'Delete Account',
+                style: AppTypography.headingMedium.copyWith(color: AppColors.danger),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Are you sure you want to delete your MediTrack account? This will permanently remove all your medication schedules, prescriptions, and dose history. This action cannot be undone.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                if (isPasswordAccount) ...[
+                  const SizedBox(height: 18),
+                  Text(
+                    'Confirm with your password:',
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SoftTextField(
+                    controller: passwordController,
+                    labelText: 'Password',
+                    hintText: 'Enter your password',
+                    obscureText: !isPasswordVisible,
+                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.danger, size: 20),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        isPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        size: 20,
+                        color: AppColors.textSecondary,
+                      ),
+                      onPressed: () {
+                        setDialogState(() => isPasswordVisible = !isPasswordVisible);
+                      },
+                    ),
+                  ),
+                ],
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withValues(alpha: 0.1),
+                      borderRadius: AppRadii.standardRadius,
+                      border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, size: 16, color: AppColors.danger),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            errorMessage!,
+                            style: AppTypography.caption.copyWith(color: AppColors.danger),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isDeleting ? null : () => Navigator.pop(dialogCtx),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                shape: RoundedRectangleBorder(borderRadius: AppRadii.standardRadius),
+              ),
+              onPressed: isDeleting
+                  ? null
+                  : () async {
+                      if (isPasswordAccount && passwordController.text.trim().isEmpty) {
+                        setDialogState(() {
+                          errorMessage = 'Please enter your password to confirm deletion.';
+                        });
+                        return;
+                      }
+
+                      setDialogState(() {
+                        isDeleting = true;
+                        errorMessage = null;
+                      });
+
+                      try {
+                        await _authService.deleteAccount(
+                          password: isPasswordAccount ? passwordController.text.trim() : null,
+                        );
+                        if (!dialogCtx.mounted) return;
+                        Navigator.pop(dialogCtx);
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Account deleted successfully.'),
+                            backgroundColor: AppColors.success,
+                          ),
+                        );
+                      } catch (e) {
+                        if (!dialogCtx.mounted) return;
+                        final cleanMsg = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+                        setDialogState(() {
+                          isDeleting = false;
+                          errorMessage = cleanMsg;
+                        });
+                      }
+                    },
+              child: isDeleting
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Delete Permanently', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showBdAppsDiagnosticModal(UserProfile profile) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bdService = context.read<BdAppsService>();
@@ -912,6 +1073,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: Text('Privacy & Security Policy', style: AppTypography.bodyMedium),
                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                       onTap: _showPrivacyModal,
+                    ),
+                    const Divider(height: 4),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.delete_outline, color: AppColors.danger),
+                      title: Text('Delete Account', style: AppTypography.bodyMedium),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: _showDeleteAccountModal,
                     ),
                   ],
                 ),

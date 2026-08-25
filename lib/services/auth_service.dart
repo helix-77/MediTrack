@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../logic/auth_guard.dart';
@@ -31,10 +32,13 @@ class AuthService {
         await credential.user?.updateDisplayName(displayName.trim());
       }
 
+      debugPrint('Triggering sendEmailVerification for ${credential.user?.email}...');
       await credential.user?.sendEmailVerification();
+      debugPrint('sendEmailVerification request submitted successfully.');
 
       return credential;
     } on FirebaseAuthException catch (error) {
+      debugPrint('FirebaseAuthException during sign up: ${error.code} - ${error.message}');
       throw Exception(_authErrorMessage(error));
     }
   }
@@ -43,8 +47,11 @@ class AuthService {
     final user = _auth.currentUser;
     if (user == null) throw const UnauthenticatedException();
     try {
+      debugPrint('Sending verification email to: ${user.email}...');
       await user.sendEmailVerification();
+      debugPrint('sendEmailVerification request submitted successfully.');
     } on FirebaseAuthException catch (error) {
+      debugPrint('FirebaseAuthException during sendEmailVerification: ${error.code} - ${error.message}');
       throw Exception(_authErrorMessage(error));
     }
   }
@@ -132,6 +139,40 @@ class AuthService {
     await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
   }
 
+  bool get isPasswordAccount {
+    final user = _auth.currentUser;
+    return user?.providerData.any((p) => p.providerId == 'password') ?? false;
+  }
+
+  bool get isGoogleAccount {
+    final user = _auth.currentUser;
+    return user?.providerData.any((p) => p.providerId == 'google.com') ?? false;
+  }
+
+  Future<void> deleteAccount({String? password}) async {
+    final user = _auth.currentUser;
+    if (user == null) throw const UnauthenticatedException();
+    try {
+      if (password != null && password.trim().isNotEmpty && user.email != null) {
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: password.trim(),
+        );
+        await user.reauthenticateWithCredential(credential);
+      } else if (isGoogleAccount) {
+        final credential = await _googleCredential();
+        if (credential != null) {
+          await user.reauthenticateWithCredential(credential);
+        }
+      }
+
+      await user.delete();
+      await _googleSignIn.signOut();
+    } on FirebaseAuthException catch (error) {
+      throw Exception(_authErrorMessage(error));
+    }
+  }
+
   User _requireAnonymousUser() {
     final user = _auth.currentUser;
     if (user == null) throw const UnauthenticatedException();
@@ -174,6 +215,8 @@ class AuthService {
         return 'This sign-in method is not enabled.';
       case 'channel-error':
         return 'Please ensure all email and password fields are filled correctly.';
+      case 'requires-recent-login':
+        return 'Account deletion requires recent authentication. Please enter your password or log in again.';
       case 'network-request-failed':
         return 'A network connection is required. Check your connection and try again.';
       default:
