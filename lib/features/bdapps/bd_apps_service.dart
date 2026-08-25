@@ -266,6 +266,12 @@ class BdAppsService extends ChangeNotifier {
         _bdMobile = mobileNumber;
         return true;
       }
+      if (response.statusCode == 'E1342' ||
+          (response.statusDetail ?? '').toLowerCase().contains('blacklisted')) {
+        errorMessage =
+            'This number is not whitelisted in BD Apps. Please add it to "Test Numbers" in developer.bdapps.com.';
+        return false;
+      }
       errorMessage =
           response.statusDetail ??
           response.error ??

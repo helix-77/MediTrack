@@ -31,4 +31,11 @@ analyzer:
   exclude:
     - 'Reference_project_file/**'
     - 'Reference project file/**'
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 

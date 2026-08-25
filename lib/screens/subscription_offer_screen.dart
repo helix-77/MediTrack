@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../features/bdapps/bd_apps_service.dart';
@@ -12,6 +14,7 @@ import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/soft_text_field.dart';
 import '../widgets/status_pill.dart';
+import 'account_upgrade_screen.dart';
 
 class SubscriptionOfferScreen extends StatefulWidget {
   const SubscriptionOfferScreen({super.key});
@@ -79,6 +82,45 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     );
   }
 
+  Future<void> _recordConsent(String mobile) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.isAnonymous) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('profile')
+          .doc('main')
+          .set({
+        'bdMobile': mobile,
+        'subscriptionConsentVersion': SubscriptionOfferConfig.consentVersion,
+        'subscriptionConsentAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Consent recording notice: $e');
+    }
+  }
+
+  Future<void> _persistSubscription(String mobile) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('profile')
+          .doc('main')
+          .set({
+        'bdMobile': mobile,
+        'subscriptionStatus': 'REGISTERED',
+        'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Subscription profile save error: $e');
+    }
+  }
+
   void _sendOtp(BdAppsService bdService, EntitlementService entitlement) async {
     final phone = _phoneController.text.trim();
     final validationError = BdMobileValidator.validateRobiAirtel(phone);
@@ -92,65 +134,81 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
       return;
     }
 
-    // Check BD Apps first: if this number is already an active subscriber,
-    // skip the OTP round-trip entirely instead of sending an SMS the user
-    // doesn't need.
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.isAnonymous) {
+      final upgraded = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(builder: (_) => const AccountUpgradeScreen()),
+      );
+      if (upgraded != true && (FirebaseAuth.instance.currentUser?.isAnonymous ?? true)) {
+        return;
+      }
+    }
+
+    final normalized = BdMobileValidator.normalize(phone);
+    await _recordConsent(normalized);
+
+    // Check BD Apps first: if this number is already an active subscriber
     final checkResult = await bdService.checkNumberBeforeOtp(
-      mobileNumber: phone,
+      mobileNumber: normalized,
     );
     if (!mounted) return;
 
-    switch (checkResult) {
-      case BdNumberCheckResult.invalidNumber:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              bdService.errorMessage ?? 'Please enter a valid mobile number',
-            ),
-            backgroundColor: AppColors.warning,
-          ),
-        );
-        return;
-      case BdNumberCheckResult.alreadyActive:
-        await entitlement.refreshEntitlement(forceCarrierCheck: true);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                '✅ This number is already a MediTrack Premium subscriber. Activating your account...',
-              ),
-              backgroundColor: AppColors.success,
-            ),
-          );
-          Navigator.pop(context, true);
-        }
-        return;
-      case BdNumberCheckResult.notRegistered:
-        break;
-    }
-
-    final success = await bdService.sendOtp(mobileNumber: phone);
-    if (success) {
-      setState(() {
-        _otpSent = true;
-      });
+    if (checkResult == BdNumberCheckResult.alreadyActive) {
+      await _persistSubscription(normalized);
+      entitlement.updateSubscribedState(true);
+      await entitlement.refreshEntitlement(forceCarrierCheck: false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('OTP sent via SMS! Please enter the 6-digit code.'),
+            content: Text(
+              '✅ This number is already a MediTrack Premium subscriber. Activating your account...',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
+        Navigator.pop(context, true);
       }
-    } else {
-      if (mounted) {
+      return;
+    }
+
+    final success = await bdService.sendOtp(mobileNumber: normalized);
+    if (!mounted) return;
+
+    if (success) {
+      if (bdService.subscriptionStatus == 'REGISTERED') {
+        await _persistSubscription(normalized);
+        entitlement.updateSubscribedState(true);
+        await entitlement.refreshEntitlement(forceCarrierCheck: false);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(bdService.errorMessage ?? 'Failed to send OTP'),
-            backgroundColor: AppColors.danger,
+          const SnackBar(
+            content: Text('🎉 Your MediTrack Premium subscription is active!'),
+            backgroundColor: AppColors.success,
           ),
         );
+        Navigator.pop(context, true);
+        return;
       }
+      setState(() {
+        _otpSent = true;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('OTP sent via SMS! Please enter the 6-digit code.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(bdService.errorMessage ?? 'Failed to send OTP'),
+          backgroundColor: AppColors.danger,
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
@@ -169,10 +227,16 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
       return;
     }
 
+    final phone = _phoneController.text.trim();
+    final normalized = BdMobileValidator.normalize(phone);
+
     final success = await bdService.verifyOtp(otp: otp);
+    if (!mounted) return;
 
     if (success) {
-      await entitlement.refreshEntitlement(forceCarrierCheck: true);
+      await _persistSubscription(normalized);
+      entitlement.updateSubscribedState(true);
+      await entitlement.refreshEntitlement(forceCarrierCheck: false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -183,14 +247,12 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
         Navigator.pop(context, true);
       }
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(bdService.errorMessage ?? 'OTP verification failed'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(bdService.errorMessage ?? 'OTP verification failed'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
     }
   }
 

@@ -24,15 +24,31 @@ class SmsApiClient {
     required String phoneNumber,
     required String message,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/send_sms.php',
-      data: {
-        'user_mobile': phoneNumber,
-        'message': message,
-      },
-      options: _formEncoded,
-    );
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/send_sms.php',
+        data: {
+          'user_mobile': phoneNumber,
+          'message': message,
+        },
+        options: _formEncoded,
+      );
 
-    return SendSmsResponse.fromJson(response.data!);
+      return SendSmsResponse.fromJson(response.data!);
+    } on DioException catch (e) {
+      return SendSmsResponse(
+        success: false,
+        statusCode: e.response?.statusCode?.toString() ?? 'E1000',
+        statusDetail: e.message ?? 'Network error sending SMS',
+        error: e.message,
+      );
+    } catch (e) {
+      return SendSmsResponse(
+        success: false,
+        statusCode: 'E1000',
+        statusDetail: e.toString(),
+        error: e.toString(),
+      );
+    }
   }
 }
