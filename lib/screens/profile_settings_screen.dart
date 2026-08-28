@@ -569,49 +569,68 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
                 // 2. MEDITRACK PREMIUM / BD APPS STATUS
                 SoftSurface(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   borderRadius: AppRadii.cardRadius,
                   color: isPro
-                      ? (isDark ? const Color(0xFF152A1E) : AppColors.successLight)
-                      : (isDark ? AppColors.darkSurface : AppColors.surface),
+                      ? (isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : AppColors.successLight)
+                      : (isDark ? const Color(0xFF450A0A).withValues(alpha: 0.35) : AppColors.dangerLight),
+                  borderColor: isPro
+                      ? (isDark ? const Color(0xFF059669).withValues(alpha: 0.4) : const Color(0xFFA7F3D0))
+                      : (isDark ? const Color(0xFFDC2626).withValues(alpha: 0.4) : const Color(0xFFFECACA)),
+                  borderWidth: 1.2,
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isPro ? AppColors.success.withValues(alpha: 0.2) : AppColors.primaryBlueLight,
+                          color: isPro
+                              ? (isDark ? const Color(0xFF059669).withValues(alpha: 0.3) : AppColors.success.withValues(alpha: 0.15))
+                              : (isDark ? const Color(0xFFDC2626).withValues(alpha: 0.25) : AppColors.danger.withValues(alpha: 0.12)),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           isPro ? Icons.verified_rounded : Icons.workspace_premium_rounded,
-                          color: isPro ? AppColors.success : AppColors.primaryBlue,
-                          size: 24,
+                          color: isPro ? AppColors.success : AppColors.danger,
+                          size: 22,
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               isPro ? 'MediTrack Premium Active' : 'MediTrack Free Tier',
-                              style: AppTypography.headingSmall.copyWith(fontSize: 14),
+                              style: AppTypography.headingSmall.copyWith(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: isPro
+                                    ? (isDark ? const Color(0xFF6EE7B7) : const Color(0xFF065F46))
+                                    : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B)),
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               isPro
                                   ? 'Full AI, OCR & Family SMS alerts active'
-                                  : 'Upgrade for ৳2/day via Robi/Airtel',
-                              style: AppTypography.caption,
+                                  : 'Upgrade for ৳2.99/day via Robi / Airtel',
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 11,
+                                color: isPro
+                                    ? (isDark ? AppColors.darkTextSecondary : const Color(0xFF047857))
+                                    : (isDark ? AppColors.darkTextSecondary : const Color(0xFFB91C1C).withValues(alpha: 0.85)),
+                              ),
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
                       SoftPrimaryButton(
                         label: isPro ? 'Active' : 'Upgrade',
                         height: 34,
-                        width: 86,
-                        backgroundColor: isPro ? AppColors.success : AppColors.primaryBlue,
+                        width: 92,
+                        backgroundColor: isPro ? AppColors.success : AppColors.danger,
+                        icon: isPro ? Icons.check_rounded : Icons.bolt_rounded,
                         onPressed: () {
                           Navigator.push(
                             context,
