@@ -5,9 +5,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../logic/entitlement_guard.dart';
+import '../models/family_member.dart';
 import '../models/prescription.dart';
 import '../models/prescription_extraction.dart';
 import '../services/entitlement_service.dart';
+import '../services/family_service.dart';
 import '../services/prescription_service.dart';
 import '../services/prescription_extraction_service.dart';
 import '../logic/image_preflight.dart';
@@ -22,7 +24,9 @@ import '../widgets/soft_text_field.dart';
 import '../widgets/status_pill.dart';
 
 class ScanPrescriptionScreen extends StatefulWidget {
-  const ScanPrescriptionScreen({super.key});
+  final String? initialFamilyMemberId;
+
+  const ScanPrescriptionScreen({super.key, this.initialFamilyMemberId});
 
   @override
   State<ScanPrescriptionScreen> createState() => _ScanPrescriptionScreenState();
@@ -30,6 +34,7 @@ class ScanPrescriptionScreen extends StatefulWidget {
 
 class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
   final PrescriptionService _prescriptionService = PrescriptionService();
+  final FamilyService _familyService = FamilyService();
   final PrescriptionExtractionService _aiService =
       PrescriptionExtractionService();
 
@@ -37,6 +42,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
   bool _isAnalyzing = false;
   bool _isSaving = false;
   ImageQualityResult? _qualityResult;
+  String? _selectedFamilyMemberId;
 
   // Metadata form
   final _titleController = TextEditingController();
@@ -44,6 +50,12 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
   DateTime _visitDate = DateTime.now();
 
   List<PrescriptionItem> _extractedReviewItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFamilyMemberId = widget.initialFamilyMemberId;
+  }
 
   @override
   void dispose() {
@@ -285,6 +297,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
         extractedText: _extractedReviewItems
             .map((m) => '${m.extractedName} ${m.extractedStrength ?? ""}')
             .join(', '),
+        familyMemberId: _selectedFamilyMemberId,
         createdAt: DateTime.now(),
       );
 
@@ -299,6 +312,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
           prescriptionId: savedRx.id,
           items: _extractedReviewItems,
           prescriptionImageUrl: savedRx.imageUrl,
+          familyMemberId: _selectedFamilyMemberId,
         );
       }
 
@@ -484,6 +498,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                         },
                       ),
                     ),
+                    _buildFamilyMemberSelector(isDark),
                   ],
                 ),
               ),
@@ -746,6 +761,51 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildFamilyMemberSelector(bool isDark) {
+    return StreamBuilder<List<FamilyMember>>(
+      stream: _familyService.streamFamilyMembers(),
+      builder: (context, snapshot) {
+        final members = snapshot.data ?? [];
+        if (members.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Divider(height: 24),
+            Text(
+              'Assign to Family Member',
+              style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text('Myself'),
+                  selected: _selectedFamilyMemberId == null,
+                  onSelected: (selected) {
+                    if (selected) setState(() => _selectedFamilyMemberId = null);
+                  },
+                ),
+                ...members.map(
+                  (m) => ChoiceChip(
+                    label: Text(m.displayName),
+                    selected: _selectedFamilyMemberId == m.id,
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedFamilyMemberId = selected ? m.id : null;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

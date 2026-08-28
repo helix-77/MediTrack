@@ -319,6 +319,25 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 ),
                               ),
                               IconButton(
+                                icon: const Icon(
+                                  Icons.folder_shared_outlined,
+                                  color: AppColors.primaryBlue,
+                                  size: 22,
+                                ),
+                                tooltip: 'View Rx Vault',
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PrescriptionVaultScreen(
+                                        initialFamilyMemberId: m.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              IconButton(
                                 icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
                                 onPressed: () => _familyService.deleteFamilyMember(m.id),
                               ),

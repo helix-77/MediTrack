@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../models/family_member.dart';
 import '../models/prescription.dart';
 import '../models/prescription_extraction.dart';
+import '../services/family_service.dart';
 import '../services/prescription_service.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
@@ -16,7 +18,9 @@ import '../widgets/soft_modal_sheet.dart';
 import 'scan_prescription_screen.dart';
 
 class PrescriptionVaultScreen extends StatefulWidget {
-  const PrescriptionVaultScreen({super.key});
+  final String? initialFamilyMemberId;
+
+  const PrescriptionVaultScreen({super.key, this.initialFamilyMemberId});
 
   @override
   State<PrescriptionVaultScreen> createState() => _PrescriptionVaultScreenState();
@@ -24,9 +28,20 @@ class PrescriptionVaultScreen extends StatefulWidget {
 
 class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
   final PrescriptionService _prescriptionService = PrescriptionService();
+  final FamilyService _familyService = FamilyService();
+  String? _selectedFamilyMemberId;
 
-  void _showPrescriptionViewer(Prescription rx) {
+  @override
+  void initState() {
+    super.initState();
+    _selectedFamilyMemberId = widget.initialFamilyMemberId;
+  }
+
+  void _showPrescriptionViewer(Prescription rx, Map<String, String> memberNameMap) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final patientLabel = rx.familyMemberId != null
+        ? (memberNameMap[rx.familyMemberId] ?? 'Family Member')
+        : 'Myself';
 
     showAppModalBottomSheet(
       context: context,
@@ -60,16 +75,36 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (rx.doctorName != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Doctor: Dr. ${rx.doctorName!}',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.primaryBlue,
-                            fontWeight: FontWeight.w600,
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          if (rx.doctorName != null) ...[
+                            Text(
+                              'Dr. ${rx.doctorName!}',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.primaryBlue,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const Text(
+                              ' • ',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
+                          ],
+                          Flexible(
+                            child: Text(
+                              'Patient: $patientLabel',
+                              style: AppTypography.caption.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -211,6 +246,149 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
     );
   }
 
+  List<Prescription> _filterPrescriptions(List<Prescription> all) {
+    if (_selectedFamilyMemberId == 'self') {
+      return all.where((p) => p.familyMemberId == null).toList();
+    } else if (_selectedFamilyMemberId != null) {
+      return all
+          .where((p) => p.familyMemberId == _selectedFamilyMemberId)
+          .toList();
+    }
+    return all;
+  }
+
+  Widget _buildFamilyFilterChips(List<FamilyMember> members, bool isDark) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _buildFilterChipItem(
+            label: 'All Vaults',
+            isSelected: _selectedFamilyMemberId == null,
+            onSelected: () => setState(() => _selectedFamilyMemberId = null),
+            isDark: isDark,
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChipItem(
+            label: 'Myself',
+            isSelected: _selectedFamilyMemberId == 'self',
+            onSelected: () => setState(() => _selectedFamilyMemberId = 'self'),
+            isDark: isDark,
+          ),
+          const SizedBox(width: 8),
+          ...members.map(
+            (m) => Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: _buildFilterChipItem(
+                label: m.displayName,
+                isSelected: _selectedFamilyMemberId == m.id,
+                onSelected: () {
+                  setState(() {
+                    _selectedFamilyMemberId =
+                        _selectedFamilyMemberId == m.id ? null : m.id;
+                  });
+                },
+                isDark: isDark,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChipItem({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onSelected,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: onSelected,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryBlue
+              : (isDark ? AppColors.darkSurface : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isSelected
+              ? AppShadows.subtle
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(
+    List<FamilyMember> members,
+    Map<String, String> memberNameMap,
+  ) {
+    String title;
+    String description;
+    String buttonLabel;
+
+    if (_selectedFamilyMemberId == 'self') {
+      title = 'Your Vault is Empty';
+      description =
+          'Keep your doctor prescriptions, diagnostic reports, and medical advice safely organized in one place.';
+      buttonLabel = 'Scan Prescription for Myself';
+    } else if (_selectedFamilyMemberId != null) {
+      final name = memberNameMap[_selectedFamilyMemberId] ?? 'Family Member';
+      title = 'No Prescriptions for $name';
+      description =
+          'Store and track $name\'s doctor prescriptions, dosage plans, and medical records.';
+      buttonLabel = 'Scan Prescription for $name';
+    } else {
+      title = 'Your Vault is Empty';
+      description =
+          'Keep your doctor prescriptions, diagnostic reports, and medical advice safely organized in one place.';
+      buttonLabel = 'Scan First Prescription';
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: EmptyStateView(
+          icon: Icons.folder_shared_outlined,
+          title: title,
+          description: description,
+          buttonLabel: buttonLabel,
+          onButtonPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ScanPrescriptionScreen(
+                  initialFamilyMemberId: _selectedFamilyMemberId == 'self'
+                      ? null
+                      : _selectedFamilyMemberId,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -238,56 +416,72 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ScanPrescriptionScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => ScanPrescriptionScreen(
+                      initialFamilyMemberId: _selectedFamilyMemberId == 'self'
+                          ? null
+                          : _selectedFamilyMemberId,
+                    ),
+                  ),
                 );
               },
             ),
           ),
         ],
       ),
-      body: StreamBuilder<List<Prescription>>(
-        stream: _prescriptionService.streamPrescriptions(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryBlue),
-            );
-          }
+      body: StreamBuilder<List<FamilyMember>>(
+        stream: _familyService.streamFamilyMembers(),
+        builder: (context, familySnapshot) {
+          final familyMembers = familySnapshot.data ?? [];
+          final memberNameMap = {
+            for (final m in familyMembers) m.id: m.displayName,
+          };
 
-          final prescriptions = snapshot.data ?? [];
+          return StreamBuilder<List<Prescription>>(
+            stream: _prescriptionService.streamPrescriptions(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  !snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primaryBlue),
+                );
+              }
 
-          if (prescriptions.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: EmptyStateView(
-                  icon: Icons.folder_shared_outlined,
-                  title: 'Your Vault is Empty',
-                  description: 'Keep your doctor prescriptions, diagnostic reports, and medical advice safely organized in one place.',
-                  buttonLabel: 'Scan First Prescription',
-                  onButtonPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ScanPrescriptionScreen()),
-                    );
-                  },
-                ),
-              ),
-            );
-          }
+              final allPrescriptions = snapshot.data ?? [];
+              final prescriptions = _filterPrescriptions(allPrescriptions);
 
-          return GridView.builder(
-            padding: const EdgeInsets.all(20),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.78,
-              crossAxisSpacing: 14,
-              mainAxisSpacing: 14,
-            ),
-            itemCount: prescriptions.length,
-            itemBuilder: (context, index) {
-              final rx = prescriptions[index];
-              return _buildVaultGridCard(rx, isDark);
+              return Column(
+                children: [
+                  if (familyMembers.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                      child: _buildFamilyFilterChips(familyMembers, isDark),
+                    ),
+                  Expanded(
+                    child: prescriptions.isEmpty
+                        ? _buildEmptyState(familyMembers, memberNameMap)
+                        : GridView.builder(
+                            padding: const EdgeInsets.all(20),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.72,
+                              crossAxisSpacing: 14,
+                              mainAxisSpacing: 14,
+                            ),
+                            itemCount: prescriptions.length,
+                            itemBuilder: (context, index) {
+                              final rx = prescriptions[index];
+                              return _buildVaultGridCard(
+                                rx,
+                                isDark,
+                                memberNameMap,
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
             },
           );
         },
@@ -295,11 +489,19 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
     );
   }
 
-  Widget _buildVaultGridCard(Prescription rx, bool isDark) {
+  Widget _buildVaultGridCard(
+    Prescription rx,
+    bool isDark,
+    Map<String, String> memberNameMap,
+  ) {
+    final patientName = rx.familyMemberId != null
+        ? (memberNameMap[rx.familyMemberId] ?? 'Family')
+        : 'Myself';
+
     return SoftSurface(
       padding: EdgeInsets.zero,
       borderRadius: AppRadii.cardRadius,
-      onTap: () => _showPrescriptionViewer(rx),
+      onTap: () => _showPrescriptionViewer(rx, memberNameMap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -309,7 +511,9 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
               fit: StackFit.expand,
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(22),
+                  ),
                   child: _buildPrescriptionImage(
                     rx.imageUrl,
                     fit: BoxFit.cover,
@@ -344,10 +548,38 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  rx.doctorName != null ? 'Dr. ${rx.doctorName!}' : 'Doctor Visit',
-                  style: AppTypography.caption.copyWith(color: AppColors.primaryBlue),
+                  rx.doctorName != null
+                      ? 'Dr. ${rx.doctorName!}'
+                      : 'Doctor Visit',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.primaryBlue,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(
+                      rx.familyMemberId != null
+                          ? Icons.family_restroom_rounded
+                          : Icons.person_outline_rounded,
+                      size: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        patientName,
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -359,7 +591,9 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
                     ),
                     StatusPill(
                       label: rx.status.toUpperCase(),
-                      type: rx.status == 'reviewed' ? PillType.success : PillType.neutral,
+                      type: rx.status == 'reviewed'
+                          ? PillType.success
+                          : PillType.neutral,
                     ),
                   ],
                 ),

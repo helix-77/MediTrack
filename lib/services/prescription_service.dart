@@ -94,6 +94,7 @@ class PrescriptionService {
       extractedText: prescription.extractedText,
       notes: prescription.notes,
       status: prescription.status,
+      familyMemberId: prescription.familyMemberId,
       createdAt: prescription.createdAt,
     );
 
@@ -132,6 +133,7 @@ class PrescriptionService {
     required String prescriptionId,
     required List<PrescriptionItem> items,
     String? prescriptionImageUrl,
+    String? familyMemberId,
   }) async {
     final user = _authenticatedUser();
     final medicinesRef = _firestore
@@ -184,6 +186,7 @@ class PrescriptionService {
         lowStockThreshold: 5,
         imageUrl: prescriptionImageUrl,
         prescriptionId: prescriptionId,
+        familyMemberId: familyMemberId,
         schedule: schedule,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

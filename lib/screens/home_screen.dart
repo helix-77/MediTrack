@@ -912,7 +912,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const ScanPrescriptionScreen(),
+                        builder: (_) => ScanPrescriptionScreen(
+                          initialFamilyMemberId:
+                              _selectedFamilyMemberId == 'self'
+                                  ? null
+                                  : _selectedFamilyMemberId,
+                        ),
                       ),
                     );
                   },
@@ -928,7 +933,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const PrescriptionVaultScreen(),
+                        builder: (_) => PrescriptionVaultScreen(
+                          initialFamilyMemberId: _selectedFamilyMemberId,
+                        ),
                       ),
                     );
                   },
