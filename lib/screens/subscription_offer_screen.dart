@@ -531,13 +531,10 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
             _buildSubscriptionCard(isDark, isBusy, bdService, entitlement),
             const SizedBox(height: 28),
 
-            // ==================== FAQ ACCORDION ====================
-            _buildFaqSection(isDark),
-            const SizedBox(height: 20),
+            // // ==================== FAQ ACCORDION ====================
+            // _buildFaqSection(isDark),
+            // const SizedBox(height: 20),
 
-            // ==================== DISCLAIMER FOOTER ====================
-            _buildDisclaimerFooter(isDark),
-            const SizedBox(height: 36),
           ],
         ),
       ),
@@ -1268,83 +1265,47 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     );
   }
 
-  Widget _buildFaqSection(bool isDark) {
-    final faqs = [
-      {
-        'q': 'How does carrier billing work?',
-        'a':
-            'The daily fee of ৳2.99 (+VAT/taxes) is automatically charged directly from your Robi or Airtel mobile account balance. No credit card or bank account is required.',
-      },
-      {
-        'q': 'Can I cancel my subscription at any time?',
-        'a':
-            'Yes, absolutely. You can cancel instantly with zero penalty at any time from your Profile tab or by dialing *213# on your Robi/Airtel phone.',
-      },
-      {
-        'q': 'What happens if my SIM balance is low?',
-        'a':
-            'If your SIM balance is insufficient, your premium access will pause until balance is recharged. There are no overdraft penalties or hidden fees.',
-      },
-      {
-        'q': 'Is my medical data and prescriptions safe?',
-        'a':
-            'Your medical information and scanned prescriptions are stored securely under your private Firebase account with user-scoped security rules. We never share your health records with any third party.',
-      },
-    ];
+  // Widget _buildFaqSection(bool isDark) {
+  //   final faqs = [
+  //     {
+  //       'q': 'How does carrier billing work?',
+  //       'a':
+  //           'The daily fee of ৳2.99 (+VAT/taxes) is automatically charged directly from your Robi or Airtel mobile account balance. No credit card or bank account is required.',
+  //     },
+  //     {
+  //       'q': 'Can I cancel my subscription at any time?',
+  //       'a':
+  //           'Yes, absolutely. You can cancel instantly with zero penalty at any time from your Profile tab or by dialing *213# on your Robi/Airtel phone.',
+  //     },
+  //     {
+  //       'q': 'What happens if my SIM balance is low?',
+  //       'a':
+  //           'If your SIM balance is insufficient, your premium access will pause until balance is recharged. There are no overdraft penalties or hidden fees.',
+  //     },
+  //     {
+  //       'q': 'Is my medical data and prescriptions safe?',
+  //       'a':
+  //           'Your medical information and scanned prescriptions are stored securely under your private Firebase account with user-scoped security rules. We never share your health records with any third party.',
+  //     },
+  //   ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(
-          title: 'Frequently Asked Questions',
-        ),
-        const SizedBox(height: 6),
-        ...faqs.map(
-          (faq) => _FaqCard(
-            question: faq['q']!,
-            answer: faq['a']!,
-            isDark: isDark,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDisclaimerFooter(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkSurface.withValues(alpha: 0.5)
-            : AppColors.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.darkDivider : AppColors.divider.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.info_outline_rounded,
-            size: 16,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Medical Disclaimer: MediTrack AI suggestions and prescription extractions are for informational assistance only and do not replace certified medical consultation or emergency diagnosis.',
-              style: AppTypography.caption.copyWith(
-                fontSize: 10.5,
-                height: 1.35,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const SectionHeader(
+  //         title: 'Frequently Asked Questions',
+  //       ),
+  //       const SizedBox(height: 6),
+  //       ...faqs.map(
+  //         (faq) => _FaqCard(
+  //           question: faq['q']!,
+  //           answer: faq['a']!,
+  //           isDark: isDark,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }
 
 class _FaqCard extends StatefulWidget {
