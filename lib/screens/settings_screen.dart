@@ -11,7 +11,6 @@ import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../l10n/locale_notifier.dart';
-import '../l10n/app_strings.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_modal_sheet.dart';
 import '../widgets/soft_surface.dart';
@@ -41,18 +40,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             const Icon(Icons.logout_rounded, color: AppColors.danger),
             const SizedBox(width: 8),
-            Text('Log Out', style: AppTypography.headingMedium),
+            Text(context.tr('log_out'), style: AppTypography.headingMedium),
           ],
         ),
         content: Text(
-          'Are you sure you want to log out of your MediTrack account?',
+          context.tr('logout_confirm_msg'),
           style: AppTypography.bodySmall.copyWith(height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
-              'Cancel',
+              context.tr('cancel'),
               style: TextStyle(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? AppColors.darkTextSecondary
@@ -72,7 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 (route) => false,
               );
             },
-            child: const Text('Log Out', style: TextStyle(color: Colors.white)),
+            child: Text(context.tr('log_out'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -884,7 +883,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(context.tr('settings')),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           onPressed: () => Navigator.pop(context),
@@ -992,7 +991,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.notifications_active_outlined, color: AppColors.primaryBlue),
                       title: Text(
-                        'Pause Notifications',
+                        context.tr('pause_notifications'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
@@ -1008,7 +1007,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.tune_rounded, color: AppColors.primaryBlue),
                       title: Text(
-                        'Reminder & Alert Rules',
+                        context.tr('reminder_alert_rules'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
@@ -1034,7 +1033,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.dark_mode_outlined, color: AppColors.primaryBlue),
                       title: Text(
-                        'Dark Mode',
+                        context.tr('dark_mode'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
@@ -1050,7 +1049,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.language_rounded, color: AppColors.primaryBlue),
                       title: Text(
-                        'Language / ভাষা',
+                        context.tr('language'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
@@ -1073,13 +1072,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.access_time_rounded, color: AppColors.primaryBlue),
                       title: Text(
-                        'Routine Time Schedule',
+                        context.tr('routine_time_schedule'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
                       ),
                       subtitle: Text(
-                        'Set Morning, Noon, Evening & Night home grid ranges',
+                        context.tr('routine_schedule_sub'),
                         style: AppTypography.caption.copyWith(
                           color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                         ),
@@ -1096,13 +1095,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.sms_outlined, color: AppColors.primaryBlue),
                       title: Text(
-                        'BD Apps SMS Service',
+                        context.tr('bdapps_sms_service'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
                       ),
                       subtitle: Text(
-                        'Carrier alert diagnostics',
+                        context.tr('carrier_alert_diagnostics'),
                         style: AppTypography.caption.copyWith(
                           color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                         ),
@@ -1128,7 +1127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.help_outline_rounded, color: AppColors.primaryBlue),
                       title: Text(
-                        'FAQ & Help Guide',
+                        context.tr('faq_help_guide'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
@@ -1145,7 +1144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.info_outline_rounded, color: AppColors.primaryBlue),
                       title: Text(
-                        'Terms of Service',
+                        context.tr('terms_of_service'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
@@ -1162,7 +1161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.shield_outlined, color: AppColors.primaryBlue),
                       title: Text(
-                        'Privacy & Security Policy',
+                        context.tr('privacy_policy'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
@@ -1179,7 +1178,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.delete_outline, color: AppColors.danger),
                       title: Text(
-                        'Delete Account',
+                        context.tr('delete_account'),
                         style: AppTypography.bodyMedium.copyWith(
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
@@ -1218,7 +1217,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           const Icon(Icons.logout_rounded, color: AppColors.danger, size: 20),
                           const SizedBox(width: 8),
                           Text(
-                            'Log Out',
+                            context.tr('log_out'),
                             style: AppTypography.buttonText.copyWith(
                               color: AppColors.danger,
                               fontWeight: FontWeight.w700,

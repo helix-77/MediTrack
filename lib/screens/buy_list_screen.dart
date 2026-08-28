@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/locale_notifier.dart';
 import '../models/buy_list_item.dart';
 import '../models/medicine.dart';
 import '../services/buy_list_service.dart';
@@ -244,7 +245,7 @@ class _BuyListScreenState extends State<BuyListScreen> {
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
         title: Text(
-          'Medicine Buy List',
+          context.tr('buy_list_title'),
           style: AppTypography.headingMedium.copyWith(
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
@@ -356,10 +357,9 @@ class _BuyListScreenState extends State<BuyListScreen> {
                     // Grouped View: Auto Low-Stock Refills Section
                     if (lowStockItems.isNotEmpty) ...[
                       SectionHeader(
-                        title: 'Low-Stock Refills',
-                        // subtitle: 'Auto-detected from your active medicines',
+                        title: context.isBangla ? 'স্বল্প স্টকের রিফিল' : 'Low-Stock Refills',
                         trailing: StatusPill(
-                          label: '${lowStockItems.where((i) => !i.isPurchased).length} to buy',
+                          label: '${lowStockItems.where((i) => !i.isPurchased).length} ${context.isBangla ? 'টি কিনতে হবে' : 'to buy'}',
                           type: PillType.warning,
                         ),
                       ),
@@ -370,10 +370,9 @@ class _BuyListScreenState extends State<BuyListScreen> {
 
                     // Grouped View: Custom Shopping Items Section
                     SectionHeader(
-                      title: 'General Supplies & Custom',
-                      // subtitle: 'Supplements, first-aid & OTC items',
+                      title: context.isBangla ? 'সাধারণ সরবরাহ ও অন্যান্য' : 'General Supplies & Custom',
                       trailing: StatusPill(
-                        label: '${customItems.where((i) => !i.isPurchased).length} to buy',
+                        label: '${customItems.where((i) => !i.isPurchased).length} ${context.isBangla ? 'টি কিনতে হবে' : 'to buy'}',
                         type: PillType.primary,
                       ),
                     ),
@@ -381,9 +380,11 @@ class _BuyListScreenState extends State<BuyListScreen> {
                     if (customItems.isEmpty && lowStockItems.isEmpty)
                       EmptyStateView(
                         icon: Icons.shopping_bag_outlined,
-                        title: 'Your Buy List is Empty',
-                        description: 'Add prescription refills, supplements, or medical items to track your purchases.',
-                        buttonLabel: 'Add First Item',
+                        title: context.tr('buy_list_empty'),
+                        description: context.isBangla
+                            ? 'আপনার কেনাকাটার তালিকায় কোনো ওষুধ বা সামগ্রী নেই।'
+                            : 'Add prescription refills, supplements, or medical items to track your purchases.',
+                        buttonLabel: context.isBangla ? 'প্রথম আইটেম যোগ করুন' : 'Add First Item',
                         onButtonPressed: () => _showAddBuyItemDialog(allMedicines: medicines),
                       )
                     else if (customItems.isEmpty)

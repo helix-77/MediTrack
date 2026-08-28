@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import '../l10n/locale_notifier.dart';
 import '../logic/entitlement_guard.dart';
 import '../services/pharmacy_service.dart';
 import '../theme/colors.dart';
@@ -91,7 +92,7 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
-        title: const Text('Nearby Pharmacies'),
+        title: Text(context.tr('nearby_pharmacies_title')),
         leading: Padding(
           padding: const EdgeInsets.only(left: 12.0),
           child: SoftIconButton(
@@ -117,14 +118,17 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
           const SizedBox(height: 24),
 
           // Categorized Quick Searches
-          const SectionHeader(
-            title: 'Pharmacy Categories',
-            subtitle: 'Find specialized medical dispensaries in Bangladesh',
+          SectionHeader(
+            title: context.isBangla ? 'ফার্মেসি ক্যাটাগরি' : 'Pharmacy Categories',
+            subtitle: context.isBangla
+                ? 'বাংলাদেশে বিশেষায়িত ওষুধ ও চিকিৎসা সামগ্রীর দোকান'
+                : 'Find specialized medical dispensaries in Bangladesh',
           ),
           _buildCategoryCard(
-            title: '24-Hour Emergency Pharmacies',
-            subtitle:
-                'Find open overnight pharmacies and critical medicine dispensaries',
+            title: context.isBangla ? '২৪ ঘণ্টা জরুরি ফার্মেসি' : '24-Hour Emergency Pharmacies',
+            subtitle: context.isBangla
+                ? 'সারারাত খোলা ফার্মেসি ও জরুরি ওষুধের দোকান'
+                : 'Find open overnight pharmacies and critical medicine dispensaries',
             icon: Icons.access_time_filled_rounded,
             color: AppColors.accentPink,
             onTap: () => _launchMaps('24 hour pharmacy'),
@@ -132,9 +136,10 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
           ),
           const SizedBox(height: 12),
           _buildCategoryCard(
-            title: 'Hospital & Model Pharmacies',
-            subtitle:
-                'Verified government model pharmacies & hospital dispensaries',
+            title: context.isBangla ? 'হাসপাতাল ও মডেল ফার্মেসি' : 'Hospital & Model Pharmacies',
+            subtitle: context.isBangla
+                ? 'অনুমোদিত মডেল ফার্মেসি ও হাসপাতাল ডিসপেনসারি'
+                : 'Verified government model pharmacies & hospital dispensaries',
             icon: Icons.local_hospital_rounded,
             color: AppColors.primaryBlue,
             onTap: () => _launchMaps('model pharmacy hospital'),
@@ -142,9 +147,10 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
           ),
           const SizedBox(height: 12),
           _buildCategoryCard(
-            title: 'Medicine & Surgical Stores',
-            subtitle:
-                'Retail chemist shops, first aid supplies & surgical goods',
+            title: context.isBangla ? 'ওষুধ ও সার্জিক্যাল স্টোর' : 'Medicine & Surgical Stores',
+            subtitle: context.isBangla
+                ? 'খুচরা ওষুধের দোকান, প্রাথমিক চিকিৎসা ও সার্জিক্যাল পণ্য'
+                : 'Retail chemist shops, first aid supplies & surgical goods',
             icon: Icons.medical_services_rounded,
             color: AppColors.accentOrange,
             onTap: () => _launchMaps('medicine store chemist'),

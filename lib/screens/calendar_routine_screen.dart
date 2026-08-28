@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../l10n/locale_notifier.dart';
 import '../models/family_member.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
@@ -34,38 +35,19 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
   late final int _totalDays;
   DateTime _selectedDate = DateTime.now();
 
-  static const double _itemWidth = 58.0;
-  static const double _itemMargin = 8.0;
-  static const double _totalItemWidth = _itemWidth + _itemMargin;
-
-  int _daysBetween(DateTime from, DateTime to) {
-    final fromUtc = DateTime.utc(from.year, from.month, from.day);
-    final toUtc = DateTime.utc(to.year, to.month, to.day);
-    return toUtc.difference(fromUtc).inDays;
-  }
-
-  DateTime _getDateForIndex(int index) {
-    return DateTime(_startDate.year, _startDate.month, _startDate.day + index);
-  }
+  static const double _itemWidth = 56.0;
+  static const double _itemMargin = 10.0;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    _selectedDate = today;
-    _startDate = DateTime(today.year, today.month, today.day - 90);
-    final endDate = DateTime(today.year, today.month, today.day + 90);
-    _totalDays = _daysBetween(_startDate, endDate) + 1;
-
-    final initialIndex = _daysBetween(_startDate, _selectedDate);
-    const estimatedViewportWidth = 360.0;
-    final initialOffset = ((initialIndex * _totalItemWidth) + (_itemWidth / 2) - (estimatedViewportWidth / 2))
-        .clamp(0.0, double.infinity);
-    _dateScrollController = ScrollController(initialScrollOffset: initialOffset);
+    _startDate = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 30));
+    _totalDays = 61; // 30 days past + today + 30 days future
+    _dateScrollController = ScrollController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToDate(_selectedDate, animate: false);
+      _scrollToDate(DateTime.now(), animate: false);
     });
   }
 
@@ -76,16 +58,20 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
   }
 
   void _scrollToDate(DateTime date, {bool animate = true}) {
-    if (!_dateScrollController.hasClients) return;
-    final index = _daysBetween(_startDate, date);
+    final index = date.difference(_startDate).inDays;
     if (index < 0 || index >= _totalDays) return;
 
-    final screenWidth = MediaQuery.of(context).size.width - 40;
-    final targetOffset = (index * _totalItemWidth) + (_itemWidth / 2) - (screenWidth / 2);
-    final maxScroll = _dateScrollController.position.maxScrollExtent;
-    final clampedOffset = maxScroll > 0
-        ? targetOffset.clamp(0.0, maxScroll)
-        : (targetOffset < 0 ? 0.0 : targetOffset);
+    final targetOffset = (index * (_itemWidth + _itemMargin)) -
+        (MediaQuery.of(context).size.width / 2) +
+        (_itemWidth / 2) +
+        20.0;
+
+    if (!_dateScrollController.hasClients) return;
+
+    final clampedOffset = targetOffset.clamp(
+      0.0,
+      _dateScrollController.position.maxScrollExtent,
+    );
 
     if (animate) {
       _dateScrollController.animateTo(
@@ -102,17 +88,37 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  DateTime _getDateForIndex(int index) {
+    return _startDate.add(Duration(days: index));
+  }
+
   Future<void> _pickCustomDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: _startDate,
-      lastDate: _getDateForIndex(_totalDays - 1),
+      lastDate: _startDate.add(Duration(days: _totalDays - 1)),
+      builder: (context, child) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: AppColors.primaryBlue,
+                    surface: AppColors.darkSurface,
+                  )
+                : const ColorScheme.light(
+                    primary: AppColors.primaryBlue,
+                  ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) {
-      final normalizedPicked = DateTime(picked.year, picked.month, picked.day);
-      setState(() => _selectedDate = normalizedPicked);
-      _scrollToDate(normalizedPicked, animate: true);
+      setState(() => _selectedDate = picked);
+      _scrollToDate(picked, animate: true);
     }
   }
 
@@ -126,7 +132,7 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
         title: Text(
-          'Routine Dashboard',
+          context.tr('schedule_and_routine'),
           style: AppTypography.headingMedium.copyWith(
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
@@ -138,7 +144,7 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
               icon: Icons.calendar_month_rounded,
               iconColor: AppColors.primaryBlue,
               size: 40,
-              tooltip: 'Pick Date',
+              tooltip: context.isBangla ? 'তারিখ নির্বাচন' : 'Pick Date',
               onPressed: _pickCustomDate,
             ),
           ),
@@ -171,23 +177,19 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
               return ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 children: [
-                  // Family Member Filter Chips
                   _buildFamilyFilterChips(familyFilter, isDark),
 
-                  // Date Bar Selector
                   _buildDateSelectorBar(isDark),
                   const SizedBox(height: 18),
 
-                  // Daily Intake Progress Card
                   _buildProgressCard(takenDoses, totalDoses, progress, isToday, isDark),
                   const SizedBox(height: 24),
 
-                  // Routine Timeline Section Header
                   SectionHeader(
-                    title: 'Scheduled Timeline',
+                    title: context.tr('scheduled_timeline'),
                     subtitle: DateFormat('EEEE, MMM d, yyyy').format(_selectedDate),
                     trailing: StatusPill(
-                      label: '$totalDoses dose(s)',
+                      label: '$totalDoses ${context.isBangla ? 'টি ডোজ' : 'dose(s)'}',
                       type: PillType.primary,
                     ),
                   ),
@@ -196,8 +198,10 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
                   if (dayItems.isEmpty)
                     EmptyStateView(
                       icon: Icons.calendar_today_rounded,
-                      title: 'No Doses Scheduled',
-                      description: 'No active medicine doses are scheduled for ${DateFormat('EEE, MMM d').format(_selectedDate)}.',
+                      title: context.tr('no_doses_today'),
+                      description: context.isBangla
+                          ? 'এই তারিখে কোনো ওষুধ নির্ধারিত নেই।'
+                          : 'No active medicine doses are scheduled for ${DateFormat('EEE, MMM d').format(_selectedDate)}.',
                     )
                   else
                     ...dayItems.map((item) => _buildTimelineDoseCard(item, isDark)),
@@ -225,7 +229,7 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
             child: Row(
               children: [
                 _buildFilterChipItem(
-                  label: 'Myself',
+                  label: context.isBangla ? 'আমি নিজে' : 'Myself',
                   isSelected: familyFilter.isSelf,
                   onSelected: () => familyFilter.selectSelf(),
                   isDark: isDark,

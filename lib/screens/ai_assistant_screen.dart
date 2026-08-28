@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/locale_notifier.dart';
 import '../models/buy_list_item.dart';
 import '../models/medicine.dart';
 import '../models/medicine_schedule.dart';
@@ -421,7 +422,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'AI Assistant',
+              context.tr('ai_health_assistant'),
               style: AppTypography.headingMedium.copyWith(
                 color: isDark
                     ? AppColors.darkTextPrimary
@@ -461,7 +462,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'AI advice is for reference. Consult your registered doctor for clinical decisions.',
+                    context.tr('safety_disclaimer'),
                     style: AppTypography.caption.copyWith(fontSize: 10.5),
                   ),
                 ),
@@ -481,7 +482,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'MediTrack AI is a Premium feature (৳2.99/day)',
+                      context.isBangla ? 'মেডিট্র্যাক এআই প্রিমিয়াম সেবা (৳২.৯৯/দিন)' : 'MediTrack AI is a Premium feature (৳2.99/day)',
                       style: AppTypography.caption.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.warning,
@@ -496,7 +497,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                       ),
                     ),
                     child: Text(
-                      'Subscribe ⚡',
+                      context.isBangla ? 'সাবস্ক্রাইব ⚡' : 'Subscribe ⚡',
                       style: AppTypography.caption.copyWith(
                         fontWeight: FontWeight.w700,
                         color: AppColors.primaryBlue,
@@ -929,7 +930,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                       : AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Send message...',
+                  hintText: context.tr('ask_ai_hint'),
                   hintStyle: AppTypography.bodyMedium.copyWith(
                     color: isDark
                         ? AppColors.darkTextSecondary

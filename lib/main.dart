@@ -171,9 +171,15 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
       child: Builder(
         builder: (context) {
           final themeNotifier = context.watch<ThemeNotifier>();
+          final localeNotifier = context.watch<LocaleNotifier>();
           return MaterialApp(
             navigatorKey: appNavigatorKey,
             title: 'MediTrack',
+            locale: localeNotifier.locale,
+            supportedLocales: const [
+              Locale('en', 'US'),
+              Locale('bn', 'BD'),
+            ],
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

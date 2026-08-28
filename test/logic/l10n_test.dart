@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:meditrack/l10n/app_strings.dart';
 import 'package:meditrack/l10n/locale_notifier.dart';
 
 void main() {
@@ -9,7 +8,7 @@ void main() {
       expect(AppStrings.get('app_title', AppLanguage.bangla), 'মেডিট্র্যাক');
 
       expect(AppStrings.get('ongoing_routine', AppLanguage.english), 'Ongoing Routine');
-      expect(AppStrings.get('ongoing_routine', AppLanguage.bangla), 'বর্তমান রুটিন');
+      expect(AppStrings.get('ongoing_routine', AppLanguage.bangla), 'চলমান রুটিন');
 
       expect(AppStrings.get('take_now', AppLanguage.bangla), 'খেয়েছি');
     });

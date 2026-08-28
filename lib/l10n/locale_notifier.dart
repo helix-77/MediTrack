@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app_strings.dart';
+
+export 'app_strings.dart';
 
 class LocaleNotifier extends ChangeNotifier {
   static const String _prefKey = 'app_language';
@@ -8,6 +11,9 @@ class LocaleNotifier extends ChangeNotifier {
 
   AppLanguage get currentLanguage => _currentLanguage;
   bool get isBangla => _currentLanguage == AppLanguage.bangla;
+  Locale get locale => _currentLanguage == AppLanguage.bangla
+      ? const Locale('bn', 'BD')
+      : const Locale('en', 'US');
 
   LocaleNotifier() {
     _loadFromPrefs();
@@ -25,6 +31,7 @@ class LocaleNotifier extends ChangeNotifier {
   }
 
   Future<void> setLanguage(AppLanguage language) async {
+    if (_currentLanguage == language) return;
     _currentLanguage = language;
     notifyListeners();
     try {
@@ -33,7 +40,20 @@ class LocaleNotifier extends ChangeNotifier {
     } catch (_) {}
   }
 
-  String tr(String key) {
-    return AppStrings.get(key, _currentLanguage);
+  String tr(String key, [Map<String, String>? params]) {
+    return AppStrings.get(key, _currentLanguage, params);
   }
 }
+
+extension LocalizationExtension on BuildContext {
+  LocaleNotifier get localeNotifier => watch<LocaleNotifier>();
+  bool get isBangla => watch<LocaleNotifier>().isBangla;
+  String tr(String key, [Map<String, String>? params]) =>
+      watch<LocaleNotifier>().tr(key, params);
+}
+
+extension StringLocalizationExtension on String {
+  String tr(BuildContext context, [Map<String, String>? params]) =>
+      context.tr(this, params);
+}
+

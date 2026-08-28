@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/locale_notifier.dart';
 import '../models/user_profile.dart';
 import '../models/family_member.dart';
 import '../services/avatar_service.dart';
@@ -367,7 +368,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
-        title: const Text('My Profile'),
+        title: Text(context.tr('profile_and_family')),
         actions: [
           // Streak / Adherence Badge
           Container(
@@ -540,7 +541,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             _buildFilterChip(
                               index: 0,
                               icon: Icons.edit_outlined,
-                              label: 'Edit Profile',
+                              label: context.isBangla ? 'প্রোফাইল সম্পাদনা' : 'Edit Profile',
                               isDark: isDark,
                               onTap: () {
                                 Navigator.push(
@@ -555,7 +556,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             _buildFilterChip(
                               index: 1,
                               icon: Icons.group_outlined,
-                              label: 'Family',
+                              label: context.tr('family_members'),
                               isDark: isDark,
                               onTap: _showFamilyMembersBottomSheet,
                             ),
@@ -653,7 +654,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Health Profile',
+                            context.tr('clinical_health_profile'),
                             style: AppTypography.headingSmall.copyWith(
                               fontSize: 14,
                               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -662,7 +663,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           GestureDetector(
                             onTap: () => _showEditHealthProfileBottomSheet(profile),
                             child: Text(
-                              'Edit',
+                              context.tr('edit'),
                               style: AppTypography.caption.copyWith(
                                 color: AppColors.primaryBlue,
                                 fontWeight: FontWeight.w700,
@@ -673,8 +674,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ),
                       const SizedBox(height: 10),
                       _buildHealthItemRow(
-                        label: 'Blood Group',
-                        value: profile.bloodGroup ?? 'Not set',
+                        label: context.tr('blood_group'),
+                        value: profile.bloodGroup ?? (context.isBangla ? 'নির্ধারিত নেই' : 'Not set'),
                         isDark: isDark,
                       ),
                       Divider(
@@ -683,8 +684,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         color: isDark ? AppColors.darkDivider : const Color(0xFFF1F5F9),
                       ),
                       _buildHealthItemRow(
-                        label: 'Allergies',
-                        value: profile.allergies ?? 'None reported',
+                        label: context.tr('allergies'),
+                        value: profile.allergies ?? (context.isBangla ? 'কোনো অ্যালার্জি নেই' : 'None reported'),
                         isDark: isDark,
                       ),
                     ],
@@ -700,8 +701,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.shopping_basket_outlined, color: AppColors.primaryBlue),
-                        title: Text('Medicine Buy & Restock List', style: AppTypography.bodyMedium),
-                        subtitle: Text('Track purchases, refills & medical supplies', style: AppTypography.caption),
+                        title: Text(context.tr('buy_list_title'), style: AppTypography.bodyMedium),
+                        subtitle: Text(
+                          context.isBangla ? 'ওষুধ কেনা, রিফিল ও সরবরাহের হিসাব' : 'Track purchases, refills & medical supplies',
+                          style: AppTypography.caption,
+                        ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
                           Navigator.push(
@@ -714,8 +718,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.primaryBlue),
-                        title: Text('Generate Doctor Visit Summary', style: AppTypography.bodyMedium),
-                        subtitle: Text('Export adherence report for physician', style: AppTypography.caption),
+                        title: Text(context.tr('export_pdf'), style: AppTypography.bodyMedium),
+                        subtitle: Text(
+                          context.isBangla ? 'চিকিৎসকের জন্য স্বাস্থ্য রিপোর্টের সারাংশ' : 'Export adherence report for physician',
+                          style: AppTypography.caption,
+                        ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
                           Navigator.push(
@@ -728,8 +735,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.folder_shared_outlined, color: AppColors.primaryBlue),
-                        title: Text('Prescription Digital Vault', style: AppTypography.bodyMedium),
-                        subtitle: Text('Scanned doctor prescriptions & archives', style: AppTypography.caption),
+                        title: Text(context.tr('prescription_vault'), style: AppTypography.bodyMedium),
+                        subtitle: Text(
+                          context.isBangla ? 'ডিজিটাল প্রেসক্রিপশন ও আর্কাইভসমূহ' : 'Scanned doctor prescriptions & archives',
+                          style: AppTypography.caption,
+                        ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
                           Navigator.push(
@@ -742,8 +752,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.search_rounded, color: AppColors.primaryBlue),
-                        title: Text('Medicine Price & Generic Lookup', style: AppTypography.bodyMedium),
-                        subtitle: Text('DGDA Bangladesh database & cheaper brands', style: AppTypography.caption),
+                        title: Text(context.tr('price_lookup'), style: AppTypography.bodyMedium),
+                        subtitle: Text(
+                          context.isBangla ? 'বাংলাদেশ ডিজিডিএ ডেটাবেজ ও বিকল্প ব্র্যান্ড' : 'DGDA Bangladesh database & cheaper brands',
+                          style: AppTypography.caption,
+                        ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
                           Navigator.push(
@@ -756,8 +769,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.local_pharmacy_outlined, color: AppColors.primaryBlue),
-                        title: Text('Find Nearby 24/7 Pharmacies', style: AppTypography.bodyMedium),
-                        subtitle: Text('GPS directions to licensed drugstores', style: AppTypography.caption),
+                        title: Text(context.tr('nearby_pharmacies_title'), style: AppTypography.bodyMedium),
+                        subtitle: Text(
+                          context.isBangla ? 'নিকটবর্তী ফার্মেসির জিপিএস দিকনির্দেশনা' : 'GPS directions to licensed drugstores',
+                          style: AppTypography.caption,
+                        ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
                           Navigator.push(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../l10n/locale_notifier.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
 import '../models/user_profile.dart';
@@ -41,11 +42,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final UserProfileService _profileService = UserProfileService();
   final FamilyService _familyService = FamilyService();
 
-  String _getGreetingSubtitle() {
+  String _getGreetingSubtitle(BuildContext context) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return context.tr('good_morning');
+    if (hour < 17) return context.tr('good_afternoon');
+    return context.tr('good_evening');
   }
 
   @override
@@ -60,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
           stream: _profileService.streamProfile(),
           builder: (context, profileSnapshot) {
             final profile = profileSnapshot.data;
-            final fullName = profile?.displayName.trim() ?? 'User';
+            final fullName = profile?.displayName.trim() ?? (context.isBangla ? 'ব্যবহারকারী' : 'User');
             final userInitial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
 
             return StreamBuilder<List<Medicine>>(
@@ -105,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         // 1. Top Header: Greeting + Headline + Avatar
                         _buildTopHeader(
-                          greeting: _getGreetingSubtitle(),
+                          greeting: _getGreetingSubtitle(context),
                           name: fullName,
                           initial: userInitial,
                           isDark: isDark,
@@ -179,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Stay on top of your health',
+                context.isBangla ? 'স্বাস্থ্যের যত্ন নিন সঠিক সময়ে' : 'Stay on top of your health',
                 style: AppTypography.displayLarge.copyWith(
                   fontSize: 22,
                   height: 1.2,
@@ -200,29 +201,27 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(builder: (_) => const ProfileSettingsScreen()),
             );
           },
-          child: Builder(
-            builder: (context) {
-              final avatarNotifier = context.watch<AvatarNotifier>();
+          child: Consumer<AvatarNotifier>(
+            builder: (context, avatarNotifier, _) {
+              final file = avatarNotifier.avatarFile;
               return Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0EDFE),
                   shape: BoxShape.circle,
+                  color: isDark ? AppColors.darkSurface : Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primaryBlue.withValues(alpha: 0.12),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.10),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: ClipOval(
-                  child: avatarNotifier.avatarFile != null
+                  child: file != null
                       ? Image.file(
-                          avatarNotifier.avatarFile!,
-                          width: 48,
-                          height: 48,
+                          file,
                           fit: BoxFit.cover,
                         )
                       : Center(
@@ -256,8 +255,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     final percentInt = (progress * 100).round();
     final subtext = total == 0
-        ? 'Add your active medications below'
-        : '$completed of $total doses completed today';
+        ? (context.isBangla ? 'নিচে আপনার নিয়মিত ওষুধ যুক্ত করুন' : 'Add your active medications below')
+        : (context.isBangla
+            ? 'আজকের $total টির মধ্যে $completed টি ডোজ সম্পন্ন হয়েছে'
+            : '$completed of $total doses completed today');
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -296,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          "TODAY'S HEALTH",
+                          context.tr('daily_adherence').toUpperCase(),
                           style: AppTypography.caption.copyWith(
                             color: AppColors.primaryBlue,
                             fontWeight: FontWeight.w800,
@@ -360,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 18),
-        ]
+        ],
       ),
     );
   }
@@ -421,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final slots = [
       _TimeSlotData(
-        title: 'Morning',
+        title: context.tr('morning'),
         timeRange: schedule.getMorningRange(),
         icon: Icons.wb_sunny_rounded,
         accentColor: const Color(0xFFF97316),
@@ -429,7 +430,7 @@ class _HomeScreenState extends State<HomeScreen> {
         doses: morningDoses,
       ),
       _TimeSlotData(
-        title: 'Noon',
+        title: context.tr('noon'),
         timeRange: schedule.getNoonRange(),
         icon: Icons.wb_twilight_rounded,
         accentColor: const Color(0xFFEC4899),
@@ -437,7 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
         doses: noonDoses,
       ),
       _TimeSlotData(
-        title: 'Evening',
+        title: context.tr('evening'),
         timeRange: schedule.getEveningRange(),
         icon: Icons.nights_stay_outlined,
         accentColor: const Color(0xFFA855F7),
@@ -445,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
         doses: eveningDoses,
       ),
       _TimeSlotData(
-        title: 'Night',
+        title: context.tr('night'),
         timeRange: schedule.getNightRange(),
         icon: Icons.nightlight_round,
         accentColor: const Color(0xFF3B82F6),
@@ -461,7 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Ongoing Routine',
+              context.tr('ongoing_routine'),
               style: AppTypography.headingMedium.copyWith(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -476,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
               child: Text(
-                'Calendar View →',
+                context.isBangla ? 'ক্যালেন্ডার ভিউ →' : 'Calendar View →',
                 style: AppTypography.caption.copyWith(
                   color: AppColors.primaryBlue,
                   fontWeight: FontWeight.w700,
@@ -489,10 +490,10 @@ class _HomeScreenState extends State<HomeScreen> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: 4,
+          itemCount: slots.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.18,
+            childAspectRatio: 1.25,
             crossAxisSpacing: 14,
             mainAxisSpacing: 14,
           ),
@@ -621,7 +622,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${slot.title} Routine',
+                          context.isBangla ? '${slot.title}র রুটিন' : '${slot.title} Routine',
                           style: AppTypography.headingMedium,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -646,7 +647,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20),
                 child: Center(
                   child: Text(
-                    'No doses scheduled for ${slot.title.toLowerCase()}',
+                    context.isBangla
+                        ? '${slot.title}র জন্য কোনো ওষুধ নির্ধারিত নেই'
+                        : 'No doses scheduled for ${slot.title.toLowerCase()}',
                     style: AppTypography.bodySmall,
                   ),
                 ),
@@ -708,9 +711,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(width: 8),
                           isTaken
-                              ? const StatusPill(label: 'Taken', type: PillType.success)
+                              ? StatusPill(label: context.tr('taken'), type: PillType.success)
                               : SoftPrimaryButton(
-                                  label: 'Take',
+                                  label: context.tr('take_now'),
                                   height: 36,
                                   width: 80,
                                   backgroundColor: slot.accentColor,
@@ -753,10 +756,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildLowStockRefillBanner(List<Medicine> lowStockMeds, bool isDark) {
     final count = lowStockMeds.length;
     final medNames = lowStockMeds
-        .map((m) => '${m.name} (${m.quantityCurrent} left)')
+        .map((m) => '${m.name} (${m.quantityCurrent} ${context.tr('left_in_stock')})')
         .take(3)
         .join(', ');
-    final moreText = count > 3 ? ' +${count - 3} more' : '';
+    final moreText = count > 3 ? ' +${count - 3} ${context.isBangla ? 'আরও' : 'more'}' : '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -792,7 +795,9 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Refill Alert ($count low stock)',
+                  context.isBangla
+                      ? 'রিফিল সতর্কতা ($count টি ওষুধের স্টক কম)'
+                      : 'Refill Alert ($count low stock)',
                   style: AppTypography.headingSmall.copyWith(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -829,17 +834,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Text(
-                    'Buy List',
-                    style: TextStyle(
+                    context.tr('buy_list'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(width: 2),
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 13),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 13),
                 ],
               ),
             ),
@@ -867,7 +872,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Smart Health Tools',
+                      context.tr('quick_tools'),
                       style: AppTypography.headingMedium.copyWith(
                         fontWeight: FontWeight.w700,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -898,7 +903,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Expanded(
                 child: SoftPrimaryButton(
-                  label: 'Scan Rx',
+                  label: context.tr('scan_rx'),
                   icon: Icons.document_scanner_rounded,
                   height: 44,
                   onPressed: () {
@@ -918,7 +923,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: SoftSecondaryButton(
-                  label: 'Rx Vault',
+                  label: context.tr('rx_vault'),
                   icon: Icons.folder_shared_outlined,
                   height: 44,
                   onPressed: () {
@@ -944,7 +949,9 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildQuickActionChip(
                   icon: Icons.shopping_basket_outlined,
-                  label: lowStockCount > 0 ? 'Buy List ($lowStockCount)' : 'Buy List',
+                  label: lowStockCount > 0
+                      ? '${context.tr("buy_list")} ($lowStockCount)'
+                      : context.tr('buy_list'),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -958,7 +965,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 _buildQuickActionChip(
                   icon: Icons.search_rounded,
-                  label: 'Price & Info',
+                  label: context.tr('price_lookup'),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -972,7 +979,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 _buildQuickActionChip(
                   icon: Icons.local_pharmacy_outlined,
-                  label: 'Pharmacies',
+                  label: context.tr('pharmacies'),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -986,7 +993,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 _buildQuickActionChip(
                   icon: Icons.description_outlined,
-                  label: 'Doctor Summary',
+                  label: context.tr('pdf_export'),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -1059,7 +1066,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               children: [
                 _buildFilterChipItem(
-                  label: 'Myself',
+                  label: context.isBangla ? 'আমি নিজে' : 'Myself',
                   isSelected: familyFilter.isSelf,
                   onSelected: () => familyFilter.selectSelf(),
                   isDark: isDark,

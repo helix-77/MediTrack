@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../l10n/locale_notifier.dart';
 import '../models/family_member.dart';
 import '../models/prescription.dart';
 import '../models/prescription_extraction.dart';
@@ -270,7 +271,7 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
       child: Row(
         children: [
           _buildFilterChipItem(
-            label: 'Myself',
+            label: context.isBangla ? 'আমি নিজে' : 'Myself',
             isSelected: _selectedFamilyMemberId == 'self',
             onSelected: () => setState(() => _selectedFamilyMemberId = 'self'),
             isDark: isDark,
@@ -389,7 +390,7 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
       appBar: AppBar(
-        title: const Text('Prescription Vault'),
+        title: Text(context.tr('prescription_vault')),
         leading: Padding(
           padding: const EdgeInsets.only(left: 12.0),
           child: SoftIconButton(

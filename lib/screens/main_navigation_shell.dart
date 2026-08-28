@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/locale_notifier.dart';
 import '../services/family_filter_notifier.dart';
 import '../services/medicine_service.dart';
 import '../theme/colors.dart';
@@ -119,14 +120,14 @@ class MainNavigationShellState extends State<MainNavigationShell> {
                         index: 0,
                         icon: Icons.home_outlined,
                         activeIcon: Icons.home_rounded,
-                        label: 'Home',
+                        label: context.tr('home'),
                         isDark: isDark,
                       ),
                       _buildNavItem(
                         index: 1,
                         icon: Icons.calendar_month_outlined,
                         activeIcon: Icons.calendar_month_rounded,
-                        label: 'Schedule',
+                        label: context.tr('schedule'),
                         isDark: isDark,
                       ),
                     ],
@@ -143,14 +144,14 @@ class MainNavigationShellState extends State<MainNavigationShell> {
                         index: 2,
                         icon: Icons.auto_awesome_outlined,
                         activeIcon: Icons.auto_awesome_rounded,
-                        label: 'AI Chat',
+                        label: context.tr('ai_chat'),
                         isDark: isDark,
                       ),
                       _buildNavItem(
                         index: 3,
                         icon: Icons.person_outline_rounded,
                         activeIcon: Icons.person_rounded,
-                        label: 'Profile',
+                        label: context.tr('profile'),
                         isDark: isDark,
                       ),
                     ],
