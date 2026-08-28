@@ -129,7 +129,9 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text("I've Verified My Email"));
+    final checkButton = find.text("I've Verified My Email");
+    await tester.ensureVisible(checkButton);
+    await tester.tap(checkButton);
     await tester.pump();
 
     expect(fakeAuth.reloadCalled, isTrue);

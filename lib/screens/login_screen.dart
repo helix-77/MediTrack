@@ -38,12 +38,23 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await _authService.signInWithEmailAndPassword(
+      final credential = await _authService.signInWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
       if (!mounted) return;
-      Navigator.popUntil(context, (route) => route.isFirst);
+
+      if (credential.user != null && !credential.user!.emailVerified) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Please verify your email address to continue. Check your Spam folder if needed.',
+            ),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      }
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
       _showErrorSnackBar(e.toString());

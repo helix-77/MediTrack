@@ -51,6 +51,13 @@ void main() async {
     debugPrint('Firebase init notice: $e');
   }
 
+  // Initialize Google Sign-In with Server Client ID
+  try {
+    await AuthService.initGoogleSignIn();
+  } catch (e) {
+    debugPrint('Google Sign-In init notice: $e');
+  }
+
   // Initialize Firebase App Check
   try {
     await FirebaseAppCheck.instance.activate(

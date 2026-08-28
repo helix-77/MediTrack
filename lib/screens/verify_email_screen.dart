@@ -23,18 +23,27 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
   bool _isResending = false;
   int _resendCooldownSeconds = 0;
   Timer? _cooldownTimer;
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _authService = context.read<AuthService>();
+
+    // Periodically check if the user verified their email in another window/app
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted) {
+        _checkVerification(silent: true);
+      }
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _cooldownTimer?.cancel();
+    _pollTimer?.cancel();
     super.dispose();
   }
 
@@ -54,6 +63,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
       if (!mounted) return;
 
       if (isVerified) {
+        _pollTimer?.cancel();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Email verified successfully! Welcome to MediTrack.'),
@@ -64,7 +74,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Email not verified yet. Please click the link in your email and pull down to refresh.',
+              'Email not verified yet. Please check your Inbox and Spam folder, click the link, and try again.',
             ),
             backgroundColor: AppColors.warning,
           ),
@@ -254,7 +264,54 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+
+                // Spam / Junk Notice Card
+                SoftCard(
+                  color: isDark
+                      ? AppColors.warning.withValues(alpha: 0.12)
+                      : const Color(0xFFFFFBEB),
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.warning,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Check Your Spam / Junk Folder',
+                              style: AppTypography.headingSmall.copyWith(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : const Color(0xFF92400E),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Verification emails often land in Spam/Junk or Promotions folder. If not in Primary, check there and tap the link.',
+                              style: AppTypography.caption.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : const Color(0xFFB45309),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // Step Instructions Card
                 SoftCard(
@@ -273,7 +330,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                         stepNumber: '2',
                         title: 'Click the Link & Pull Down',
                         description:
-                            'Click the verification link, then swipe down anywhere on this screen to open your dashboard.',
+                            'Click the verification link in your email. This app will automatically detect it within seconds.',
                         isDark: isDark,
                       ),
                     ],

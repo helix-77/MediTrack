@@ -12,6 +12,23 @@ class AuthService {
   final FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
 
+  static const String googleServerClientId =
+      '363299282373-9s91kgtsf1uj94f3dnv8k0pbr6ng7b7e.apps.googleusercontent.com';
+
+  static bool _googleSignInInitialized = false;
+
+  static Future<void> initGoogleSignIn({String? serverClientId}) async {
+    if (_googleSignInInitialized) return;
+    try {
+      await GoogleSignIn.instance.initialize(
+        serverClientId: serverClientId ?? googleServerClientId,
+      );
+      _googleSignInInitialized = true;
+    } catch (e) {
+      debugPrint('GoogleSignIn initialize notice: $e');
+    }
+  }
+
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   Stream<User?> get userChanges => _auth.userChanges();
 
@@ -61,8 +78,12 @@ class AuthService {
     if (user == null) return false;
     try {
       await user.reload();
+      // Force token refresh to ensure updated claims (including emailVerified)
+      // are propagated to auth state listeners immediately.
+      await user.getIdToken(true);
       return _auth.currentUser?.emailVerified ?? false;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('reloadUser error: $e');
       return false;
     }
   }
@@ -72,10 +93,17 @@ class AuthService {
     required String password,
   }) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      final credential = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password.trim(),
       );
+      if (credential.user != null) {
+        try {
+          await credential.user!.reload();
+          await credential.user!.getIdToken(true);
+        } catch (_) {}
+      }
+      return credential;
     } on FirebaseAuthException catch (error) {
       throw Exception(_authErrorMessage(error));
     }
@@ -184,10 +212,18 @@ class AuthService {
 
   Future<OAuthCredential?> _googleCredential() async {
     try {
+      await initGoogleSignIn();
       final googleUser = await _googleSignIn.authenticate();
       final googleAuth = googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw const GoogleSignInException(
+          code: GoogleSignInExceptionCode.unknownError,
+          description: 'Failed to retrieve ID token from Google Sign-In.',
+        );
+      }
       return GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
+        idToken: idToken,
       );
     } on GoogleSignInException catch (error) {
       if (error.code == GoogleSignInExceptionCode.canceled) {
