@@ -44,7 +44,7 @@ class NotificationService {
     );
 
     await _notificationsPlugin.initialize(
-      initSettings,
+      settings: initSettings,
       onDidReceiveNotificationResponse: (response) {
         onNotificationTap?.call(response);
       },
@@ -183,10 +183,10 @@ class NotificationService {
   Future<void> _showRefillNotification(Medicine medicine) async {
     try {
       await _notificationsPlugin.show(
-        notificationIdFor(medicine.id, 'refill'),
-        'Refill Alert: ${medicine.name}',
-        'Low stock! You have ${medicine.quantityCurrent} remaining.',
-        const NotificationDetails(
+        id: notificationIdFor(medicine.id, 'refill'),
+        title: 'Refill Alert: ${medicine.name}',
+        body: 'Low stock! You have ${medicine.quantityCurrent} remaining.',
+        notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'refill_alerts',
             'Refill Alerts',
@@ -217,28 +217,24 @@ class NotificationService {
   }) async {
     try {
       await _notificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        scheduledDate,
-        notificationDetails,
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledDate,
+        notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: matchDateTimeComponents,
         payload: payload,
       );
     } catch (_) {
       try {
         await _notificationsPlugin.zonedSchedule(
-          id,
-          title,
-          body,
-          scheduledDate,
-          notificationDetails,
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          notificationDetails: notificationDetails,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: matchDateTimeComponents,
           payload: payload,
         );
@@ -253,7 +249,7 @@ class NotificationService {
       for (var slot = 0; slot < 100; slot++) {
         try {
           await _notificationsPlugin.cancel(
-            notificationIdFor(medicineId, kind, slot),
+            id: notificationIdFor(medicineId, kind, slot),
           );
         } catch (_) {}
       }
