@@ -627,7 +627,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        Text(slot.timeRange, style: AppTypography.caption),
+                        Text(
+                          slot.timeRange,
+                          style: AppTypography.caption.copyWith(
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   ),

@@ -704,7 +704,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         title: Text(context.tr('buy_list_title'), style: AppTypography.bodyMedium),
                         subtitle: Text(
                           context.isBangla ? 'ওষুধ কেনা, রিফিল ও সরবরাহের হিসাব' : 'Track purchases, refills & medical supplies',
-                          style: AppTypography.caption,
+                          style: AppTypography.caption.copyWith(
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
@@ -721,7 +723,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         title: Text(context.tr('export_pdf'), style: AppTypography.bodyMedium),
                         subtitle: Text(
                           context.isBangla ? 'চিকিৎসকের জন্য স্বাস্থ্য রিপোর্টের সারাংশ' : 'Export adherence report for physician',
-                          style: AppTypography.caption,
+                          style: AppTypography.caption.copyWith(
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
@@ -738,7 +742,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         title: Text(context.tr('prescription_vault'), style: AppTypography.bodyMedium),
                         subtitle: Text(
                           context.isBangla ? 'ডিজিটাল প্রেসক্রিপশন ও আর্কাইভসমূহ' : 'Scanned doctor prescriptions & archives',
-                          style: AppTypography.caption,
+                          style: AppTypography.caption.copyWith(
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
@@ -755,7 +761,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         title: Text(context.tr('price_lookup'), style: AppTypography.bodyMedium),
                         subtitle: Text(
                           context.isBangla ? 'বাংলাদেশ ডিজিডিএ ডেটাবেজ ও বিকল্প ব্র্যান্ড' : 'DGDA Bangladesh database & cheaper brands',
-                          style: AppTypography.caption,
+                          style: AppTypography.caption.copyWith(
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
@@ -772,7 +780,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         title: Text(context.tr('nearby_pharmacies_title'), style: AppTypography.bodyMedium),
                         subtitle: Text(
                           context.isBangla ? 'নিকটবর্তী ফার্মেসির জিপিএস দিকনির্দেশনা' : 'GPS directions to licensed drugstores',
-                          style: AppTypography.caption,
+                          style: AppTypography.caption.copyWith(
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                         onTap: () {
