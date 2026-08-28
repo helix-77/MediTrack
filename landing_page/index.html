@@ -21,11 +21,11 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="apple-touch-icon" href="app_icon.png" />
 
-    <!-- Google Fonts: Plus Jakarta Sans, Inter, Poppins -->
+    <!-- Google Fonts: Plus Jakarta Sans (display + body), JetBrains Mono (clinical) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
       rel="stylesheet"
     />
 
@@ -33,159 +33,160 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <!-- =========================================================================
-       1. Floating Header & Navigation
-       ========================================================================= -->
-    <header class="navbar">
-      <div class="container nav-container">
-        <a href="#" class="brand-logo" aria-label="MediTrack Homepage">
-          <img src="favicon.svg" alt="MediTrack App Icon" class="logo-icon-img" width="36" height="36" />
-          <span>MediTrack</span>
+    <!-- Atmosphere: fixed grain + drifting gradient orbs -->
+    <div class="grain" aria-hidden="true"></div>
+    <div class="orb orb-a" aria-hidden="true"></div>
+    <div class="orb orb-b" aria-hidden="true"></div>
+    <div class="orb orb-c" aria-hidden="true"></div>
+
+    <!-- Nav scroll sentinel (read by IntersectionObserver — no scroll listeners) -->
+    <div class="nav-sentinel" id="navSentinel" aria-hidden="true"></div>
+
+    <!-- 1. Floating Glass Pill Navigation -->
+    <div class="nav-shell">
+      <header class="navbar" id="navbar">
+        <a href="#hero" class="brand" aria-label="MediTrack Homepage">
+          <img src="favicon.svg" alt="MediTrack App Icon" class="brand-mark" width="34" height="34" />
+          <span class="brand-name">MediTrack</span>
         </a>
 
-        <nav aria-label="Main Navigation">
-          <ul class="nav-menu">
-            <li><a href="#features" class="nav-link">Features</a></li>
-            <li><a href="#pillars" class="nav-link">Dual OCR</a></li>
-            <li><a href="#generics" class="nav-link">Generic Lookup</a></li>
-            <li><a href="#calculator" class="nav-link">Savings Calculator</a></li>
-            <li><a href="#pricing" class="nav-link">Pricing</a></li>
-            <li><a href="#faq" class="nav-link">FAQ</a></li>
-          </ul>
+        <nav class="nav-links" aria-label="Primary Navigation">
+          <a href="#pillars" class="nav-link">Platform</a>
+          <a href="#generics" class="nav-link">Generics</a>
+          <a href="#calculator" class="nav-link">Savings</a>
+          <a href="#pricing" class="nav-link">Pricing</a>
+          <a href="#faq" class="nav-link">FAQ</a>
         </nav>
 
-        <div class="nav-actions">
-          <a
-            href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk"
-            class="btn btn-primary"
-            download
-            aria-label="Download MediTrack APK"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Download APK</span>
-          </a>
-        </div>
+        <a
+          href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk"
+          class="btn btn-primary btn-nav"
+          download
+          aria-label="Download MediTrack APK"
+        >
+          <span>Get the App</span>
+          <span class="btn-dot">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10" /><path d="M17 8v9H8" /></svg>
+          </span>
+        </a>
 
-        <button class="mobile-menu-toggle" aria-label="Toggle Mobile Menu">
-          <span></span>
+        <button class="nav-burger" id="navBurger" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobileOverlay">
           <span></span>
           <span></span>
         </button>
-      </div>
-    </header>
+      </header>
+    </div>
 
-    <!-- =========================================================================
-       2. Hero Section with Interactive Live Phone Preview
-       ========================================================================= -->
-    <section class="hero-section" id="hero">
-      <div class="hero-glow-1"></div>
-      <div class="hero-glow-2"></div>
+    <!-- Full-screen glass mobile menu with staggered mask reveal -->
+    <div class="mobile-overlay" id="mobileOverlay" aria-hidden="true">
+      <nav class="overlay-nav" aria-label="Mobile Navigation">
+        <a class="overlay-link" href="#pillars"><span class="ol-index">01</span>Platform</a>
+        <a class="overlay-link" href="#generics"><span class="ol-index">02</span>Generics</a>
+        <a class="overlay-link" href="#calculator"><span class="ol-index">03</span>Savings</a>
+        <a class="overlay-link" href="#pricing"><span class="ol-index">04</span>Pricing</a>
+        <a class="overlay-link" href="#faq"><span class="ol-index">05</span>FAQ</a>
+      </nav>
+      <a
+        class="btn btn-primary overlay-cta"
+        href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk"
+        download
+      >
+        <span>Download APK — Free</span>
+        <span class="btn-dot">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+        </span>
+      </a>
+    </div>
 
+    <main>
+    <!-- 2. Hero — massive typography + live interactive phone -->
+    <section class="hero" id="hero">
       <div class="container hero-grid">
-        <!-- Left Column: Headline & CTA -->
         <div class="hero-content">
-          <div class="hero-pill-tag">
+          <div class="eyebrow hero-eyebrow" data-reveal>
             <span class="flag">🇧🇩</span>
-            <span>Tailored for Bangladesh • Smart Medication Companion</span>
+            <span class="eyebrow-text">Tailored for Bangladesh</span>
           </div>
 
-          <h1 class="hero-title">
-            Never Miss a Dose.<br />
-            Find Cheaper Generics with <span class="highlight-blue">AI Precision</span>.
+          <h1 class="hero-title" data-reveal>
+            Never miss a dose.<br />
+            Find cheaper generics with <span class="grad-blue">AI precision</span>.
           </h1>
 
-          <p class="hero-subtitle">
-            MediTrack combines on-device box OCR, multi-page Gemini 3.6 Flash prescription scanning, smart refill & expiry alerts, and 25,000+ Bangladesh generic price comparisons in one elegant, offline-first companion.
+          <p class="hero-sub" data-reveal>
+            MediTrack fuses on-device box OCR, multi-page Gemini 3.6 Flash prescription scanning,
+            smart refill &amp; expiry alerts, and 25,000+ Bangladesh generic price comparisons —
+            in one offline-first companion.
           </p>
 
-          <div class="hero-cta-group">
+          <div class="hero-cta" data-reveal>
             <a
               href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk"
-              class="btn btn-primary"
+              class="btn btn-primary btn-lg"
               download
               aria-label="Download MediTrack APK"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
               <span>Download APK v0.0.3b</span>
-              <span class="apk-badge-tag">Free Install</span>
+              <span class="btn-dot">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+              </span>
             </a>
 
-            <a href="#demo" class="btn btn-secondary">
-              <span>Interactive Demo</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
+            <a href="#demo" class="btn btn-ghost btn-lg">
+              <span>Try the live demo</span>
+              <span class="btn-dot">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10" /><path d="M17 8v9H8" /></svg>
+              </span>
             </a>
           </div>
 
-          <div class="hero-trust-bar">
+          <div class="hero-trust" data-reveal>
             <div class="trust-item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              </svg>
-              <span>Offline-First Storage</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+              <span>Offline-first storage</span>
             </div>
             <div class="trust-item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-              </svg>
-              <span>25,000+ BD Medicines</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg>
+              <span>25,000+ BD medicines</span>
             </div>
             <div class="trust-item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="m4.93 4.93 4.24 4.24"></path>
-                <path d="m14.83 9.17 4.24-4.24"></path>
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 4.3 4.3" /><path d="m14.8 9.2 4.3-4.3" /></svg>
               <span>Gemini 3.6 Flash</span>
             </div>
           </div>
         </div>
 
-        <!-- Right Column: Interactive Phone Mockup -->
-        <div class="phone-mockup-wrapper" id="demo">
-          <div class="phone-ambient-ring"></div>
+        <!-- Right: Interactive Phone Mockup (double-bezel hardware feel) -->
+        <div class="phone-stage" id="demo" data-reveal>
+          <div class="phone-halo" aria-hidden="true"></div>
 
-          <!-- Floating Badges -->
-          <div class="floating-badge badge-top-left">
-            <div class="badge-icon-circle" style="background: var(--accent-mint-light); color: var(--accent-mint);">✓</div>
+          <div class="floating-badge badge-tl">
+            <div class="badge-dot dot-mint">✓</div>
             <div>
-              <div class="badge-text-title">Dose Logged</div>
-              <div class="badge-text-sub">8:00 AM • Napa Extra 500mg</div>
+              <div class="badge-title">Dose logged</div>
+              <div class="badge-sub">8:00 AM • Napa Extra 500mg</div>
             </div>
           </div>
 
-          <div class="floating-badge badge-bottom-right">
-            <div class="badge-icon-circle" style="background: var(--primary-blue-light); color: var(--primary-blue);">৳</div>
+          <div class="floating-badge badge-br">
+            <div class="badge-dot dot-blue">৳</div>
             <div>
-              <div class="badge-text-title">Generic Match Found</div>
-              <div class="badge-text-sub">Save 33% on Paracetamol</div>
+              <div class="badge-title">Generic match found</div>
+              <div class="badge-sub">Save 33% on Paracetamol</div>
             </div>
           </div>
 
-          <!-- Phone Card Container -->
-          <div class="phone-mockup-card">
+          <div class="phone-shell">
             <div class="phone-screen">
-              <!-- App Screen Header -->
-              <div class="app-screen-header">
+              <div class="app-header">
                 <div class="app-header-top">
                   <div>
-                    <div class="app-user-greeting">Good morning, Rahi</div>
-                    <div class="app-user-name">Stay on top of your health</div>
+                    <div class="app-greeting">Good morning, Rahi</div>
+                    <div class="app-name">Stay on top of your health</div>
                   </div>
                   <div class="app-avatar">R</div>
                 </div>
 
-                <!-- Interactive Screen Tabs -->
                 <div class="phone-tab-bar">
                   <button class="phone-tab-btn active" data-tab="routine">Routine</button>
                   <button class="phone-tab-btn" data-tab="scanner">Rx Scan</button>
@@ -194,17 +195,15 @@
                 </div>
               </div>
 
-              <!-- App Screen Body Panels -->
-              <div class="app-screen-body">
-                <!-- Panel 1: Routine Tracker (Active Default) -->
-                <div class="app-view-panel active" id="view-routine">
-                  <!-- Progress Card -->
+              <div class="app-body">
+                <!-- Panel 1: Routine -->
+                <div class="app-panel active" id="view-routine">
                   <div class="phone-progress-card">
                     <div class="phone-progress-top">
                       <div>
-                        <div style="font-size: 0.65rem; font-weight: 800; color: var(--primary-blue); letter-spacing: 0.5px;">TODAY'S HEALTH</div>
+                        <div class="pp-eyebrow">TODAY'S HEALTH</div>
                         <div class="phone-progress-title">You are doing great.</div>
-                        <div style="font-size: 0.68rem; color: var(--text-secondary);">3 of 5 doses completed</div>
+                        <div class="pp-sub">3 of 5 doses completed</div>
                       </div>
                       <div class="phone-progress-badge">60%</div>
                     </div>
@@ -213,7 +212,6 @@
                     </div>
                   </div>
 
-                  <!-- Dose Item 1 -->
                   <div class="med-card-item" id="demoDose1">
                     <div class="med-icon-box med-icon-pink">💊</div>
                     <div class="med-info">
@@ -223,81 +221,74 @@
                     <div class="med-action-pill med-action-pink" id="dosePill1">Take now</div>
                   </div>
 
-                  <!-- Dose Item 2 -->
-                  <div class="med-card-item" id="demoDose2">
+                  <div class="med-card-item">
                     <div class="med-icon-box med-icon-mint">💊</div>
                     <div class="med-info">
                       <div class="med-name">Omeprazole 20 mg</div>
                       <div class="med-dose">08:00 PM • Before dinner</div>
                     </div>
-                    <div class="med-action-pill med-action-mint" id="dosePill2">Upcoming</div>
+                    <div class="med-action-pill med-action-mint">Upcoming</div>
                   </div>
 
-                  <!-- Dose Item 3 -->
-                  <div class="med-card-item" id="demoDose3">
+                  <div class="med-card-item">
                     <div class="med-icon-box med-icon-orange">💧</div>
                     <div class="med-info">
                       <div class="med-name">Montene 10 mg</div>
                       <div class="med-dose">09:30 PM • At bedtime</div>
                     </div>
-                    <div class="med-action-pill med-action-mint" id="dosePill3">Upcoming</div>
+                    <div class="med-action-pill med-action-mint">Upcoming</div>
                   </div>
                 </div>
 
                 <!-- Panel 2: Scanner -->
-                <div class="app-view-panel" id="view-scanner">
+                <div class="app-panel" id="view-scanner">
                   <div class="scanner-preview-box">
                     <div class="scanner-frame">
                       <div class="scanner-laser"></div>
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary-blue)" stroke-width="2">
-                        <path d="M4 7V4h3"></path>
-                        <path d="M20 7V4h-3"></path>
-                        <path d="M4 17v3h3"></path>
-                        <path d="M20 17v3h-3"></path>
-                      </svg>
-                      <span style="font-size: 0.65rem; color: #94A3B8; margin-top: 6px;">Gemini 3.6 Flash Active</span>
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 7V4h3" /><path d="M20 7V4h-3" /><path d="M4 17v3h3" /><path d="M20 17v3h-3" /></svg>
+                      <span class="scanner-caption">Gemini 3.6 Flash Active</span>
                     </div>
                   </div>
                   <div class="scanner-extracted-list">
-                    <div style="font-size: 0.7rem; font-weight: 800; color: var(--primary-blue);">EXTRACTED MEDICINES:</div>
+                    <div class="pp-eyebrow">EXTRACTED MEDICINES</div>
                     <div class="extracted-item">
                       <span>• Napa Extra 500mg</span>
-                      <span style="color: var(--accent-mint);">High (98%)</span>
+                      <span class="confident">High (98%)</span>
                     </div>
                     <div class="extracted-item">
                       <span>• Seclo 20mg Cap</span>
-                      <span style="color: var(--accent-mint);">High (95%)</span>
+                      <span class="confident">High (95%)</span>
                     </div>
                   </div>
                 </div>
 
                 <!-- Panel 3: Generics -->
-                <div class="app-view-panel" id="view-generics">
+                <div class="app-panel" id="view-generics">
                   <div class="phone-generic-lookup">
                     <div class="generic-search-bar-sim">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                      <span>Searching Napa 500mg...</span>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                      <span>Searching Napa 500mg…</span>
                     </div>
                     <div class="generic-match-card">
                       <div class="generic-match-header">
                         <span>Napa 500mg (Beximco)</span>
-                        <span style="color: var(--primary-blue);">৳1.20</span>
+                        <span class="gh-price">৳1.20</span>
                       </div>
-                      <div style="font-size: 0.68rem; color: var(--text-secondary); margin-bottom: 4px;">Generic: Paracetamol 500mg</div>
+                      <div class="gh-generic">Generic: Paracetamol 500mg</div>
                       <div class="generic-sub-alt">
                         <span>Ace 500mg (Square)</span>
-                        <strong style="color: var(--accent-mint);">৳0.80 (-33%)</strong>
+                        <strong>৳0.80 (−33%)</strong>
                       </div>
                       <div class="generic-sub-alt">
                         <span>Renova 500mg (Opso)</span>
-                        <strong style="color: var(--accent-mint);">৳0.80 (-33%)</strong>
+                        <strong>৳0.80 (−33%)</strong>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <!-- Panel 4: AI Chat -->
-                <div class="app-view-panel" id="view-ai">
+                <div class="app-panel" id="view-ai">
                   <div class="phone-ai-chat">
                     <div class="chat-bubble user">Should I take Napa before or after meals?</div>
                     <div class="chat-bubble ai">Take <strong>Napa (Paracetamol)</strong> with a glass of water after food to avoid stomach irritation.</div>
@@ -312,244 +303,236 @@
       </div>
     </section>
 
-    <!-- =========================================================================
-       3. Core Pillars Section
-       ========================================================================= -->
+    <!-- 3. Core Pillars -->
     <section class="section" id="pillars">
       <div class="container">
-        <div class="section-header">
-          <span class="badge badge-blue section-tag">Engineered for Bangladesh</span>
+        <div class="section-head" data-reveal>
+          <span class="eyebrow eyebrow-blue">Engineered for Bangladesh</span>
           <h2>Built specifically for Bangladesh's clinical landscape</h2>
           <p>Overcoming complex handwriting, missing brand names, and family healthcare coordination.</p>
         </div>
 
-        <div class="pillars-grid">
-          <!-- Pillar 1 -->
-          <div class="pillar-card">
-            <div class="pillar-icon" style="background: var(--primary-blue-light); color: var(--primary-blue);">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-            </div>
-            <h3>Dual OCR & Vision Intelligence</h3>
-            <p>Fast on-device ML Kit scans medicine boxes offline with zero latency. When scanning messy handwritten doctor prescriptions, Gemini 3.6 Flash parses dosages, frequencies, and durations automatically.</p>
-            <div class="pillar-feature-tag">
-              <span>On-device ML Kit + Gemini 3.6 Flash</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </div>
-          </div>
-
-          <!-- Pillar 2 -->
-          <div class="pillar-card">
-            <div class="pillar-icon" style="background: var(--accent-orange-light); color: var(--accent-orange-dark);">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><path d="M11 8v6"></path><path d="M8 11h6"></path></svg>
-            </div>
-            <h3>25,000+ DGDA Bangladesh Medicines</h3>
-            <p>Compare Bangladesh Maximum Retail Prices (MRP in ৳) instantly. Discover bioequivalent generic alternatives from Square, Beximco, Incepta, Renata, and Acme to save up to 40% on monthly pharmacy bills.</p>
-            <div class="pillar-feature-tag" style="color: var(--accent-orange-dark);">
-              <span>Direct DGDA MRP Database</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        <div class="pillars-grid" data-reveal-group>
+          <div class="card-shell" data-reveal>
+            <div class="card-core pillar-inner">
+              <div class="pillar-icon icon-blue">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>
+              </div>
+              <h3>Dual OCR &amp; Vision Intelligence</h3>
+              <p>Fast on-device ML Kit scans medicine boxes offline with zero latency. When scanning messy handwritten doctor prescriptions, Gemini 3.6 Flash parses dosages, frequencies, and durations automatically.</p>
+              <div class="pillar-tag tag-blue"><span>On-device ML Kit + Gemini 3.6 Flash</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+              </div>
             </div>
           </div>
 
-          <!-- Pillar 3 -->
-          <div class="pillar-card">
-            <div class="pillar-icon" style="background: var(--accent-pink-light); color: var(--accent-pink);">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          <div class="card-shell" data-reveal>
+            <div class="card-core pillar-inner">
+              <div class="pillar-icon icon-orange">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /><path d="M11 8v6" /><path d="M8 11h6" /></svg>
+              </div>
+              <h3>25,000+ DGDA Bangladesh Medicines</h3>
+              <p>Compare Bangladesh Maximum Retail Prices (MRP in ৳) instantly. Discover bioequivalent generic alternatives from Square, Beximco, Incepta, Renata, and Acme to save up to 40% on monthly pharmacy bills.</p>
+              <div class="pillar-tag tag-orange"><span>Direct DGDA MRP Database</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+              </div>
             </div>
-            <h3>BD Apps Direct SMS Reminders</h3>
-            <p>Never let elderly parents miss a dose. Integrates directly with Robi and Airtel networks to dispatch automated SMS alarms to non-smartphone feature phones for only ৳2.99/day direct carrier billing.</p>
-            <div class="pillar-feature-tag" style="color: var(--accent-pink);">
-              <span>Robi (018) & Airtel (016) Native</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+
+          <div class="card-shell" data-reveal>
+            <div class="card-core pillar-inner">
+              <div class="pillar-icon icon-pink">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+              </div>
+              <h3>BD Apps Direct SMS Reminders</h3>
+              <p>Never let elderly parents miss a dose. Integrates directly with Robi and Airtel networks to dispatch automated SMS alarms to non-smartphone feature phones for only ৳2.99/day direct carrier billing.</p>
+              <div class="pillar-tag tag-pink"><span>Robi (018) &amp; Airtel (016) Native</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- =========================================================================
-       4. Interactive Bento Grid Features
-       ========================================================================= -->
+    <!-- 4. Interactive Bento Grid Features -->
     <section class="section" id="features">
       <div class="container">
-        <div class="section-header">
-          <span class="badge badge-mint section-tag">Interactive Feature Suite</span>
+        <div class="section-head" data-reveal>
+          <span class="eyebrow eyebrow-mint">Interactive Feature Suite</span>
           <h2>Everything you need for total medication control</h2>
           <p>Test the interactive tools below to experience how MediTrack transforms everyday health management.</p>
         </div>
 
-        <div class="bento-grid">
-          <!-- Bento 1: Interactive DGDA Generic Alternative Comparator (8 Cols) -->
-          <div class="bento-card bento-col-8" id="generics">
-            <div class="bento-header">
-              <span class="badge badge-orange" style="width: fit-content;">Live Interactive Tool</span>
-              <h3>Interactive Generic Medicine Price Comparator</h3>
-              <p>Select any popular Bangladesh brand to view price differences and cheaper generic equivalents.</p>
-            </div>
-
-            <!-- Chips Row -->
-            <div class="med-chip-row">
-              <button class="med-search-chip active" data-med="napa">Napa (Paracetamol)</button>
-              <button class="med-search-chip" data-med="seclo">Seclo (Omeprazole)</button>
-              <button class="med-search-chip" data-med="montene">Montene (Montelukast)</button>
-              <button class="med-search-chip" data-med="sergel">Sergel (Esomeprazole)</button>
-            </div>
-
-            <!-- Live Output Card -->
-            <div class="generic-comparison-box" id="genericCompareBox">
-              <div class="current-brand-row">
-                <div>
-                  <span class="table-brand-name">Napa 500mg Tablet</span>
-                  <span class="table-brand-mfg">Beximco Pharmaceuticals Ltd.</span>
-                </div>
-                <div class="table-brand-price">MRP: ৳1.20 / tab</div>
+        <div class="bento-grid" data-reveal-group>
+          <!-- Bento 1: Generic Price Comparator -->
+          <div class="card-shell bento-8" id="generics" data-reveal>
+            <div class="card-core bento-inner">
+              <div class="bento-header">
+                <span class="badge-chip chip-orange">Live Interactive Tool</span>
+                <h3>Interactive Generic Medicine Price Comparator</h3>
+                <p>Select any popular Bangladesh brand to view price differences and cheaper generic equivalents.</p>
               </div>
 
-              <div class="alt-list-title">Cheaper Brands with Same Generic (Paracetamol 500mg):</div>
-              <div class="alt-items-list">
-                <div class="alt-result-row">
-                  <div><strong>Ace 500mg</strong> • Square Pharmaceuticals</div>
-                  <div class="alt-price-tag">৳0.80 <span class="badge-saving">Save 33%</span></div>
+              <div class="med-chip-row">
+                <button class="med-search-chip active" data-med="napa">Napa (Paracetamol)</button>
+                <button class="med-search-chip" data-med="seclo">Seclo (Omeprazole)</button>
+                <button class="med-search-chip" data-med="montene">Montene (Montelukast)</button>
+                <button class="med-search-chip" data-med="sergel">Sergel (Esomeprazole)</button>
+              </div>
+
+              <div class="generic-comparison-box" id="genericCompareBox">
+                <div class="current-brand-row">
+                  <div>
+                    <span class="table-brand-name">Napa 500mg Tablet</span>
+                    <span class="table-brand-mfg">Beximco Pharmaceuticals Ltd.</span>
+                  </div>
+                  <div class="table-brand-price">MRP: ৳1.20 / tab</div>
                 </div>
-                <div class="alt-result-row">
-                  <div><strong>Renova 500mg</strong> • Opso Saline Ltd.</div>
-                  <div class="alt-price-tag">৳0.80 <span class="badge-saving">Save 33%</span></div>
-                </div>
-                <div class="alt-result-row">
-                  <div><strong>Fast 500mg</strong> • Acme Laboratories Ltd.</div>
-                  <div class="alt-price-tag">৳0.80 <span class="badge-saving">Save 33%</span></div>
+
+                <div class="alt-list-title">Cheaper brands with the same generic (Paracetamol 500mg):</div>
+                <div class="alt-items-list">
+                  <div class="alt-result-row">
+                    <div><strong>Ace 500mg</strong> • Square Pharmaceuticals</div>
+                    <div class="alt-price-tag">৳0.80 <span class="badge-saving">Save 33%</span></div>
+                  </div>
+                  <div class="alt-result-row">
+                    <div><strong>Renova 500mg</strong> • Opso Saline Ltd.</div>
+                    <div class="alt-price-tag">৳0.80 <span class="badge-saving">Save 33%</span></div>
+                  </div>
+                  <div class="alt-result-row">
+                    <div><strong>Fast 500mg</strong> • Acme Laboratories Ltd.</div>
+                    <div class="alt-price-tag">৳0.80 <span class="badge-saving">Save 33%</span></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Bento 2: Adherence Streak & Habit Gamification (4 Cols) -->
-          <div class="bento-card bento-col-4">
-            <div class="bento-header">
-              <span class="badge badge-mint" style="width: fit-content;">Habit Building</span>
-              <h3>Adherence Streak Tracker</h3>
-              <p>Keep your daily health streak going with one-tap dose logging.</p>
+          <!-- Bento 2: Adherence Streak -->
+          <div class="card-shell bento-4" data-reveal>
+            <div class="card-core bento-inner">
+              <div class="bento-header">
+                <span class="badge-chip chip-mint">Habit Building</span>
+                <h3>Adherence Streak Tracker</h3>
+                <p>Keep your daily health streak going with one-tap dose logging.</p>
+              </div>
+
+              <div class="streak-box">
+                <div class="streak-count" id="streakCount">7 Day Streak 🔥</div>
+                <div class="streak-sub">Consistent doses taken on time</div>
+                <button class="btn btn-primary streak-btn" id="logDoseBtn">
+                  <span>+ Log Afternoon Dose</span>
+                </button>
+              </div>
+
+              <div class="footnote">⚡ Automatic dose logging syncs across all your devices via Cloud Firestore offline persistence.</div>
             </div>
+          </div>
 
-            <div style="background: var(--canvas-subtle); padding: 24px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--divider);">
-              <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary-blue);" id="streakCount">7 Day Streak 🔥</div>
-              <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">Consistent doses taken on time</div>
+          <!-- Bento 3: AI Assistant Playground -->
+          <div class="card-shell bento-6" data-reveal>
+            <div class="card-core bento-inner">
+              <div class="bento-header">
+                <span class="badge-chip chip-blue">Gemini 3.6 Flash</span>
+                <h3>Interactive AI Health Assistant</h3>
+                <p>Ask medication guidelines, dosage interactions, and schedule routines automatically.</p>
+              </div>
 
-              <button class="btn btn-primary" id="logDoseBtn" style="margin-top: 18px; width: 100%;">
-                + Log Afternoon Dose
+              <div class="ai-interactive-widget">
+                <div class="ai-chips-list">
+                  <button class="query-chip active" data-query="timing">Dosage Timing for Seclo</button>
+                  <button class="query-chip" data-query="food">Food Advice for Montene</button>
+                  <button class="query-chip" data-query="action">Extract Prescription Action</button>
+                </div>
+
+                <div class="ai-demo-response" id="aiDemoResponse">
+                  <strong>AI Guidance:</strong> Take <strong>Omeprazole (e.g. Seclo)</strong> 30–60 minutes before breakfast on an empty stomach for optimal gastric acid reduction.
+                  <div class="ai-action-demo-pill">⚡ Action: Set dose reminder for 7:30 AM</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bento 4: Doctor Visit Summary -->
+          <div class="card-shell bento-6" data-reveal>
+            <div class="card-core bento-inner">
+              <div class="bento-header">
+                <span class="badge-chip chip-pink">Clinical Export</span>
+                <h3>Doctor Visit Summary Generator</h3>
+                <p>Generate clean, formatted monospace medication summaries to share with your physician.</p>
+              </div>
+
+              <div class="clinical-box">
+                <div class="clinical-title">=== MEDITRACK CLINICAL SUMMARY ===</div>
+                <div>Patient: Rahi | Adherence: 94.2% (Last 30 Days)</div>
+                <div>Active Meds: Napa Extra (500mg, 1+0+1), Seclo (20mg, 1+0+0)</div>
+                <div>Refill Status: All active stocks sufficient for 14+ days</div>
+                <div class="clinical-muted">Verified on: 25 August 2026 via MediTrack</div>
+              </div>
+
+              <button class="btn btn-ghost btn-pill" id="copySummaryBtn">
+                <span>📋 Copy Summary to Clipboard</span>
               </button>
             </div>
-
-            <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
-              ⚡ Automatic dose logging syncs across all your devices via Cloud Firestore offline persistence.
-            </div>
-          </div>
-
-          <!-- Bento 3: AI Assistant Interactive Playground (6 Cols) -->
-          <div class="bento-card bento-col-6">
-            <div class="bento-header">
-              <span class="badge badge-blue" style="width: fit-content;">Gemini 3.6 Flash</span>
-              <h3>Interactive AI Health Assistant</h3>
-              <p>Ask medication guidelines, dosage interactions, and schedule routines automatically.</p>
-            </div>
-
-            <div class="ai-interactive-widget">
-              <div class="ai-chips-list">
-                <button class="query-chip active" data-query="timing">Dosage Timing for Seclo</button>
-                <button class="query-chip" data-query="food">Food Advice for Montene</button>
-                <button class="query-chip" data-query="action">Extract Prescription Action</button>
-              </div>
-
-              <div class="ai-demo-response" id="aiDemoResponse">
-                <strong>AI Guidance:</strong> Take <strong>Omeprazole (e.g. Seclo)</strong> 30–60 minutes before breakfast on an empty stomach for optimal gastric acid reduction.
-                <div class="ai-action-demo-pill">⚡ Action: Set dose reminder for 7:30 AM</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bento 4: Doctor Visit Summary Generator (6 Cols) -->
-          <div class="bento-card bento-col-6">
-            <div class="bento-header">
-              <span class="badge badge-pink" style="width: fit-content;">Clinical Export</span>
-              <h3>Doctor Visit Summary Generator</h3>
-              <p>Generate clean, formatted monospace medication summaries to share with your physician.</p>
-            </div>
-
-            <div style="background: #18233D; border-radius: var(--radius-md); padding: 18px; color: #E2E8F0; font-family: var(--font-mono); font-size: 0.74rem; line-height: 1.5; border: 1px solid rgba(255,255,255,0.1);">
-              <div style="color: var(--primary-blue); font-weight: 700;">=== MEDITRACK CLINICAL SUMMARY ===</div>
-              <div>Patient: Rahi | Adherence: 94.2% (Last 30 Days)</div>
-              <div>Active Meds: Napa Extra (500mg, 1+0+1), Seclo (20mg, 1+0+0)</div>
-              <div>Refill Status: All active stocks sufficient for 14+ days</div>
-              <div style="color: #94A3B8; margin-top: 4px;">Verified on: 25 August 2026 via MediTrack</div>
-            </div>
-
-            <button class="btn btn-secondary btn-pill" id="copySummaryBtn" style="align-self: flex-start;">
-              📋 Copy Summary to Clipboard
-            </button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- =========================================================================
-       5. Interactive Adherence & Generic Savings ROI Calculator
-       ========================================================================= -->
-    <section class="section calculator-section" id="calculator">
+    <!-- 5. Adherence & Generic Savings ROI Calculator -->
+    <section class="section" id="calculator">
       <div class="container">
-        <div class="section-header">
-          <span class="badge badge-orange section-tag">ROI & Adherence Calculator</span>
+        <div class="section-head" data-reveal>
+          <span class="eyebrow eyebrow-orange">ROI &amp; Adherence Calculator</span>
           <h2>Calculate your health adherence and annual Taka savings</h2>
           <p>See how much you can save every year by discovering cheaper generic alternatives and avoiding missed doses.</p>
         </div>
 
-        <div class="calc-card">
-          <!-- Left: Sliders -->
-          <div class="calc-sliders-column">
-            <!-- Slider 1 -->
-            <div class="slider-group">
-              <div class="slider-label-row">
-                <span class="slider-title">Daily Medicines You / Family Take:</span>
-                <span class="slider-value-badge" id="medsValueBadge">3 medications</span>
+        <div class="card-shell" data-reveal>
+          <div class="card-core calc-inner">
+            <div class="calc-sliders">
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span class="slider-title">Daily medicines you / family take:</span>
+                  <span class="slider-value-badge" id="medsValueBadge">3 medications</span>
+                </div>
+                <input type="range" class="range-input" id="medsSlider" min="1" max="10" value="3" />
               </div>
-              <input type="range" class="range-input" id="medsSlider" min="1" max="10" value="3" />
+
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span class="slider-title">Estimated monthly medicine bill (BDT):</span>
+                  <span class="slider-value-badge" id="spendValueBadge">৳2,000 / month</span>
+                </div>
+                <input type="range" class="range-input" id="spendSlider" min="500" max="15000" step="500" value="2000" />
+              </div>
+
+              <div class="calc-note">
+                💡 <em>Based on Bangladesh pharmacy average price spreads where generic equivalents save between 20% to 40% per strip.</em>
+              </div>
             </div>
 
-            <!-- Slider 2 -->
-            <div class="slider-group">
-              <div class="slider-label-row">
-                <span class="slider-title">Estimated Monthly Medicine Bill (BDT):</span>
-                <span class="slider-value-badge" id="spendValueBadge">৳2,000 / month</span>
-              </div>
-              <input type="range" class="range-input" id="spendSlider" min="500" max="15000" step="500" value="2000" />
-            </div>
+            <div class="calc-results">
+              <div class="calc-results-header">Your projected MediTrack impact:</div>
 
-            <div style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; background: var(--canvas); padding: 14px; border-radius: var(--radius-sm);">
-              💡 <em>Based on Bangladesh pharmacy average price spreads where generic equivalents save between 20% to 40% per strip.</em>
-            </div>
-          </div>
-
-          <!-- Right: Output Metrics Grid -->
-          <div class="calc-results-column">
-            <div class="calc-results-header">Your Projected MediTrack Impact:</div>
-
-            <div class="calc-metrics-grid">
-              <div class="calc-metric-box">
-                <span class="calc-metric-label">Annual Doses Scheduled</span>
-                <span class="calc-metric-number" id="annualDosesVal">1,095</span>
-              </div>
-
-              <div class="calc-metric-box">
-                <span class="calc-metric-label">Missed Doses Prevented</span>
-                <span class="calc-metric-number highlight-blue" id="missedPreventedVal">241 doses</span>
-              </div>
-
-              <div class="calc-metric-box">
-                <span class="calc-metric-label">Annual Generic Savings</span>
-                <span class="calc-metric-number highlight-mint" id="genericSavingsVal">৳7,200 / year</span>
-              </div>
-
-              <div class="calc-metric-box">
-                <span class="calc-metric-label">Adherence Score</span>
-                <span class="calc-metric-number highlight-blue" id="adherenceScoreVal">95.5%</span>
+              <div class="calc-metrics-grid">
+                <div class="calc-metric-box">
+                  <span class="calc-metric-label">Annual doses scheduled</span>
+                  <span class="calc-metric-number" id="annualDosesVal">1,095</span>
+                </div>
+                <div class="calc-metric-box">
+                  <span class="calc-metric-label">Missed doses prevented</span>
+                  <span class="calc-metric-number highlight-blue" id="missedPreventedVal">241 doses</span>
+                </div>
+                <div class="calc-metric-box">
+                  <span class="calc-metric-label">Annual generic savings</span>
+                  <span class="calc-metric-number highlight-mint" id="genericSavingsVal">৳7,200 / year</span>
+                </div>
+                <div class="calc-metric-box">
+                  <span class="calc-metric-label">Adherence score</span>
+                  <span class="calc-metric-number highlight-blue" id="adherenceScoreVal">95.5%</span>
+                </div>
               </div>
             </div>
           </div>
@@ -557,135 +540,144 @@
       </div>
     </section>
 
-    <!-- =========================================================================
-       6. Transparent BD Apps Pricing Section
-       ========================================================================= -->
+    <!-- 6. Transparent BD Apps Pricing -->
     <section class="section" id="pricing">
       <div class="container">
-        <div class="section-header">
-          <span class="badge badge-blue section-tag">Direct Carrier Billing</span>
+        <div class="section-head" data-reveal>
+          <span class="eyebrow eyebrow-blue">Direct Carrier Billing</span>
           <h2>Simple, transparent pricing for every citizen</h2>
           <p>No international credit cards needed. Charges are deducted directly from your Robi or Airtel mobile balance.</p>
         </div>
 
-        <div class="pricing-grid">
+        <div class="pricing-grid" data-reveal-group>
           <!-- Free Tier -->
-          <div class="pricing-card">
-            <div class="pricing-tier-name">MediTrack Free</div>
-            <div class="pricing-tier-price">
-              <span class="amount">৳0</span>
-              <span class="frequency">/ Forever</span>
+          <div class="card-shell pricing-card" data-reveal>
+            <div class="card-core pricing-inner">
+              <div class="pricing-tier-name">MediTrack Free</div>
+              <div class="pricing-tier-price">
+                <span class="amount">৳0</span>
+                <span class="frequency">/ forever</span>
+              </div>
+              <div class="pricing-disclaimer">Free forever for personal medication tracking and offline local reminders.</div>
+
+              <ul class="pricing-features-list">
+                <li class="pricing-feature-item">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  <span>Unlimited local dose reminders &amp; alarms</span>
+                </li>
+                <li class="pricing-feature-item">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  <span>Offline on-device medicine box OCR scanner</span>
+                </li>
+                <li class="pricing-feature-item">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  <span>Full DGDA Bangladesh generic database search</span>
+                </li>
+                <li class="pricing-feature-item">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  <span>5 AI prescription scans / day</span>
+                </li>
+              </ul>
+
+              <a href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk" class="btn btn-ghost pricing-cta" download>
+                <span>Download Free App</span>
+                <span class="btn-dot">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+                </span>
+              </a>
             </div>
-            <div class="pricing-disclaimer">Free forever for personal medication tracking and offline local reminders.</div>
-
-            <ul class="pricing-features-list">
-              <li class="pricing-feature-item">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>Unlimited local dose reminders & alarms</span>
-              </li>
-              <li class="pricing-feature-item">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>Offline on-device medicine box OCR scanner</span>
-              </li>
-              <li class="pricing-feature-item">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>Full DGDA Bangladesh generic database search</span>
-              </li>
-              <li class="pricing-feature-item">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>5 AI prescription scans / day</span>
-              </li>
-            </ul>
-
-            <a href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk" class="btn btn-secondary" download style="margin-top: auto;">
-              Download Free App
-            </a>
           </div>
 
           <!-- Premium Tier (BD Apps) -->
-          <div class="pricing-card popular">
-            <div class="pricing-badge-popular">MOST POPULAR</div>
-            <div class="pricing-tier-name">MediTrack Premium</div>
-            <div class="pricing-tier-price">
-              <span class="amount">৳2.99</span>
-              <span class="frequency">/ Day (+VAT+SD+SC)</span>
+          <div class="card-shell pricing-card popular" data-reveal>
+            <div class="pricing-badge-popular">Most Popular</div>
+            <div class="card-core pricing-inner">
+              <div class="pricing-tier-name">MediTrack Premium</div>
+              <div class="pricing-tier-price">
+                <span class="amount">৳2.99</span>
+                <span class="frequency">/ day (+VAT+SD+SC)</span>
+              </div>
+              <div class="pricing-disclaimer">Carrier billing on Robi (018) &amp; Airtel (016). Auto-renews daily until cancelled.</div>
+
+              <ul class="pricing-features-list">
+                <li class="pricing-feature-item">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  <span><strong>Unlimited Gemini 3.6 Flash</strong> prescription extraction</span>
+                </li>
+                <li class="pricing-feature-item">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  <span><strong>Automated BD Apps SMS alerts</strong> for family feature phones</span>
+                </li>
+                <li class="pricing-feature-item">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  <span>Unlimited Digital Prescription Vault cloud storage</span>
+                </li>
+                <li class="pricing-feature-item">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  <span>Priority 24/7 AI health advice &amp; generic comparator</span>
+                </li>
+              </ul>
+
+              <a href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk" class="btn btn-primary pricing-cta" download>
+                <span>Activate Premium via App</span>
+                <span class="btn-dot">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10" /><path d="M17 8v9H8" /></svg>
+                </span>
+              </a>
             </div>
-            <div class="pricing-disclaimer">Carrier billing on Robi (018) & Airtel (016). Auto-renews daily until cancelled.</div>
-
-            <ul class="pricing-features-list">
-              <li class="pricing-feature-item">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span><strong>Unlimited Gemini 3.6 Flash</strong> prescription extraction</span>
-              </li>
-              <li class="pricing-feature-item">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span><strong>Automated BD Apps SMS alerts</strong> for family feature phones</span>
-              </li>
-              <li class="pricing-feature-item">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>Unlimited Digital Prescription Vault cloud storage</span>
-              </li>
-              <li class="pricing-feature-item">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>Priority 24/7 AI health advice & generic comparator</span>
-              </li>
-            </ul>
-
-            <a href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk" class="btn btn-primary" download style="margin-top: auto;">
-              Activate Premium via App
-            </a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- =========================================================================
-       7. Community Reviews & Testimonials
-       ========================================================================= -->
+    <!-- 7. Community Reviews -->
     <section class="section" id="reviews">
       <div class="container">
-        <div class="section-header">
-          <span class="badge badge-mint section-tag">User Stories</span>
-          <h2>Trusted by families & medical professionals</h2>
+        <div class="section-head" data-reveal>
+          <span class="eyebrow eyebrow-mint">User Stories</span>
+          <h2>Trusted by families &amp; medical professionals</h2>
           <p>See how patients and doctors across Bangladesh use MediTrack daily.</p>
         </div>
 
-        <div class="reviews-grid">
-          <!-- Review 1 -->
-          <div class="review-card">
-            <div class="review-stars">★★★★★</div>
-            <div class="review-quote">"The Gemini prescription scanner is unbelievable. It accurately extracted my grandmother's multi-page chronic heart medicine schedule in 3 seconds."</div>
-            <div class="review-author">
-              <div class="review-author-avatar">TA</div>
-              <div class="review-author-info">
-                <div class="author-name">Tanvir Ahmed</div>
-                <div class="author-location">Dhanmondi, Dhaka</div>
+        <div class="reviews-grid" data-reveal-group>
+          <div class="card-shell" data-reveal>
+            <div class="card-core review-inner">
+              <div class="review-stars" aria-label="5 stars">★★★★★</div>
+              <div class="review-quote">"The Gemini prescription scanner is unbelievable. It accurately extracted my grandmother's multi-page chronic heart medicine schedule in 3 seconds."</div>
+              <div class="review-author">
+                <div class="review-author-avatar">TA</div>
+                <div>
+                  <div class="author-name">Tanvir Ahmed</div>
+                  <div class="author-location">Dhanmondi, Dhaka</div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Review 2 -->
-          <div class="review-card">
-            <div class="review-stars">★★★★★</div>
-            <div class="review-quote">"Finding cheaper generic equivalents in Taka right inside the app saved our family over ৳1,500 every single month on routine diabetes medication."</div>
-            <div class="review-author">
-              <div class="review-author-avatar">FN</div>
-              <div class="review-author-info">
-                <div class="author-name">Farhana Nazneen</div>
-                <div class="author-location">GEC Circle, Chittagong</div>
+          <div class="card-shell" data-reveal>
+            <div class="card-core review-inner">
+              <div class="review-stars" aria-label="5 stars">★★★★★</div>
+              <div class="review-quote">"Finding cheaper generic equivalents in Taka right inside the app saved our family over ৳1,500 every single month on routine diabetes medication."</div>
+              <div class="review-author">
+                <div class="review-author-avatar">FN</div>
+                <div>
+                  <div class="author-name">Farhana Nazneen</div>
+                  <div class="author-location">GEC Circle, Chittagong</div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Review 3 -->
-          <div class="review-card">
-            <div class="review-stars">★★★★★</div>
-            <div class="review-quote">"The Robi SMS integration is a lifesaver. My elderly father doesn't use a smartphone, but receives regular SMS alarms whenever his pressure medicine is due."</div>
-            <div class="review-author">
-              <div class="review-author-avatar">MR</div>
-              <div class="review-author-info">
-                <div class="author-name">Mahmudur Rahman</div>
-                <div class="author-location">Zindabazar, Sylhet</div>
+          <div class="card-shell" data-reveal>
+            <div class="card-core review-inner">
+              <div class="review-stars" aria-label="5 stars">★★★★★</div>
+              <div class="review-quote">"The Robi SMS integration is a lifesaver. My elderly father doesn't use a smartphone, but receives regular SMS alarms whenever his pressure medicine is due."</div>
+              <div class="review-author">
+                <div class="review-author-avatar">MR</div>
+                <div>
+                  <div class="author-name">Mahmudur Rahman</div>
+                  <div class="author-location">Zindabazar, Sylhet</div>
+                </div>
               </div>
             </div>
           </div>
@@ -693,52 +685,50 @@
       </div>
     </section>
 
-    <!-- =========================================================================
-       8. FAQ Accordion
-       ========================================================================= -->
+    <!-- 8. FAQ Accordion -->
     <section class="section" id="faq">
       <div class="container">
-        <div class="section-header">
-          <span class="badge badge-blue section-tag">Questions & Answers</span>
-          <h2>Frequently Asked Questions</h2>
+        <div class="section-head" data-reveal>
+          <span class="eyebrow eyebrow-blue">Questions &amp; Answers</span>
+          <h2>Frequently asked questions</h2>
           <p>Everything you need to know about MediTrack, data privacy, and carrier billing.</p>
         </div>
 
-        <div class="faq-container">
-          <div class="faq-item active">
+        <div class="faq-container" data-reveal-group>
+          <div class="faq-item active" data-reveal>
             <button class="faq-question">
               <span>Does MediTrack work without internet access?</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14" /><path d="m5 12 7 7 7-7" /></svg>
             </button>
             <div class="faq-answer">
               Yes! All daily dose reminders, routine tracking, and on-device medicine box OCR work 100% offline using Cloud Firestore local cache and Google ML Kit. An internet connection is only needed when scanning handwritten prescriptions with Gemini AI or refreshing the cloud database.
             </div>
           </div>
 
-          <div class="faq-item">
+          <div class="faq-item" data-reveal>
             <button class="faq-question">
               <span>How does the ৳2.99/day Robi/Airtel subscription work?</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14" /><path d="m5 12 7 7 7-7" /></svg>
             </button>
             <div class="faq-answer">
               Through the BD Apps telecom gateway, users with Robi (018) and Airtel (016) SIM cards can activate premium features directly. Simply enter your mobile number in the app, verify the 6-digit SMS OTP, and the charge is deducted from your mobile balance automatically. You can unsubscribe anytime by dialing *213# or from the app settings.
             </div>
           </div>
 
-          <div class="faq-item">
+          <div class="faq-item" data-reveal>
             <button class="faq-question">
               <span>Are my prescription images kept private and secure?</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14" /><path d="m5 12 7 7 7-7" /></svg>
             </button>
             <div class="faq-answer">
               Yes, absolutely. Prescription images and medical logs are stored under strict per-user security rules (<code>users/{uid}/...</code>) with Firebase App Check protection. We never sell medical data or use private prescriptions for public model training.
             </div>
           </div>
 
-          <div class="faq-item">
+          <div class="faq-item" data-reveal>
             <button class="faq-question">
               <span>How accurate is the DGDA medicine price database?</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14" /><path d="m5 12 7 7 7-7" /></svg>
             </button>
             <div class="faq-answer">
               Our medicine reference engine includes over 25,000 registered pharmaceuticals matching official Directorate General of Drug Administration (DGDA) Bangladesh Maximum Retail Prices (MRP).
@@ -748,66 +738,65 @@
       </div>
     </section>
 
-    <!-- =========================================================================
-       9. Final CTA Download Banner
-       ========================================================================= -->
+    <!-- 9. Final CTA Download Banner -->
     <section class="section" id="download">
       <div class="container">
-        <div class="cta-banner-card">
-          <div class="cta-content">
-            <h2>Ready to master your medication routine?</h2>
-            <p>Download MediTrack v0.0.3b APK today for Android. Instant offline reminders, AI prescription OCR, and 25,000+ Bangladesh generic price comparisons.</p>
+        <div class="cta-banner" data-reveal>
+          <div class="cta-inner">
+            <div class="cta-content">
+              <h2>Ready to master your medication routine?</h2>
+              <p>Download MediTrack v0.0.3b APK today for Android. Instant offline reminders, AI prescription OCR, and 25,000+ Bangladesh generic price comparisons.</p>
 
-            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
-              <a
-                href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk"
-                class="btn btn-primary"
-                download
-                style="background: var(--primary-blue); color: #FFFFFF;"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
+              <div class="cta-actions">
+                <a
+                  href="https://github.com/helix-77/MediTrack/releases/download/v0.0.3b/app-release.apk"
+                  class="btn btn-primary"
+                  download
+                >
+                  <span>Download APK (Free)</span>
+                  <span class="btn-dot">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+                  </span>
+                </a>
+
+                <a href="https://github.com/helix-77/MediTrack" target="_blank" rel="noopener noreferrer" class="btn btn-outline-light">
+                  <span>View on GitHub</span>
+                  <span class="btn-dot">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10" /><path d="M17 8v9H8" /></svg>
+                  </span>
+                </a>
+              </div>
+            </div>
+
+            <div class="cta-download">
+              <div class="cta-qr-box">
+                <svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="#0B1220" stroke-width="1.6" stroke-linecap="round">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                  <rect x="7" y="7" width="1" height="1"></rect>
+                  <rect x="17" y="7" width="1" height="1"></rect>
+                  <rect x="7" y="17" width="1" height="1"></rect>
+                  <rect x="17" y="17" width="1" height="1"></rect>
                 </svg>
-                <span>Download APK (Free)</span>
-              </a>
-
-              <a href="https://github.com/helix-77/MediTrack" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="background: rgba(255,255,255,0.1); color: #FFFFFF; border-color: rgba(255,255,255,0.2);">
-                <span>View on GitHub</span>
-              </a>
+              </div>
+              <span class="cta-qr-caption">Scan with phone camera to download directly</span>
             </div>
-          </div>
-
-          <div class="cta-download-box">
-            <div class="cta-qr-box">
-              <svg width="88" height="88" viewBox="0 0 24 24" fill="none" stroke="#18233D" stroke-width="1.8">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-                <rect x="7" y="7" width="1" height="1"></rect>
-                <rect x="17" y="7" width="1" height="1"></rect>
-                <rect x="7" y="17" width="1" height="1"></rect>
-                <rect x="17" y="17" width="1" height="1"></rect>
-              </svg>
-            </div>
-            <span style="font-size: 0.82rem; color: #94A3B8;">Scan with phone camera to download directly</span>
           </div>
         </div>
       </div>
     </section>
+    </main>
 
-    <!-- =========================================================================
-       10. Footer
-       ========================================================================= -->
+    <!-- 10. Footer -->
     <footer class="footer">
       <div class="container">
         <div class="footer-grid">
           <div class="footer-brand">
-            <div class="brand-logo">
-              <img src="favicon.svg" alt="MediTrack App Icon" class="logo-icon-img" width="32" height="32" />
-              <span>MediTrack</span>
+            <div class="brand">
+              <img src="favicon.svg" alt="MediTrack App Icon" class="brand-mark" width="30" height="30" />
+              <span class="brand-name">MediTrack</span>
             </div>
             <p>Intelligent medication management, dual OCR prescription scanning, and DGDA Bangladesh generic price comparison platform.</p>
           </div>
@@ -827,16 +816,16 @@
             <ul class="footer-links">
               <li><a href="#">Flutter 3.44 + Dart 3.6</a></li>
               <li><a href="#">Google Gemini 3.6 Flash</a></li>
-              <li><a href="#">Firebase AI Logic & Auth</a></li>
+              <li><a href="#">Firebase AI Logic &amp; Auth</a></li>
               <li><a href="#">Robi / Airtel BD Apps API</a></li>
             </ul>
           </div>
 
           <div class="footer-col">
-            <h4>Legal & Safety</h4>
+            <h4>Legal &amp; Safety</h4>
             <ul class="footer-links">
               <li><a href="#">Privacy Policy</a></li>
-              <li><a href="#">Terms & Conditions</a></li>
+              <li><a href="#">Terms &amp; Conditions</a></li>
               <li><a href="#">Medical Disclaimer</a></li>
               <li><a href="#">Developer Portal</a></li>
             </ul>
@@ -850,7 +839,16 @@
       </div>
     </footer>
 
-    <!-- Interactive Script -->
-    <script src="script.js"></script>
+
+
+
+
+
+
+
+
+
+
+
   </body>
 </html>
