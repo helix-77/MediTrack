@@ -1128,17 +1128,10 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
           hintText: '018XXXXXXXX or 016XXXXXXXX',
           keyboardType: TextInputType.phone,
           enabled: !_otpSent,
-          prefixIcon: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              '🇧🇩 +880',
-              style: AppTypography.bodyMedium.copyWith(
-                fontWeight: FontWeight.w700,
-                color: isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.textPrimary,
-              ),
-            ),
+          prefixIcon: const Icon(
+            Icons.phone_android_rounded,
+            color: AppColors.primaryBlue,
+            size: 20,
           ),
         ),
         if (_detectedOperator != null) ...[
