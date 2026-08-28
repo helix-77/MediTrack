@@ -377,15 +377,15 @@ class _HomeScreenState extends State<HomeScreen> {
       scheduledAt: item.log.scheduledAt,
     );
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ Recorded ${item.medicine.name} as taken!'),
-          backgroundColor: AppColors.success,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+    // if (mounted) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(
+    //       content: Text('✅ Recorded ${item.medicine.name} as taken!'),
+    //       backgroundColor: AppColors.success,
+    //       duration: const Duration(seconds: 2),
+    //     ),
+    //   );
+    // }
   }
 
   // ---------------------------------------------------------------------------

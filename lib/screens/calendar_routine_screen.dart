@@ -383,6 +383,7 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
                     isToday ? 'Today\'s Intake Progress' : DateFormat('EEEE, MMM d').format(_selectedDate),
                     style: AppTypography.headingSmall.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -430,8 +431,10 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isTaken
-                    ? AppColors.successLight
-                    : (isSkipped ? AppColors.dangerLight : AppColors.primaryBlueLight),
+                    ? (isDark ? AppColors.success.withValues(alpha: 0.18) : AppColors.successLight)
+                    : (isSkipped
+                        ? (isDark ? AppColors.danger.withValues(alpha: 0.18) : AppColors.dangerLight)
+                        : (isDark ? AppColors.primaryBlue.withValues(alpha: 0.18) : AppColors.primaryBlueLight)),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -451,13 +454,16 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
                     '${item.medicine.name} (${TimeFormatter.format24To12Hour(item.timeString)})',
                     style: AppTypography.headingSmall.copyWith(
                       fontSize: 14,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       decoration: isTaken ? TextDecoration.lineThrough : null,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${item.medicine.schedule.doseAmount} ${item.medicine.dosageForm ?? "unit(s)"} • ${TimeFormatter.formatDaysOfWeek(item.medicine.schedule.daysOfWeek)}',
-                    style: AppTypography.caption,
+                    style: AppTypography.caption.copyWith(
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),

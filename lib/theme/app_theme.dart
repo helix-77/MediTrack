@@ -15,13 +15,17 @@ class AppTheme {
         tertiary: AppColors.accentOrange,
         surface: AppColors.surface,
         error: AppColors.danger,
+        onSurface: AppColors.textPrimary,
+        onSurfaceVariant: AppColors.textSecondary,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.canvas,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: AppTypography.headingMedium,
+        titleTextStyle: AppTypography.headingMedium.copyWith(color: AppColors.textPrimary),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
       cardTheme: CardThemeData(
@@ -32,6 +36,45 @@ class AppTheme {
           borderRadius: AppRadii.cardRadius,
           side: BorderSide.none,
         ),
+      ),
+      listTileTheme: ListTileThemeData(
+        textColor: AppColors.textPrimary,
+        iconColor: AppColors.textSecondary,
+        titleTextStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+        subtitleTextStyle: AppTypography.caption.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.surface,
+        titleTextStyle: AppTypography.headingMedium.copyWith(color: AppColors.textPrimary),
+        contentTextStyle: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      iconTheme: const IconThemeData(
+        color: AppColors.textPrimary,
+      ),
+      textTheme: TextTheme(
+        displayLarge: AppTypography.displayLarge.copyWith(color: AppColors.textPrimary),
+        displayMedium: AppTypography.displayMedium.copyWith(color: AppColors.textPrimary),
+        headlineLarge: AppTypography.headingLarge.copyWith(color: AppColors.textPrimary),
+        headlineMedium: AppTypography.headingMedium.copyWith(color: AppColors.textPrimary),
+        headlineSmall: AppTypography.headingSmall.copyWith(color: AppColors.textPrimary),
+        titleLarge: AppTypography.headingLarge.copyWith(color: AppColors.textPrimary),
+        titleMedium: AppTypography.headingMedium.copyWith(color: AppColors.textPrimary),
+        titleSmall: AppTypography.headingSmall.copyWith(color: AppColors.textPrimary),
+        bodyLarge: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+        bodyMedium: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
+        bodySmall: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+        labelLarge: AppTypography.buttonText,
+        labelMedium: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+        labelSmall: AppTypography.caption.copyWith(color: AppColors.textSecondary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -70,7 +113,9 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        hintStyle: AppTypography.bodySmall,
+        hintStyle: AppTypography.bodySmall.copyWith(
+          color: AppColors.textMuted,
+        ),
         labelStyle: AppTypography.bodySmall.copyWith(
           color: AppColors.textSecondary,
         ),
@@ -98,7 +143,9 @@ class AppTheme {
           borderRadius: AppRadii.pillRadius,
           side: BorderSide.none,
         ),
-        labelStyle: AppTypography.caption,
+        labelStyle: AppTypography.caption.copyWith(
+          color: AppColors.textPrimary,
+        ),
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.divider,
@@ -118,6 +165,10 @@ class AppTheme {
         tertiary: AppColors.accentOrange,
         surface: AppColors.darkSurface,
         error: AppColors.danger,
+        onSurface: AppColors.darkTextPrimary,
+        onSurfaceVariant: AppColors.darkTextSecondary,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.darkCanvas,
@@ -137,6 +188,45 @@ class AppTheme {
           borderRadius: AppRadii.cardRadius,
           side: BorderSide.none,
         ),
+      ),
+      listTileTheme: ListTileThemeData(
+        textColor: AppColors.darkTextPrimary,
+        iconColor: AppColors.darkTextSecondary,
+        titleTextStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+        subtitleTextStyle: AppTypography.caption.copyWith(
+          color: AppColors.darkTextSecondary,
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.darkSurface,
+        titleTextStyle: AppTypography.headingMedium.copyWith(color: AppColors.darkTextPrimary),
+        contentTextStyle: AppTypography.bodySmall.copyWith(color: AppColors.darkTextSecondary),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.darkSurface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      iconTheme: const IconThemeData(
+        color: AppColors.darkTextPrimary,
+      ),
+      textTheme: TextTheme(
+        displayLarge: AppTypography.displayLarge.copyWith(color: AppColors.darkTextPrimary),
+        displayMedium: AppTypography.displayMedium.copyWith(color: AppColors.darkTextPrimary),
+        headlineLarge: AppTypography.headingLarge.copyWith(color: AppColors.darkTextPrimary),
+        headlineMedium: AppTypography.headingMedium.copyWith(color: AppColors.darkTextPrimary),
+        headlineSmall: AppTypography.headingSmall.copyWith(color: AppColors.darkTextPrimary),
+        titleLarge: AppTypography.headingLarge.copyWith(color: AppColors.darkTextPrimary),
+        titleMedium: AppTypography.headingMedium.copyWith(color: AppColors.darkTextPrimary),
+        titleSmall: AppTypography.headingSmall.copyWith(color: AppColors.darkTextPrimary),
+        bodyLarge: AppTypography.bodyLarge.copyWith(color: AppColors.darkTextPrimary),
+        bodyMedium: AppTypography.bodyMedium.copyWith(color: AppColors.darkTextPrimary),
+        bodySmall: AppTypography.bodySmall.copyWith(color: AppColors.darkTextSecondary),
+        labelLarge: AppTypography.buttonText,
+        labelMedium: AppTypography.caption.copyWith(color: AppColors.darkTextSecondary),
+        labelSmall: AppTypography.caption.copyWith(color: AppColors.darkTextSecondary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

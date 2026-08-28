@@ -27,6 +27,8 @@ class EmptyStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SoftCard(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
       child: Center(
@@ -37,7 +39,8 @@ class EmptyStateView extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: iconBgColor ?? AppColors.primaryBlueLight,
+                color: iconBgColor ??
+                    (isDark ? AppColors.primaryBlue.withValues(alpha: 0.18) : AppColors.primaryBlueLight),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -50,13 +53,16 @@ class EmptyStateView extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: AppTypography.headingMedium,
+              style: AppTypography.headingMedium.copyWith(
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               description,
               textAlign: TextAlign.center,
               style: AppTypography.bodySmall.copyWith(
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                 height: 1.5,
               ),
             ),

@@ -483,7 +483,12 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -839,7 +844,11 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline, size: 18, color: AppColors.textSecondary),
+                        Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(

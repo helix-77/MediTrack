@@ -333,17 +333,25 @@ class _NearbyPharmaciesScreenState extends State<NearbyPharmaciesScreen> {
               children: [
                 Text(
                   title,
-                  style: AppTypography.headingSmall.copyWith(fontSize: 14),
+                  style: AppTypography.headingSmall.copyWith(
+                    fontSize: 14,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: AppTypography.caption),
+                Text(
+                  subtitle,
+                  style: AppTypography.caption.copyWith(
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
-          const Icon(
+          Icon(
             Icons.arrow_forward_ios_rounded,
             size: 14,
-            color: AppColors.textSecondary,
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
           ),
         ],
       ),

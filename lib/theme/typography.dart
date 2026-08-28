@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'colors.dart';
 
 /// Centralized typographic hierarchy for MediTrack.
 /// Built with Plus Jakarta Sans to deliver a clean, modern, and clinical yet friendly healthcare experience.
+/// Font colors are unconstrained (null) so they dynamically adapt to Theme.of(context) (Light/Dark mode).
 class AppTypography {
   // Display Heading (Hero / Welcome / Numbers)
   static TextStyle displayLarge = GoogleFonts.plusJakartaSans(
     fontSize: 32,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
-    color: AppColors.textPrimary,
   );
 
   static TextStyle displayMedium = GoogleFonts.plusJakartaSans(
     fontSize: 28,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.4,
-    color: AppColors.textPrimary,
   );
 
   // Section & Screen Headings
@@ -25,21 +23,18 @@ class AppTypography {
     fontSize: 24,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.3,
-    color: AppColors.textPrimary,
   );
 
   static TextStyle headingMedium = GoogleFonts.plusJakartaSans(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.2,
-    color: AppColors.textPrimary,
   );
 
   static TextStyle headingSmall = GoogleFonts.plusJakartaSans(
     fontSize: 15,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.1,
-    color: AppColors.textPrimary,
   );
 
   // Body Typography
@@ -48,7 +43,6 @@ class AppTypography {
     fontWeight: FontWeight.w400,
     letterSpacing: 0,
     height: 1.45,
-    color: AppColors.textPrimary,
   );
 
   static TextStyle bodyMedium = GoogleFonts.plusJakartaSans(
@@ -56,7 +50,6 @@ class AppTypography {
     fontWeight: FontWeight.w400,
     letterSpacing: 0,
     height: 1.4,
-    color: AppColors.textPrimary,
   );
 
   static TextStyle bodySmall = GoogleFonts.plusJakartaSans(
@@ -64,14 +57,12 @@ class AppTypography {
     fontWeight: FontWeight.w400,
     letterSpacing: 0,
     height: 1.35,
-    color: AppColors.textSecondary,
   );
 
   static TextStyle caption = GoogleFonts.plusJakartaSans(
     fontSize: 11,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.1,
-    color: AppColors.textSecondary,
   );
 
   // Interactive Buttons & Pills

@@ -162,7 +162,7 @@ class _AccountUpgradeScreenState extends State<AccountUpgradeScreen> {
                         _isPasswordVisible
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
-                        color: AppColors.textSecondary,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                         size: 20,
                       ),
                     ),

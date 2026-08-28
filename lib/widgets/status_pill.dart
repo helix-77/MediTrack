@@ -33,33 +33,34 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Color bg;
     Color fg;
 
     switch (type) {
       case PillType.primary:
-        bg = AppColors.primaryBlueLight;
+        bg = isDark ? AppColors.primaryBlue.withValues(alpha: 0.2) : AppColors.primaryBlueLight;
         fg = AppColors.primaryBlue;
         break;
       case PillType.success:
-        bg = AppColors.successLight;
+        bg = isDark ? AppColors.success.withValues(alpha: 0.2) : AppColors.successLight;
         fg = AppColors.success;
         break;
       case PillType.warning:
-        bg = AppColors.accentOrangeLight;
-        fg = const Color(0xFFD97706); // Darker amber for contrast
+        bg = isDark ? AppColors.warning.withValues(alpha: 0.2) : AppColors.accentOrangeLight;
+        fg = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
         break;
       case PillType.danger:
-        bg = AppColors.dangerLight;
-        fg = AppColors.danger;
+        bg = isDark ? AppColors.danger.withValues(alpha: 0.2) : AppColors.dangerLight;
+        fg = isDark ? const Color(0xFFF87171) : AppColors.danger;
         break;
       case PillType.pink:
-        bg = AppColors.accentPinkLight;
+        bg = isDark ? AppColors.accentPink.withValues(alpha: 0.2) : AppColors.accentPinkLight;
         fg = AppColors.accentPink;
         break;
       case PillType.neutral:
-        bg = AppColors.divider.withValues(alpha: 0.5);
-        fg = AppColors.textSecondary;
+        bg = isDark ? AppColors.darkSurfaceElevated : AppColors.divider.withValues(alpha: 0.5);
+        fg = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
         break;
     }
 

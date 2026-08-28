@@ -51,7 +51,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
@@ -948,16 +955,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(profile.displayName, style: AppTypography.headingSmall),
+                              Text(
+                                profile.displayName,
+                                style: AppTypography.headingSmall.copyWith(
+                                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                ),
+                              ),
                               const SizedBox(height: 2),
                               Text(
                                 profile.bdMobile ?? (profile.email.isNotEmpty ? profile.email : 'Tap to edit profile details'),
-                                style: AppTypography.caption,
+                                style: AppTypography.caption.copyWith(
+                                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 14,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
                       ],
                     );
                   },
@@ -973,7 +991,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.notifications_active_outlined, color: AppColors.primaryBlue),
-                      title: Text('Pause Notifications', style: AppTypography.bodyMedium),
+                      title: Text(
+                        'Pause Notifications',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
                       trailing: Switch(
                         value: _pauseNotifications,
                         activeThumbColor: AppColors.primaryBlue,
@@ -984,8 +1007,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.tune_rounded, color: AppColors.primaryBlue),
-                      title: Text('Reminder & Alert Rules', style: AppTypography.bodyMedium),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      title: Text(
+                        'Reminder & Alert Rules',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
                       onTap: () => _showNotificationSettingsModal(profile),
                     ),
                   ],
@@ -1001,7 +1033,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.dark_mode_outlined, color: AppColors.primaryBlue),
-                      title: Text('Dark Mode', style: AppTypography.bodyMedium),
+                      title: Text(
+                        'Dark Mode',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
                       trailing: Switch(
                         value: themeNotifier.isDarkMode,
                         activeThumbColor: AppColors.primaryBlue,
@@ -1012,33 +1049,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.language_rounded, color: AppColors.primaryBlue),
-                      title: Text('Language / ভাষা', style: AppTypography.bodyMedium),
+                      title: Text(
+                        'Language / ভাষা',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
                       subtitle: Text(
                         localeNotifier.isBangla ? 'বাংলা (Bangla)' : 'English',
-                        style: AppTypography.caption,
+                        style: AppTypography.caption.copyWith(
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
                       ),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
                       onTap: _showLanguageModal,
                     ),
                     const Divider(height: 4),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.access_time_rounded, color: AppColors.primaryBlue),
-                      title: Text('Routine Time Schedule', style: AppTypography.bodyMedium),
+                      title: Text(
+                        'Routine Time Schedule',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
                       subtitle: Text(
                         'Set Morning, Noon, Evening & Night home grid ranges',
-                        style: AppTypography.caption,
+                        style: AppTypography.caption.copyWith(
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
                       ),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
                       onTap: _showRoutineScheduleModal,
                     ),
                     const Divider(height: 4),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.sms_outlined, color: AppColors.primaryBlue),
-                      title: Text('BD Apps SMS Service', style: AppTypography.bodyMedium),
-                      subtitle: Text('Carrier alert diagnostics', style: AppTypography.caption),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      title: Text(
+                        'BD Apps SMS Service',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Carrier alert diagnostics',
+                        style: AppTypography.caption.copyWith(
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
                       onTap: () => _showBdAppsDiagnosticModal(profile),
                     ),
                   ],
@@ -1054,32 +1127,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.help_outline_rounded, color: AppColors.primaryBlue),
-                      title: Text('FAQ & Help Guide', style: AppTypography.bodyMedium),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      title: Text(
+                        'FAQ & Help Guide',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
                       onTap: _showFaqModal,
                     ),
                     const Divider(height: 4),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.info_outline_rounded, color: AppColors.primaryBlue),
-                      title: Text('Terms of Service', style: AppTypography.bodyMedium),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      title: Text(
+                        'Terms of Service',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
                       onTap: _showTermsModal,
                     ),
                     const Divider(height: 4),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.shield_outlined, color: AppColors.primaryBlue),
-                      title: Text('Privacy & Security Policy', style: AppTypography.bodyMedium),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      title: Text(
+                        'Privacy & Security Policy',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
                       onTap: _showPrivacyModal,
                     ),
                     const Divider(height: 4),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.delete_outline, color: AppColors.danger),
-                      title: Text('Delete Account', style: AppTypography.bodyMedium),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      title: Text(
+                        'Delete Account',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
                       onTap: _showDeleteAccountModal,
                     ),
                   ],
