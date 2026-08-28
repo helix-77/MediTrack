@@ -342,17 +342,12 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
       description =
           'Keep your doctor prescriptions, diagnostic reports, and medical advice safely organized in one place.';
       buttonLabel = 'Scan Prescription for Myself';
-    } else if (_selectedFamilyMemberId != null) {
+    } else {
       final name = memberNameMap[_selectedFamilyMemberId] ?? 'Family Member';
       title = 'No Prescriptions for $name';
       description =
           'Store and track $name\'s doctor prescriptions, dosage plans, and medical records.';
       buttonLabel = 'Scan Prescription for $name';
-    } else {
-      title = 'Your Vault is Empty';
-      description =
-          'Keep your doctor prescriptions, diagnostic reports, and medical advice safely organized in one place.';
-      buttonLabel = 'Scan First Prescription';
     }
 
     return Center(

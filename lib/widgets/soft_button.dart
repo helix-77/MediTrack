@@ -79,6 +79,7 @@ class SoftPrimaryButton extends StatelessWidget {
                     const SizedBox(width: 8),
                   ],
                   Flexible(
+                    fit: FlexFit.loose,
                     child: Text(
                       label,
                       style: AppTypography.buttonText.copyWith(color: fg),
@@ -156,6 +157,7 @@ class SoftSecondaryButton extends StatelessWidget {
                     const SizedBox(width: 8),
                   ],
                   Flexible(
+                    fit: FlexFit.loose,
                     child: Text(
                       label,
                       style: AppTypography.buttonText.copyWith(color: text),
