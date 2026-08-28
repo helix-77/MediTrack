@@ -549,29 +549,19 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: AppRadii.cardRadius,
-        gradient: isDark
-            ? const LinearGradient(
-                colors: [
-                  Color(0xFF1E293B),
-                  Color(0xFF1E3A8A),
-                  Color(0xFF2E1065),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : const LinearGradient(
-                colors: [
-                  Color(0xFF2563EB),
-                  Color(0xFF4338CA),
-                  Color(0xFF6D28D9),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF4F6BFF), // 0%
+            Color(0xFF78A5FF), // 100%
+          ],
+          stops: [0.0, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : const Color(0xFF2563EB))
-                .withValues(alpha: 0.28),
+            color: const Color(0xFF4F6BFF)
+                .withValues(alpha: isDark ? 0.35 : 0.30),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1158,15 +1148,15 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
             ],
           ),
         ],
-        const SizedBox(height: 6),
-        Text(
-          'A 6-digit verification code will be sent to this number via BD Apps SMS.',
-          style: AppTypography.caption.copyWith(
-            color: isDark
-                ? AppColors.darkTextSecondary
-                : AppColors.textSecondary,
-          ),
-        ),
+        // const SizedBox(height: 6),
+        // Text(
+        //   'A 6-digit verification code will be sent to this number via BD Apps SMS.',
+        //   style: AppTypography.caption.copyWith(
+        //     color: isDark
+        //         ? AppColors.darkTextSecondary
+        //         : AppColors.textSecondary,
+        //   ),
+        // ),
       ],
     );
   }
