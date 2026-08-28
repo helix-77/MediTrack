@@ -19,6 +19,7 @@ import 'theme/theme_notifier.dart';
 import 'l10n/locale_notifier.dart';
 import 'services/auth_service.dart';
 import 'services/avatar_service.dart';
+import 'services/family_filter_notifier.dart';
 import 'services/routine_schedule_service.dart';
 import 'services/entitlement_service.dart';
 import 'services/notification_service.dart';
@@ -149,6 +150,9 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
         ),
         ChangeNotifierProvider<RoutineScheduleNotifier>(
           create: (_) => RoutineScheduleNotifier(),
+        ),
+        ChangeNotifierProvider<FamilyFilterNotifier>(
+          create: (_) => FamilyFilterNotifier(),
         ),
         ChangeNotifierProvider<EntitlementService>.value(
           value: _entitlementService,

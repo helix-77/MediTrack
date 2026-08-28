@@ -29,12 +29,12 @@ class PrescriptionVaultScreen extends StatefulWidget {
 class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
   final PrescriptionService _prescriptionService = PrescriptionService();
   final FamilyService _familyService = FamilyService();
-  String? _selectedFamilyMemberId;
+  late String _selectedFamilyMemberId;
 
   @override
   void initState() {
     super.initState();
-    _selectedFamilyMemberId = widget.initialFamilyMemberId;
+    _selectedFamilyMemberId = widget.initialFamilyMemberId ?? 'self';
   }
 
   void _showPrescriptionViewer(Prescription rx, Map<String, String> memberNameMap) {
@@ -249,12 +249,11 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
   List<Prescription> _filterPrescriptions(List<Prescription> all) {
     if (_selectedFamilyMemberId == 'self') {
       return all.where((p) => p.familyMemberId == null).toList();
-    } else if (_selectedFamilyMemberId != null) {
+    } else {
       return all
           .where((p) => p.familyMemberId == _selectedFamilyMemberId)
           .toList();
     }
-    return all;
   }
 
   Widget _buildFamilyFilterChips(List<FamilyMember> members, bool isDark) {
@@ -263,13 +262,6 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _buildFilterChipItem(
-            label: 'All Vaults',
-            isSelected: _selectedFamilyMemberId == null,
-            onSelected: () => setState(() => _selectedFamilyMemberId = null),
-            isDark: isDark,
-          ),
-          const SizedBox(width: 8),
           _buildFilterChipItem(
             label: 'Myself',
             isSelected: _selectedFamilyMemberId == 'self',
@@ -285,8 +277,7 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
                 isSelected: _selectedFamilyMemberId == m.id,
                 onSelected: () {
                   setState(() {
-                    _selectedFamilyMemberId =
-                        _selectedFamilyMemberId == m.id ? null : m.id;
+                    _selectedFamilyMemberId = m.id;
                   });
                 },
                 isDark: isDark,

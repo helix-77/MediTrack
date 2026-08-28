@@ -481,7 +481,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'MediTrack AI is a Premium feature (৳2.00/day)',
+                      'MediTrack AI is a Premium feature (৳2.99/day)',
                       style: AppTypography.caption.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.warning,

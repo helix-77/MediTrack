@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../models/family_member.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
+import '../services/family_service.dart';
+import '../services/family_filter_notifier.dart';
 import '../services/medicine_service.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
@@ -23,6 +27,7 @@ class CalendarRoutineScreen extends StatefulWidget {
 
 class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
   final MedicineService _medicineService = MedicineService();
+  final FamilyService _familyService = FamilyService();
   late final ScrollController _dateScrollController;
 
   late final DateTime _startDate;
@@ -115,6 +120,7 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isToday = _isSameDay(_selectedDate, DateTime.now());
+    final familyFilter = context.watch<FamilyFilterNotifier>();
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
@@ -147,7 +153,10 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
             );
           }
 
-          final medicines = medSnapshot.data ?? [];
+          final allMedicines = medSnapshot.data ?? [];
+          final medicines = allMedicines
+              .where((m) => m.familyMemberId == familyFilter.currentFamilyMemberId)
+              .toList();
 
           return StreamBuilder<List<DoseLog>>(
             stream: _medicineService.streamDateDoseLogs(_selectedDate),
@@ -162,6 +171,9 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
               return ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 children: [
+                  // Family Member Filter Chips
+                  _buildFamilyFilterChips(familyFilter, isDark),
+
                   // Date Bar Selector
                   _buildDateSelectorBar(isDark),
                   const SizedBox(height: 18),
@@ -195,6 +207,85 @@ class _CalendarRoutineScreenState extends State<CalendarRoutineScreen> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFamilyFilterChips(FamilyFilterNotifier familyFilter, bool isDark) {
+    return StreamBuilder<List<FamilyMember>>(
+      stream: _familyService.streamFamilyMembers(),
+      builder: (context, snapshot) {
+        final members = snapshot.data ?? [];
+        if (members.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChipItem(
+                  label: 'Myself',
+                  isSelected: familyFilter.isSelf,
+                  onSelected: () => familyFilter.selectSelf(),
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 8),
+                ...members.map(
+                  (m) => Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: _buildFilterChipItem(
+                      label: m.displayName,
+                      isSelected: familyFilter.selectedMemberId == m.id,
+                      onSelected: () => familyFilter.selectMember(m.id),
+                      isDark: isDark,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChipItem({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onSelected,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: onSelected,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryBlue
+              : (isDark ? AppColors.darkSurface : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isSelected
+              ? AppShadows.subtle
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+          ),
+        ),
       ),
     );
   }

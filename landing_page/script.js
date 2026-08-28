@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       price: 'MRP: ৳16.00 / tab',
       generic: 'Montelukast 10mg',
       alternatives: [
-        { name: 'Romilast 10mg', mfg: 'Popular Pharmaceuticals', price: '৳12.00', saving: 'Save 25%' },
+        { name: 'Romilast 10mg', mfg: 'Popular Pharmaceuticals', price: '৳12.99', saving: 'Save 25%' },
         { name: 'Monas 10mg', mfg: 'Acme Laboratories Ltd.', price: '৳14.00', saving: 'Save 12%' },
         { name: 'Odmon 10mg', mfg: 'Square Pharmaceuticals', price: '৳14.00', saving: 'Save 12%' },
         { name: 'Mona 10mg', mfg: 'Renata Limited', price: '৳14.00', saving: 'Save 12%' }

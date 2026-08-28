@@ -51,7 +51,7 @@ The biggest remaining latency lever for Flash-tier "thinking" models is disablin
 - **`lib/screens/ai_assistant_screen.dart`** (persistent tab, can't be popped):
   - `_sendMessage()` now calls `entitlement.requirePremium(context, feature: EntitlementFeature.aiAssistant)` **before** calling Gemini; bails out early if not allowed.
   - Calls `entitlement.recordAiUsage()` (fire-and-forget via `unawaited`) after a successful AI response.
-  - Replaced the fake "5 requests/day" banner with an accurate "MediTrack AI is a Premium feature (৳2.00/day)" CTA for free users, plus a live quota readout (`entitlement.checkAiQuota().statusMessage`) for already-subscribed users.
+  - Replaced the fake "5 requests/day" banner with an accurate "MediTrack AI is a Premium feature (৳2.99/day)" CTA for free users, plus a live quota readout (`entitlement.checkAiQuota().statusMessage`) for already-subscribed users.
 - **`lib/screens/scan_prescription_screen.dart`**: wrapped `build()` in `PremiumGate(feature: EntitlementFeature.prescriptionOcr)`. Calls `recordPrescriptionScanUsage()` after a successful extraction.
 - **`lib/screens/medicine_search_screen.dart`**: wrapped `build()` in `PremiumGate(feature: EntitlementFeature.priceLookup)`.
 - **`lib/screens/nearby_pharmacies_screen.dart`**: wrapped `build()` in `PremiumGate(feature: EntitlementFeature.nearbyPharmacy)`.

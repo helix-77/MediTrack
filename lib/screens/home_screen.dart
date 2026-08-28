@@ -10,6 +10,7 @@ import '../services/routine_schedule_service.dart';
 import '../services/medicine_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/family_service.dart';
+import '../services/family_filter_notifier.dart';
 import '../logic/refill_calculator.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
@@ -40,8 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final UserProfileService _profileService = UserProfileService();
   final FamilyService _familyService = FamilyService();
 
-  String? _selectedFamilyMemberId; // null = all, 'self' = self, or member.id
-
   String _getGreetingSubtitle() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good morning';
@@ -52,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final familyFilter = context.watch<FamilyFilterNotifier>();
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
@@ -67,16 +67,9 @@ class _HomeScreenState extends State<HomeScreen> {
               stream: _medicineService.streamMedicines(),
               builder: (context, medSnapshot) {
                 final allMedicines = medSnapshot.data ?? [];
-                var filteredMedicines = allMedicines;
-                if (_selectedFamilyMemberId == 'self') {
-                  filteredMedicines = filteredMedicines
-                      .where((m) => m.familyMemberId == null)
-                      .toList();
-                } else if (_selectedFamilyMemberId != null) {
-                  filteredMedicines = filteredMedicines
-                      .where((m) => m.familyMemberId == _selectedFamilyMemberId)
-                      .toList();
-                }
+                final filteredMedicines = allMedicines
+                    .where((m) => m.familyMemberId == familyFilter.currentFamilyMemberId)
+                    .toList();
 
                 return StreamBuilder<List<DoseLog>>(
                   stream: _medicineService.streamTodayDoseLogs(),
@@ -120,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 18),
 
                         // Optional: Family Member Filters (if members exist)
-                        _buildFamilyFilterChips(isDark),
+                        _buildFamilyFilterChips(familyFilter, isDark),
 
                         // 2. Combined Hero Progress Card: "Today's Health & Overview"
                         _buildTodaysHealthCard(
@@ -909,14 +902,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.document_scanner_rounded,
                   height: 44,
                   onPressed: () {
+                    final familyFilter = context.read<FamilyFilterNotifier>();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => ScanPrescriptionScreen(
                           initialFamilyMemberId:
-                              _selectedFamilyMemberId == 'self'
-                                  ? null
-                                  : _selectedFamilyMemberId,
+                              familyFilter.currentFamilyMemberId,
                         ),
                       ),
                     );
@@ -930,11 +922,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.folder_shared_outlined,
                   height: 44,
                   onPressed: () {
+                    final familyFilter = context.read<FamilyFilterNotifier>();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => PrescriptionVaultScreen(
-                          initialFamilyMemberId: _selectedFamilyMemberId,
+                          initialFamilyMemberId: familyFilter.selectedMemberId,
                         ),
                       ),
                     );
@@ -965,7 +958,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 _buildQuickActionChip(
                   icon: Icons.search_rounded,
-                  label: 'Price & Generic',
+                  label: 'Price & Info',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -979,7 +972,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 _buildQuickActionChip(
                   icon: Icons.local_pharmacy_outlined,
-                  label: 'Nearby Pharmacies',
+                  label: 'Pharmacies',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -992,7 +985,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 8),
                 _buildQuickActionChip(
-                  icon: Icons.picture_as_pdf_outlined,
+                  icon: Icons.description_outlined,
                   label: 'Doctor Summary',
                   onTap: () {
                     Navigator.push(
@@ -1020,18 +1013,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: AppShadows.subtle,
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.darkDivider : AppColors.divider,
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: AppColors.primaryBlue),
+            Icon(icon, size: 16, color: AppColors.primaryBlue),
             const SizedBox(width: 6),
             Text(
               label,
@@ -1049,7 +1045,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ---------------------------------------------------------------------------
   // FAMILY FILTER CHIPS
   // ---------------------------------------------------------------------------
-  Widget _buildFamilyFilterChips(bool isDark) {
+  Widget _buildFamilyFilterChips(FamilyFilterNotifier familyFilter, bool isDark) {
     return StreamBuilder<List<FamilyMember>>(
       stream: _familyService.streamFamilyMembers(),
       builder: (context, snapshot) {
@@ -1063,16 +1059,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               children: [
                 _buildFilterChipItem(
-                  label: 'All Medicines',
-                  isSelected: _selectedFamilyMemberId == null,
-                  onSelected: () => setState(() => _selectedFamilyMemberId = null),
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChipItem(
                   label: 'Myself',
-                  isSelected: _selectedFamilyMemberId == 'self',
-                  onSelected: () => setState(() => _selectedFamilyMemberId = 'self'),
+                  isSelected: familyFilter.isSelf,
+                  onSelected: () => familyFilter.selectSelf(),
                   isDark: isDark,
                 ),
                 const SizedBox(width: 8),
@@ -1081,12 +1070,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.only(right: 8.0),
                     child: _buildFilterChipItem(
                       label: m.displayName,
-                      isSelected: _selectedFamilyMemberId == m.id,
-                      onSelected: () {
-                        setState(() {
-                          _selectedFamilyMemberId = _selectedFamilyMemberId == m.id ? null : m.id;
-                        });
-                      },
+                      isSelected: familyFilter.selectedMemberId == m.id,
+                      onSelected: () => familyFilter.selectMember(m.id),
                       isDark: isDark,
                     ),
                   ),

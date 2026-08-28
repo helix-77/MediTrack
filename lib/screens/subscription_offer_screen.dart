@@ -509,7 +509,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'I agree to subscribe to MediTrack Premium at ৳2.00/day ${SubscriptionOfferConfig.taxSuffix} and accept the terms below.',
+                                'I agree to subscribe to MediTrack Premium at ৳2.99/day ${SubscriptionOfferConfig.taxSuffix} and accept the terms below.',
                                 style: AppTypography.caption.copyWith(
                                   height: 1.35,
                                 ),

@@ -34,7 +34,7 @@ void main() {
 
     // Headline & Price
     expect(find.text(SubscriptionOfferConfig.headline), findsOneWidget);
-    expect(find.text('৳2.00'), findsOneWidget);
+    expect(find.text('৳2.99'), findsOneWidget);
     expect(find.textContaining('VAT+SD+SC'), findsWidgets);
 
     // Carrier Badges
@@ -48,7 +48,7 @@ void main() {
 
     // Consent Checkbox
     expect(find.byType(Checkbox), findsOneWidget);
-    expect(find.textContaining('I agree to subscribe to MediTrack Premium at ৳2.00/day'), findsOneWidget);
+    expect(find.textContaining('I agree to subscribe to MediTrack Premium at ৳2.99/day'), findsOneWidget);
     expect(find.text('Terms & Conditions'), findsOneWidget);
     expect(find.text('Privacy Policy'), findsOneWidget);
   });

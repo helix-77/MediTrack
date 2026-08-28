@@ -10,7 +10,7 @@
 - 📷 **OCR Box Scanner & Vault**: Fast on-device medicine box recognition and secure prescription storage (Free forever).
 - 📅 **Calendar & Daily Routine**: Interactive calendar medication schedules and refill tracker (Free forever).
 - 🛒 **Medicine Buy List**: Keep track of low-stock medications and restocking lists (Free forever).
-- ⭐ **MediTrack Premium (BD Apps Carrier Micro-Subscription - ৳2.00/day)**:
+- ⭐ **MediTrack Premium (BD Apps Carrier Micro-Subscription - ৳2.99/day)**:
   - 🤖 **AI Assistant**: Multimodal Gemini 3.6 Flash health insights and advice.
   - 📝 **AI Prescription OCR**: Structured dosage and schedule extraction from prescription photos.
   - 🔍 **Medicine Price & Generic Lookup**: Price checking and generic alternative finder.

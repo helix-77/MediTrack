@@ -23,8 +23,13 @@ import '../widgets/soft_modal_sheet.dart';
 
 class AddEditMedicineScreen extends StatefulWidget {
   final Medicine? medicine;
+  final String? initialFamilyMemberId;
 
-  const AddEditMedicineScreen({super.key, this.medicine});
+  const AddEditMedicineScreen({
+    super.key,
+    this.medicine,
+    this.initialFamilyMemberId,
+  });
 
   @override
   State<AddEditMedicineScreen> createState() => _AddEditMedicineScreenState();
@@ -80,6 +85,8 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
       _doseTimes = List.from(med.schedule.doseTimes);
       _daysOfWeek = List.from(med.schedule.daysOfWeek);
       _selectedFamilyMemberId = med.familyMemberId;
+    } else {
+      _selectedFamilyMemberId = widget.initialFamilyMemberId;
     }
 
     _medicineSubscription = _medicineService.streamMedicines().listen((meds) {

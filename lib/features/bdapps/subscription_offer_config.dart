@@ -5,7 +5,7 @@ class SubscriptionOfferConfig {
   const SubscriptionOfferConfig._();
 
   /// Daily subscription price in BDT.
-  static const double dailyPrice = 2.00;
+  static const double dailyPrice = 2.99;
 
   /// Tax disclosure suffix required by Bangladesh telco regulations.
   static const String taxSuffix = '+(VAT+SD+SC)';
@@ -64,7 +64,7 @@ class SubscriptionOfferConfig {
 MediTrack Premium Subscription Terms & Conditions (BD Apps):
 
 1. Eligibility: Subscription is available exclusively for active Robi and Airtel prepaid and postpaid mobile subscribers in Bangladesh.
-2. Pricing & Billing: The service costs ৳2.00 per day (+VAT, SD, and SC). The charge is deducted automatically from your mobile account balance every 24 hours.
+2. Pricing & Billing: The service costs ৳2.99 per day (+VAT, SD, and SC). The charge is deducted automatically from your mobile account balance every 24 hours.
 3. Auto-Renewal: Your subscription will renew automatically every day until you explicitly cancel or unsubscribe.
 4. Cancellation: You can unsubscribe at any time at zero additional cost directly through the Profile tab in MediTrack or by dialing the standard Robi/Airtel BD Apps USSD menu (*213#).
 5. Data Privacy & AI Usage: MediTrack AI features are powered by Google Gemini via Firebase AI Logic. No personal health records are shared with third parties without your consent.

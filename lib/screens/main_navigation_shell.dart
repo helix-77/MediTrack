@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/family_filter_notifier.dart';
 import '../services/medicine_service.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -77,9 +79,14 @@ class MainNavigationShellState extends State<MainNavigationShell> {
           shape: const CircleBorder(),
           backgroundColor: AppColors.primaryBlue,
           onPressed: () {
+            final familyFilter = context.read<FamilyFilterNotifier>();
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AddEditMedicineScreen()),
+              MaterialPageRoute(
+                builder: (_) => AddEditMedicineScreen(
+                  initialFamilyMemberId: familyFilter.currentFamilyMemberId,
+                ),
+              ),
             );
           },
           child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
