@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -176,6 +177,11 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
             navigatorKey: appNavigatorKey,
             title: 'MediTrack',
             locale: localeNotifier.locale,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             supportedLocales: const [
               Locale('en', 'US'),
               Locale('bn', 'BD'),
