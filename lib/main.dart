@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -106,6 +108,7 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
   late final AuthService _authService;
   late final EntitlementService _entitlementService;
   late final BdAppsService _bdAppsService;
+  StreamSubscription<User?>? _authSubscription;
 
   @override
   void initState() {
@@ -127,11 +130,18 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
     );
 
     _entitlementService.refreshEntitlement();
+
+    _authSubscription = _authService.userChanges.listen((user) {
+      if (user == null) {
+        appNavigatorKey.currentState?.popUntil((route) => route.isFirst);
+      }
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _authSubscription?.cancel();
     _entitlementService.dispose();
     _bdAppsService.dispose();
     super.dispose();

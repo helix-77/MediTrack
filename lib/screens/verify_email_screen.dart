@@ -2,7 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../features/bdapps/bd_apps_service.dart';
 import '../services/auth_service.dart';
+import '../services/avatar_service.dart';
+import '../services/family_filter_notifier.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -151,6 +154,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
   Future<void> _handleSignOut() async {
     try {
       await _authService.signOut();
+      if (!mounted) return;
+      context.read<AvatarNotifier>().clearAvatar();
+      context.read<FamilyFilterNotifier>().selectSelf();
+      context.read<BdAppsService>().reset();
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
       final message = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');

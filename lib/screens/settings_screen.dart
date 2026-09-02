@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/avatar_service.dart';
+import '../services/family_filter_notifier.dart';
 import '../services/routine_schedule_service.dart';
 import '../services/user_profile_service.dart';
 import '../features/bdapps/bd_apps_service.dart';
@@ -64,6 +65,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(dialogContext);
               await _authService.signOut();
               if (!mounted) return;
+              context.read<AvatarNotifier>().clearAvatar();
+              context.read<FamilyFilterNotifier>().selectSelf();
+              context.read<BdAppsService>().reset();
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
             child: Text(context.tr('log_out'), style: const TextStyle(color: Colors.white)),
@@ -758,7 +762,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (!dialogCtx.mounted) return;
                         Navigator.pop(dialogCtx);
                         if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        final messenger = ScaffoldMessenger.of(context);
+                        context.read<AvatarNotifier>().clearAvatar();
+                        context.read<FamilyFilterNotifier>().selectSelf();
+                        context.read<BdAppsService>().reset();
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                        messenger.showSnackBar(
                           const SnackBar(
                             content: Text('Account deleted successfully.'),
                             backgroundColor: AppColors.success,

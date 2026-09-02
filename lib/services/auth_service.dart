@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -7,14 +8,22 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../logic/auth_guard.dart';
 
 class AuthService {
-  AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
-    : _auth = auth ?? FirebaseAuth.instance,
-      _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
+  AuthService({
+    FirebaseAuth? auth,
+    GoogleSignIn? googleSignIn,
+    FirebaseFirestore? firestore,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn.instance,
+        // ignore: prefer_initializing_formals
+        _firestore = firestore {
     _ensureListenersInitialized();
   }
 
   final FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
+  final FirebaseFirestore? _firestore;
+
+  FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
   static final StreamController<User?> _userStreamController =
       StreamController<User?>.broadcast();
@@ -243,6 +252,18 @@ class AuthService {
         if (credential != null) {
           await user.reauthenticateWithCredential(credential);
         }
+      }
+
+      // Best-effort cleanup of user Firestore profile before auth token is revoked
+      try {
+        await _db
+            .collection('users')
+            .doc(user.uid)
+            .collection('profile')
+            .doc('main')
+            .delete();
+      } catch (e) {
+        debugPrint('Notice: User profile cleanup during account deletion: $e');
       }
 
       await user.delete();

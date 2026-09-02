@@ -92,6 +92,23 @@ class BdAppsService extends ChangeNotifier {
       subscriptionStatus?.toUpperCase() == 'REGISTERED' ||
       subscriptionState == SubscriptionState.registered;
 
+  /// Resets all in-memory user-specific BD Apps state upon sign out or account deletion.
+  void reset() {
+    _bdMobile = null;
+    subscriptionState = SubscriptionState.idle;
+    subscriptionStatus = null;
+    pendingReferenceNo = null;
+    lastSendOtpResponse = null;
+    lastVerifyOtpResponse = null;
+    lastSubscribeResponse = null;
+    lastSendSmsResponse = null;
+    lastCheckSubscriptionResponse = null;
+    lastUnsubscribeResponse = null;
+    errorMessage = null;
+    pollingSecondsRemaining = 0;
+    notifyListeners();
+  }
+
   /// Requests direct carrier subscription for Robi/Airtel numbers, followed by
   /// a 5-second polling loop up to 60 seconds.
   Future<bool> requestSubscription({
