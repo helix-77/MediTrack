@@ -14,6 +14,8 @@ class SoftPrimaryButton extends StatelessWidget {
   final Color? backgroundColor;
   final Color? foregroundColor;
   final EdgeInsetsGeometry? padding;
+  final TextStyle? textStyle;
+  final double? iconSize;
 
   const SoftPrimaryButton({
     super.key,
@@ -26,6 +28,8 @@ class SoftPrimaryButton extends StatelessWidget {
     this.backgroundColor,
     this.foregroundColor,
     this.padding,
+    this.textStyle,
+    this.iconSize,
   });
 
   @override
@@ -75,14 +79,14 @@ class SoftPrimaryButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 18, color: fg),
-                    const SizedBox(width: 8),
+                    Icon(icon, size: iconSize ?? 18, color: fg),
+                    const SizedBox(width: 6),
                   ],
                   Flexible(
                     fit: FlexFit.loose,
                     child: Text(
                       label,
-                      style: AppTypography.buttonText.copyWith(color: fg),
+                      style: (textStyle ?? AppTypography.buttonText).copyWith(color: fg),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -105,6 +109,8 @@ class SoftSecondaryButton extends StatelessWidget {
   final Color? borderColor;
   final Color? textColor;
   final EdgeInsetsGeometry? padding;
+  final TextStyle? textStyle;
+  final double? iconSize;
 
   const SoftSecondaryButton({
     super.key,
@@ -117,6 +123,8 @@ class SoftSecondaryButton extends StatelessWidget {
     this.borderColor,
     this.textColor,
     this.padding,
+    this.textStyle,
+    this.iconSize,
   });
 
   @override
@@ -153,14 +161,14 @@ class SoftSecondaryButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 18, color: text),
-                    const SizedBox(width: 8),
+                    Icon(icon, size: iconSize ?? 18, color: text),
+                    const SizedBox(width: 6),
                   ],
                   Flexible(
                     fit: FlexFit.loose,
                     child: Text(
                       label,
-                      style: AppTypography.buttonText.copyWith(color: text),
+                      style: (textStyle ?? AppTypography.buttonText).copyWith(color: text),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

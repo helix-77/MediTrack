@@ -329,4 +329,28 @@ class EntitlementService extends ChangeNotifier {
     _lastVerifiedAt = DateTime.now();
     notifyListeners();
   }
+
+  /// Persists unsubscription state to Firestore and updates in-memory flags
+  Future<void> recordUnsubscribed({String? userId}) async {
+    final uid = userId ?? _auth.currentUser?.uid;
+    _isSubscribed = false;
+    _lastVerifiedAt = DateTime.now();
+    notifyListeners();
+
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('profile')
+            .doc('main')
+            .set({
+          'subscriptionStatus': 'UNREGISTERED',
+          'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('Entitlement cancel notice: $e');
+      }
+    }
+  }
 }

@@ -20,6 +20,7 @@ import 'prescription_vault_screen.dart';
 import 'medicine_search_screen.dart';
 import 'nearby_pharmacies_screen.dart';
 import 'subscription_offer_screen.dart';
+import 'subscription_details_screen.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 import 'buy_list_screen.dart';
@@ -572,6 +573,23 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 SoftSurface(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   borderRadius: AppRadii.cardRadius,
+                  onTap: () {
+                    if (isPro) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SubscriptionDetailsScreen(profile: profile),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SubscriptionOfferScreen(),
+                        ),
+                      );
+                    }
+                  },
                   color: isPro
                       ? (isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : AppColors.successLight)
                       : (isDark ? const Color(0xFF450A0A).withValues(alpha: 0.35) : AppColors.dangerLight),
@@ -601,7 +619,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              isPro ? 'MediTrack Premium Active' : 'MediTrack Free Tier',
+                              isPro ? 'MediTrack Premium' : 'MediTrack Free Tier',
                               style: AppTypography.headingSmall.copyWith(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
@@ -629,14 +647,31 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       SoftPrimaryButton(
                         label: isPro ? 'Active' : 'Upgrade',
                         height: 34,
-                        width: 92,
+                        width: isPro ? 96 : 104,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        iconSize: 15,
+                        textStyle: AppTypography.buttonText.copyWith(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                         backgroundColor: isPro ? AppColors.success : AppColors.danger,
                         icon: isPro ? Icons.check_rounded : Icons.bolt_rounded,
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const SubscriptionOfferScreen()),
-                          );
+                          if (isPro) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SubscriptionDetailsScreen(profile: profile),
+                              ),
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionOfferScreen(),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ],
