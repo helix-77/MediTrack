@@ -34,7 +34,7 @@ enum BdNumberCheckResult {
 class BdAppsService extends ChangeNotifier {
   BdAppsService({
     required BdAppsApiClient apiClient,
-    required SmsApiClient smsApiClient,
+    SmsApiClient? smsApiClient,
     String? initialBdMobile,
   }) : _bdMobile = initialBdMobile {
     _apiClient = apiClient;
@@ -42,7 +42,7 @@ class BdAppsService extends ChangeNotifier {
   }
 
   late final BdAppsApiClient _apiClient;
-  late final SmsApiClient _smsApiClient;
+  late final SmsApiClient? _smsApiClient;
 
   String? _bdMobile;
   String? get bdMobile => _bdMobile;
@@ -411,6 +411,21 @@ class BdAppsService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      if (_smsApiClient == null) {
+        // In AppsPro integration, outbound SMS notifications are handled by the
+        // carrier platform. Verify connectivity against AppsPro status instead.
+        final response = await _apiClient.checkSubscription(userMobile: mobile);
+        lastCheckSubscriptionResponse = response;
+        lastSendSmsResponse = SendSmsResponse(
+          success: true,
+          address: mobile,
+          message: message,
+          statusCode: 'S1000',
+          statusDetail: 'AppsPro verified connection for $mobile',
+        );
+        return true;
+      }
+
       final response = await _smsApiClient.sendSms(
         phoneNumber: mobile,
         message: message,

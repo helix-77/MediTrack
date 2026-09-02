@@ -18,8 +18,8 @@ how (Section 5).
 - State management: `provider` (`ChangeNotifier` + `MultiProvider`). Never reach for
   `setState` beyond a single dumb widget's local UI flag. No second state-management
   library "just for this one screen."
-- Backend: **Firebase**, not a custom server, for everything except the BD Apps SMS
-  integration:
+- Backend: **Firebase**, not a custom server, with **AppsPro.dev** (`api.appspro.dev/api/v1`)
+  for the BD Apps SMS & carrier billing integration:
   - `firebase_auth` (anonymous + email/password + Google Sign-In)
   - `cloud_firestore` — the single source of truth. Its offline persistence already
     provides offline support; do not add Drift/Isar/Hive/sqflite.
@@ -27,9 +27,8 @@ how (Section 5).
   - `firebase_app_check` — required on every Firebase AI Logic call.
   - Cloud Functions for Firebase (add under `functions/` when needed) — the only place
     allowed to hold a third-party secret key (e.g. Google Places).
-  - Monetization: the BD Apps SMS integration below doubles as the carrier-billing
-    subscription/entitlement mechanism (Section 5.10). No app-side paywall gate exists yet
-    — don't add one speculatively before that section's gated-feature list is confirmed.
+  - Monetization: the AppsPro / BD Apps carrier-billing subscription/entitlement
+    mechanism (Section 5.10).
 - AI / vision: `firebase_ai` (Firebase AI Logic) calling Gemini 3.6 Flash directly from
   the Flutter client, gated by App Check + Auth (no server proxy needed — App Check is
   the abuse control). See `medicine-manager-spec.md` Section 5.2 for the prescription-OCR
@@ -42,7 +41,7 @@ how (Section 5).
   fields. No cloud speech API — consistent with the on-device-first stance above.
 - Local notifications: `flutter_local_notifications` + `timezone` + `flutter_timezone`.
 - Maps (Phase 3): `google_maps_flutter`, location via `geolocator`.
-- HTTP: `dio` — for the BD Apps SMS backend and any future Cloud Function called over
+- HTTP: `dio` — for AppsPro.dev REST API calls and any future Cloud Function called over
   plain HTTPS. Never used to call a paid third-party API directly with an embedded key.
 - Fonts: `google_fonts` (Poppins headings, Inter body).
 - Config/secrets: `flutter_dotenv` (`.env`, gitignored) for non-Firebase config only.

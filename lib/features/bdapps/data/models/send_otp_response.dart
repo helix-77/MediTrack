@@ -34,12 +34,36 @@ class SendOtpResponse {
   }
 
   factory SendOtpResponse.fromJson(Map<String, dynamic> json) {
+    final rawMap = json['raw'] is Map<String, dynamic>
+        ? json['raw'] as Map<String, dynamic>
+        : null;
+
+    final code = (json['status_code'] as String?) ??
+        (json['statusCode'] as String?) ??
+        (rawMap?['statusCode'] as String?);
+
+    final refNo = (json['reference_no'] as String?) ??
+        (json['referenceNo'] as String?) ??
+        (rawMap?['referenceNo'] as String?);
+
+    final subId = (json['subscriber_id'] as String?) ??
+        (json['subscriberId'] as String?) ??
+        (rawMap?['subscriberId'] as String?);
+
+    final detail = (json['status_detail'] as String?) ??
+        (json['statusDetail'] as String?) ??
+        (rawMap?['statusDetail'] as String?);
+
+    final success = json['success'] == true ||
+        code == 'S1000' ||
+        (refNo != null && refNo.isNotEmpty);
+
     return SendOtpResponse(
-      isSuccess: json['success'] == true || json['statusCode'] == 'S1000',
-      referenceNo: json['referenceNo'] as String?,
-      subscriberId: json['subscriberId'] as String?,
-      statusCode: json['statusCode'] as String?,
-      statusDetail: json['statusDetail'] as String?,
+      isSuccess: success,
+      referenceNo: refNo,
+      subscriberId: subId,
+      statusCode: code,
+      statusDetail: detail,
       version: json['version'] as String?,
       error: (json['error'] as String?) ?? (json['message'] as String?),
     );

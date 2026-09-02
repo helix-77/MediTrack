@@ -8,10 +8,24 @@ import 'package:flutter/foundation.dart';
 class DioClient {
   DioClient._();
 
-  static Dio create({required String baseUrl}) {
+  static Dio create({
+    required String baseUrl,
+    String? bearerToken,
+    Map<String, dynamic>? defaultHeaders,
+  }) {
+    final headers = <String, dynamic>{
+      Headers.contentTypeHeader: Headers.jsonContentType,
+      Headers.acceptHeader: Headers.jsonContentType,
+      ...?defaultHeaders,
+    };
+    if (bearerToken != null && bearerToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $bearerToken';
+    }
+
     final dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
+        headers: headers,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 35),
       ),

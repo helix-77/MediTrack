@@ -61,14 +61,41 @@ class SubscribeResponse {
   bool get isRequestAccepted =>
       statusCode == 'S1000' || isPending || isRegistered || isAlreadyRegistered;
 
+  /// Helper: whether the response indicates success.
+  bool get isSuccess => success || statusCode == 'S1000';
+
   factory SubscribeResponse.fromJson(Map<String, dynamic> json) {
+    final rawMap = json['raw'] is Map<String, dynamic>
+        ? json['raw'] as Map<String, dynamic>
+        : null;
+
+    final subStatus = (json['subscription_status'] as String?) ??
+        (json['subscriptionStatus'] as String?) ??
+        (rawMap?['subscriptionStatus'] as String?);
+
+    final code = (json['status_code'] as String?) ??
+        (json['statusCode'] as String?) ??
+        (rawMap?['statusCode'] as String?);
+
+    final detail = (json['status_detail'] as String?) ??
+        (json['statusDetail'] as String?) ??
+        (rawMap?['statusDetail'] as String?);
+
+    final subId = (json['subscriber_id'] as String?) ??
+        (json['subscriberId'] as String?) ??
+        (rawMap?['subscriberId'] as String?);
+
+    final isRegistered = subStatus?.toUpperCase() == 'REGISTERED';
+    final explicitSuccess = _parseBool(json['success']) ?? false;
+    final isSuccess = explicitSuccess || (code == 'S1000' && (isRegistered || subStatus != 'FAILED'));
+
     return SubscribeResponse(
-      success: _parseBool(json['success']) ?? false,
-      subscriberId: json['subscriberId'] as String?,
-      subscriptionStatus: json['subscriptionStatus'] as String?,
-      statusCode: json['statusCode'] as String?,
-      statusDetail: json['statusDetail'] as String?,
-      error: json['error'] as String?,
+      success: isSuccess,
+      subscriberId: subId,
+      subscriptionStatus: subStatus,
+      statusCode: code,
+      statusDetail: detail,
+      error: (json['error'] as String?) ?? (json['message'] as String?),
       version: json['version'] as String?,
     );
   }

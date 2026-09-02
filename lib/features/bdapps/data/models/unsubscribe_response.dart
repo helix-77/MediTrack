@@ -56,16 +56,41 @@ class UnsubscribeResponse {
   bool get isUnregistered => subscriptionStatus?.toUpperCase() == 'UNREGISTERED';
 
   factory UnsubscribeResponse.fromJson(Map<String, dynamic> json) {
+    final rawMap = json['raw'] is Map<String, dynamic>
+        ? json['raw'] as Map<String, dynamic>
+        : null;
+
+    final code = (json['status_code'] as String?) ??
+        (json['statusCode'] as String?) ??
+        (rawMap?['statusCode'] as String?);
+
+    final detail = (json['status_detail'] as String?) ??
+        (json['statusDetail'] as String?) ??
+        (rawMap?['statusDetail'] as String?);
+
+    final subStatus = (json['subscription_status'] as String?) ??
+        (json['subscriptionStatus'] as String?) ??
+        (rawMap?['subscriptionStatus'] as String?);
+
+    final subId = (json['subscriber_id'] as String?) ??
+        (json['subscriberId'] as String?) ??
+        (rawMap?['subscriberId'] as String?);
+
+    final explicitSuccess = _parseBool(json['success']);
+    final isSuccess = explicitSuccess == true ||
+        code == 'S1000' ||
+        subStatus?.toUpperCase() == 'UNREGISTERED';
+
     return UnsubscribeResponse(
-      success: _parseBool(json['success']),
-      subscriberId: json['subscriberId'] as String?,
+      success: isSuccess,
+      subscriberId: subId,
       action: json['action'] as String?,
       version: json['version'] as String?,
-      statusCode: json['statusCode'] as String?,
-      statusDetail: json['statusDetail'] as String?,
-      subscriptionStatus: json['subscriptionStatus'] as String?,
+      statusCode: code,
+      statusDetail: detail,
+      subscriptionStatus: subStatus ?? (isSuccess ? 'UNREGISTERED' : null),
       rawResponse: json['rawResponse'] as String?,
-      error: json['error'] as String?,
+      error: (json['error'] as String?) ?? (json['message'] as String?),
     );
   }
 

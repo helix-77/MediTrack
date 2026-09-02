@@ -61,14 +61,45 @@ class CheckSubscriptionResponse {
   bool get isSuccess => statusCode == 'S1000' || error == null;
 
   factory CheckSubscriptionResponse.fromJson(Map<String, dynamic> json) {
+    final rawMap = json['raw'] is Map<String, dynamic>
+        ? json['raw'] as Map<String, dynamic>
+        : null;
+
+    final subscriberMap = json['subscriber'] is Map<String, dynamic>
+        ? json['subscriber'] as Map<String, dynamic>
+        : null;
+
+    final subStatus = (json['subscription_status'] as String?) ??
+        (json['subscriptionStatus'] as String?) ??
+        (subscriberMap?['status'] as String?) ??
+        (rawMap?['subscriptionStatus'] as String?);
+
+    final code = (json['status_code'] as String?) ??
+        (json['statusCode'] as String?) ??
+        (rawMap?['statusCode'] as String?);
+
+    final detail = (json['status_detail'] as String?) ??
+        (json['statusDetail'] as String?) ??
+        (rawMap?['statusDetail'] as String?);
+
+    final subId = (json['subscriber_id'] as String?) ??
+        (json['subscriberId'] as String?) ??
+        (subscriberMap?['bdapps_subscriber_id'] as String?);
+
+    final isValid = json['valid'] == true;
+
+    final isSub = (subStatus?.toUpperCase() == 'REGISTERED') ||
+        isValid ||
+        (_parseBool(json['isSubscribed']) ?? false);
+
     return CheckSubscriptionResponse(
-      subscriptionStatus: json['subscriptionStatus'] as String?,
-      isSubscribed: _parseBool(json['isSubscribed']) ?? false,
-      statusCode: json['statusCode'] as String?,
-      statusDetail: json['statusDetail'] as String?,
+      subscriptionStatus: subStatus,
+      isSubscribed: isSub,
+      statusCode: code,
+      statusDetail: detail,
       version: json['version'] as String?,
-      subscriberId: json['subscriberId'] as String?,
-      error: json['error'] as String?,
+      subscriberId: subId,
+      error: (json['error'] as String?) ?? (json['reason'] as String?),
       details: json['details'] as String?,
     );
   }

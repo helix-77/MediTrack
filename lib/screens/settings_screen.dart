@@ -821,19 +821,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'BD Apps SMS Diagnostic',
+                'AppsPro Carrier Diagnostic',
                 style: AppTypography.headingMedium.copyWith(
                   color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                'Send a live adherence reminder test SMS to your linked phone number (${profile.bdMobile ?? "No number"}).',
+                'Verify live AppsPro / BD Apps carrier connectivity and alert status for your linked phone (${profile.bdMobile ?? "No number"}).',
                 style: AppTypography.caption,
               ),
               const SizedBox(height: 20),
               SoftPrimaryButton(
-                label: 'Send Test Alert SMS',
+                label: 'Run Carrier Diagnostic',
                 isLoading: bdService.isSendingSms,
                 onPressed: () async {
                   final phone = profile.bdMobile;

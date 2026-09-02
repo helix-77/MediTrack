@@ -1,37 +1,30 @@
-# MediTrack - BD Apps Backend
+# MediTrack - BD Apps Backend (Legacy / Migrated to AppsPro.dev)
 
-PHP endpoints that proxy between the Flutter app and the BD Apps platform
-(developer.bdapps.com). They are designed to be deployed on
-`https://www.bdappsdigitalapps.com/NADB26067/` (or any path that serves PHP).
+> [!NOTE]
+> **Status: Migrated to AppsPro.dev API**
+> MediTrack has migrated from this custom PHP backend proxy to [AppsPro.dev](https://api.appspro.dev) (`/api/v1/sdk/*`).
+> The Flutter client now communicates directly with AppsPro via Bearer token authentication and JSON REST endpoints.
+> These PHP files are retained for reference and legacy fallback.
 
-## Files
+## Legacy PHP Endpoints
 
-| File | Purpose |
-|------|---------|
-| `config.php` | Loads `BDAPPS_APP_ID` / `BDAPPS_APP_PASSWORD` from the deployment environment and fails closed when either is absent. |
-| `subscribe.php` | Initiates carrier subscription confirmation flow (`POST user_mobile`, Robi `018` & Airtel `016` only). |
-| `check_subscription.php` | Returns the current subscription status for a subscriber. |
-| `unsubscribe.php` | Sends an unsubscribe request (`POST user_mobile`). |
-| `send_sms.php` | Client-initiated outbound SMS (`POST user_mobile, message`) — used by the profile tab's "Send test SMS" action. |
-| `sms.php` | MO/MT SMS gateway hook (configurable in the dashboard). |
-| `ussd.php` | USSD session entry point (configurable in the dashboard). |
+| File | Purpose | AppsPro Equivalent |
+|------|---------|--------------------|
+| `config.php` | Loaded BDApps credentials | Replaced by `.env` (`APPS_PRO_SECRET_KEY`, `Base_URI`, etc.) |
+| `subscribe.php` | Initiated carrier subscription | `POST /api/v1/sdk/subscribe` |
+| `send_otp.php` | Requested subscription OTP | `POST /api/v1/sdk/otp/request` |
+| `verify_otp.php` | Verified subscriber OTP | `POST /api/v1/sdk/otp/verify` |
+| `check_subscription.php` | Queried subscription status | `POST /api/v1/sdk/status` / `GET /api/v1/sdk/verify/{id}` |
+| `unsubscribe.php` | Handled subscriber cancellation | `POST /api/v1/sdk/unsubscribe` |
+| `send_sms.php` | Client-initiated test SMS | Managed via AppsPro platform |
+| `sms.php` | MO/MT SMS gateway hook | Configured via AppsPro BDApps callback URL |
+| `ussd.php` | USSD session entry point | Configured via AppsPro BDApps callback URL |
 
-## Deploying
+## BDApps Portal Configuration with AppsPro
 
-1. Rotate the BD Apps password currently exposed in Git history through the BD Apps
-   dashboard. The repository change cannot invalidate that credential.
-2. Configure `BDAPPS_APP_ID` and `BDAPPS_APP_PASSWORD` as environment variables in the
-   PHP hosting environment. Never place production values in tracked files. Requests fail
-   with HTTP 500 when either variable is missing.
-3. Upload the contents of this folder to `https://www.bdappsdigitalapps.com/NADB26067/`
-   (or any reachable PHP host).
-4. In the BD Apps dashboard, point:
-   - **SMS URL** → `https://www.bdappsdigitalapps.com/NADB26067/sms.php`
-   - **USSD URL** → `https://www.bdappsdigitalapps.com/NADB26067/ussd.php`
-5. Update the Flutter client `api_config.dart`'s `bdappsBaseUrl` to point at
-   the deployed host. The default points at the path above.
+In the BDApps developer portal, configure the following unified AppsPro URLs:
+- **SMS MO URL**: `https://api.appspro.dev/bdapps/sms`
+- **USSD MO URL**: `https://api.appspro.dev/bdapps/ussd`
+- **Notify URL**: `https://api.appspro.dev/bdapps/notify`
+- **Report URL**: `https://api.appspro.dev/bdapps/report`
 
-## Wire format
-
-All endpoints speak `application/x-www-form-urlencoded` (PHP's `$_POST`) so
-the Flutter client uses Dio's `Options(contentType: Headers.formUrlEncodedContentType)`.

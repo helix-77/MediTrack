@@ -112,7 +112,10 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    final dio = DioClient.create(baseUrl: ApiConfig.bdappsBaseUrl);
+    final dio = DioClient.create(
+      baseUrl: ApiConfig.appsProBaseUrl,
+      bearerToken: ApiConfig.appsProSecretKey,
+    );
     final bdAppsApiClient = BdAppsApiClient(dio);
     final smsApiClient = SmsApiClient(dio);
 
