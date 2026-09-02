@@ -211,7 +211,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '100% Offline Database • DGDA Bangladesh Maximum Retail Prices (MRP)',
+                    'Reference prices • Some prices may differ due to recent market price changes.',
                     style: AppTypography.caption.copyWith(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w600,
