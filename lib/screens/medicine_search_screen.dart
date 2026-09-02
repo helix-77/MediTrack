@@ -339,10 +339,15 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${med.dosageForm?.toUpperCase() ?? "MEDICINE"} • ${med.manufacturer ?? "Bangladesh"}',
-                  style: AppTypography.caption,
+                Expanded(
+                  child: Text(
+                    '${med.dosageForm?.toUpperCase() ?? "MEDICINE"} • ${med.manufacturer ?? "Bangladesh"}',
+                    style: AppTypography.caption,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Text('/ unit MRP', style: AppTypography.caption),
               ],
             ),
@@ -448,12 +453,16 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                                       style: AppTypography.caption.copyWith(
                                         fontWeight: FontWeight.w700,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
                                       alt.manufacturer ?? 'Bangladesh',
                                       style: AppTypography.caption.copyWith(
                                         fontSize: 10,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
