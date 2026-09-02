@@ -80,4 +80,20 @@ class MedicineReference {
               : DateTime.now()),
     );
   }
+
+  factory MedicineReference.fromSqlite(Map<String, dynamic> row) {
+    return MedicineReference(
+      id: row['id']?.toString() ?? '',
+      brandName: row['brand_name'] as String? ?? '',
+      genericName: row['generic_name'] as String? ?? '',
+      manufacturer: row['manufacturer'] as String?,
+      dosageForm: row['dosage_form'] as String?,
+      strength: row['strength'] as String?,
+      unitPriceBdt: (row['unit_price'] as num?)?.toDouble(),
+      searchName: row['search_name'] as String? ??
+          normalizeSearchName(row['brand_name'] as String? ?? ''),
+      source: 'medex_seed_2026',
+      lastUpdated: DateTime(2026, 9, 2),
+    );
+  }
 }

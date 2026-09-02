@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:meditrack/models/generic_reference.dart';
 import 'package:meditrack/models/medicine_reference.dart';
 
 void main() {
@@ -38,6 +39,48 @@ void main() {
       expect(map['brandName'], 'Napa');
       expect(map['genericName'], 'Paracetamol');
       expect(map['unitPriceBdt'], 1.20);
+    });
+
+    test('deserializes properly from SQLite row', () {
+      final med = MedicineReference.fromSqlite({
+        'id': 4077,
+        'brand_name': 'A-Cold',
+        'generic_name': 'Bromhexine Hydrochloride',
+        'dosage_form': 'Syrup',
+        'strength': '4 mg/5 ml',
+        'manufacturer': 'ACME Laboratories Ltd.',
+        'unit_price': 40.12,
+        'search_name': 'a-cold bromhexine hydrochloride',
+      });
+
+      expect(med.id, '4077');
+      expect(med.brandName, 'A-Cold');
+      expect(med.genericName, 'Bromhexine Hydrochloride');
+      expect(med.dosageForm, 'Syrup');
+      expect(med.strength, '4 mg/5 ml');
+      expect(med.manufacturer, 'ACME Laboratories Ltd.');
+      expect(med.unitPriceBdt, 40.12);
+      expect(med.searchName, 'a-cold bromhexine hydrochloride');
+    });
+
+    test('GenericReference deserializes properly from SQLite row', () {
+      final generic = GenericReference.fromSqlite({
+        'id': 31,
+        'generic_name': 'Paracetamol',
+        'drug_class': 'Analgesic, Antipyretic',
+        'indication': 'Fever, Headache, Toothache',
+        'pharmacology_desc': 'Paracetamol has analgesic and antipyretic properties...',
+        'dosage_desc': 'Adults: 500 mg to 1 g every 4-6 hours.',
+        'side_effects_desc': 'Rarely, hypersensitivity reactions may occur.',
+      });
+
+      expect(generic.id, 31);
+      expect(generic.genericName, 'Paracetamol');
+      expect(generic.drugClass, 'Analgesic, Antipyretic');
+      expect(generic.indication, 'Fever, Headache, Toothache');
+      expect(generic.pharmacologyDesc, contains('analgesic'));
+      expect(generic.dosageDesc, contains('500 mg'));
+      expect(generic.sideEffectsDesc, contains('hypersensitivity'));
     });
 
     test('sorts generic alternatives by price ascending', () {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../logic/entitlement_guard.dart';
 import '../models/buy_list_item.dart';
+import '../models/generic_reference.dart';
 import '../models/medicine_reference.dart';
 import '../services/buy_list_service.dart';
 import '../services/medicine_reference_service.dart';
@@ -87,6 +88,32 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
         ),
       );
     }
+  }
+
+  void _showGenericDetails(String genericName) async {
+    final details = await _searchService.getGenericDetails(genericName);
+    if (!mounted) return;
+
+    if (details == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No detailed monograph available for this generic.'),
+        ),
+      );
+      return;
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _GenericDetailsModal(
+        details: details,
+        isDark: isDark,
+      ),
+    );
   }
 
   @override
@@ -177,15 +204,18 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
             child: Row(
               children: [
                 const Icon(
-                  Icons.info_outline,
+                  Icons.offline_bolt_rounded,
                   size: 16,
                   color: AppColors.primaryBlue,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Prices reflect DGDA Bangladesh Maximum Retail Prices (MRP). Actual pharmacy prices may vary.',
-                    style: AppTypography.caption.copyWith(fontSize: 10.5),
+                    '100% Offline Database • DGDA Bangladesh Maximum Retail Prices (MRP)',
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -207,7 +237,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                       icon: Icons.medication_liquid_outlined,
                       title: 'Search Bangladesh Medicines',
                       description:
-                          'Enter a medicine brand name or generic compound to compare prices and find cheaper alternatives.',
+                          'Enter a medicine brand name or generic compound to compare prices and find cheaper alternatives offline.',
                     ),
                   )
                 : _results.isEmpty
@@ -216,7 +246,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                       icon: Icons.search_off_rounded,
                       title: 'No Medicines Found',
                       description:
-                          'No matching DGDA medicine found for "$_searchedQuery". Check spelling and try again.',
+                          'No matching medicine found for "$_searchedQuery". Check spelling or try the generic name.',
                     ),
                   )
                 : ListView.builder(
@@ -260,12 +290,33 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                           fontSize: 15,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        med.genericName,
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.primaryBlue,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () => _showGenericDetails(med.genericName),
+                        borderRadius: BorderRadius.circular(4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2.0),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  med.genericName,
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.primaryBlue,
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.info_outline,
+                                size: 13,
+                                color: AppColors.primaryBlue,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -356,7 +407,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
-                        'No other brands found for this exact generic and strength.',
+                        'No other brands found for this exact generic in database.',
                         style: AppTypography.caption,
                       ),
                     );
@@ -393,7 +444,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      alt.brandName,
+                                      '${alt.brandName} ${alt.strength ?? ""}'.trim(),
                                       style: AppTypography.caption.copyWith(
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -446,6 +497,134 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _GenericDetailsModal extends StatelessWidget {
+  final GenericReference details;
+  final bool isDark;
+
+  const _GenericDetailsModal({
+    required this.details,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : AppColors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Drag Handle
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            details.genericName,
+                            style: AppTypography.headingMedium.copyWith(fontSize: 18),
+                          ),
+                          if (details.drugClass != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              details.drugClass!,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.primaryBlue,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Content Body
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    if (details.indication != null && details.indication!.isNotEmpty)
+                      _buildSection('Primary Indication', details.indication!),
+                    if (details.indicationDesc != null && details.indicationDesc!.isNotEmpty)
+                      _buildSection('Indications & Usage', details.indicationDesc!),
+                    if (details.pharmacologyDesc != null && details.pharmacologyDesc!.isNotEmpty)
+                      _buildSection('Pharmacology & Mechanism', details.pharmacologyDesc!),
+                    if (details.dosageDesc != null && details.dosageDesc!.isNotEmpty)
+                      _buildSection('Dosage & Administration', details.dosageDesc!),
+                    if (details.sideEffectsDesc != null && details.sideEffectsDesc!.isNotEmpty)
+                      _buildSection('Side Effects', details.sideEffectsDesc!),
+                    if (details.contraindicationsDesc != null && details.contraindicationsDesc!.isNotEmpty)
+                      _buildSection('Contraindications', details.contraindicationsDesc!),
+                    if (details.pregnancyDesc != null && details.pregnancyDesc!.isNotEmpty)
+                      _buildSection('Pregnancy & Lactation', details.pregnancyDesc!),
+                    if (details.precautionsDesc != null && details.precautionsDesc!.isNotEmpty)
+                      _buildSection('Precautions & Warnings', details.precautionsDesc!),
+                    if (details.storageDesc != null && details.storageDesc!.isNotEmpty)
+                      _buildSection('Storage Conditions', details.storageDesc!),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSection(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTypography.bodySmall.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryBlue,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            content,
+            style: AppTypography.bodySmall.copyWith(height: 1.4),
+          ),
+        ],
       ),
     );
   }

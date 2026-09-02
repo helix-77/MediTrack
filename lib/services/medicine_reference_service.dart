@@ -1,68 +1,33 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../logic/auth_guard.dart';
+import '../models/generic_reference.dart';
 import '../models/medicine_reference.dart';
+import 'medicine_database_service.dart';
 
 class MedicineReferenceService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final MedicineDatabaseService _dbService = MedicineDatabaseService();
 
-  void _ensureAuth() => requireAuthenticatedUser(_auth);
-
-  /// Searches the medicine reference collection by brand name prefix.
+  /// Searches the medicine reference database by brand or generic name using local SQLite FTS5.
   Future<List<MedicineReference>> searchMedicines(
     String query, {
-    int limit = 25,
+    int limit = 30,
   }) async {
-    _ensureAuth();
-
-    final queryLower = MedicineReference.normalizeSearchName(query);
-    if (queryLower.length < 2) {
-      return [];
-    }
-
-    final snapshot = await _firestore
-        .collection('medicineReference')
-        .where('searchName', isGreaterThanOrEqualTo: queryLower)
-        .where('searchName', isLessThanOrEqualTo: '$queryLower\uf8ff')
-        .limit(limit)
-        .get();
-
-    return snapshot.docs
-        .map((doc) => MedicineReference.fromSnapshot(doc))
-        .toList();
+    return await _dbService.searchMedicines(query, limit: limit);
   }
 
-  /// Finds other brands sharing the same generic name, sorted by price ascending.
+  /// Finds other brands sharing the same generic name, sorted by price ascending (cheapest first).
   Future<List<MedicineReference>> getAlternativesForGeneric(
     String genericName, {
     String? excludeBrandId,
-    int limit = 20,
+    int limit = 25,
   }) async {
-    _ensureAuth();
+    return await _dbService.getAlternativesForGeneric(
+      genericName,
+      excludeBrandId: excludeBrandId,
+      limit: limit,
+    );
+  }
 
-    final trimmed = genericName.trim();
-    if (trimmed.isEmpty) return [];
-
-    final snapshot = await _firestore
-        .collection('medicineReference')
-        .where('genericName', isEqualTo: trimmed)
-        .limit(limit)
-        .get();
-
-    final list = snapshot.docs
-        .map((doc) => MedicineReference.fromSnapshot(doc))
-        .where((med) => med.id != excludeBrandId)
-        .toList();
-
-    // Sort by price ascending (nulls last)
-    list.sort((a, b) {
-      if (a.unitPriceBdt == null && b.unitPriceBdt == null) return 0;
-      if (a.unitPriceBdt == null) return 1;
-      if (b.unitPriceBdt == null) return -1;
-      return a.unitPriceBdt!.compareTo(b.unitPriceBdt!);
-    });
-
-    return list;
+  /// Retrieves full generic details (pharmacology, indications, dosage, side effects).
+  Future<GenericReference?> getGenericDetails(String genericName) async {
+    return await _dbService.getGenericDetails(genericName);
   }
 }
