@@ -19,9 +19,12 @@ class PrescriptionExtractionService {
       : _customClient = client;
 
   static const String _systemPrompt = '''
-You are a medical prescription OCR assistant. You will receive one or more images of a doctor's prescription, which may be handwritten and may mix Bangla and English. Extract only what is visibly present on the page — never infer or guess a medicine name, dosage, or duration that is not legible. If a field is not clearly readable, output null for it rather than guessing.
+You are an expert medical prescription assistant. You are analyzing a doctor's prescription which may be handwritten, printed, or mixed English and Bengali.
+You will receive:
+1. The prescription image.
+2. Optional on-device OCR recognized text lines extracted directly from the image to help you decipher medicine names and instructions.
 
-Return ONLY valid JSON, no prose, no markdown code fences, matching exactly this schema:
+Extract all detected medicines, dosages, frequencies, doctor details, and visit date according to this JSON schema:
 {
   "schema_version": 1,
   "doctor_name": null,
@@ -39,7 +42,13 @@ Return ONLY valid JSON, no prose, no markdown code fences, matching exactly this
     }
   ]
 }
-If the image is unreadable or is not a prescription, return {"error": "unreadable"}.
+
+CRITICAL RULES:
+1. Extract whatever medicines, strengths, forms, or instructions you can identify from the image and OCR text.
+2. If a medicine name or schedule is partially unclear, extract your best interpretation and set confidence to "medium" or "low" so the user can verify it.
+3. If specific fields (doctor_name, date, instructions) are not present or not readable, set them to null.
+4. Only return {"error": "unreadable"} if the image contains NO medical text whatsoever, is completely blank, or has zero recognizable words.
+5. Return ONLY the raw JSON object, without any prose, markdown explanations, or code blocks.
 ''';
 
   OpenRouterClient _getClient() {
@@ -50,9 +59,12 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
     );
   }
 
+  /// Extracts prescription details using OpenRouter multimodal vision with
+  /// on-device OCR text assistance.
   Future<PrescriptionDraft> extractPrescription({
     required File imageFile,
     String mimeType = 'image/jpeg',
+    String? onDeviceOcrText,
   }) async {
     requireAuthenticatedUser(FirebaseAuth.instance);
 
@@ -77,8 +89,29 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
       final base64Image = base64Encode(bytes);
       final dataUri = 'data:$mimeType;base64,$base64Image';
 
+      final userPromptBuffer = StringBuffer(
+        'Extract all medicines and details from this prescription according to the schema.',
+      );
+      if (onDeviceOcrText != null && onDeviceOcrText.trim().isNotEmpty) {
+        userPromptBuffer.writeln();
+        userPromptBuffer.writeln();
+        userPromptBuffer.writeln(
+          'On-device text scanner detected the following text from this image for your reference:',
+        );
+        userPromptBuffer.writeln('"""');
+        userPromptBuffer.writeln(onDeviceOcrText.trim());
+        userPromptBuffer.writeln('"""');
+      }
+
       final request = ChatRequest(
         model: ApiConfig.openRouterModel,
+        models: const [
+          'minimax/minimax-m3:free',
+          'google/gemma-4-31b-it:free',
+          'google/gemma-4-26b-a4b-it:free',
+          'dots-studio/dots-3-note-preview:free',
+          'openrouter/free',
+        ],
         messages: [
           const Message(
             role: MessageRole.system,
@@ -87,9 +120,8 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
           Message(
             role: MessageRole.user,
             content: [
-              const TextContentItem(
-                text:
-                    'Extract the medicines and details from this prescription according to the schema.',
+              TextContentItem(
+                text: userPromptBuffer.toString(),
               ),
               ImageContentItem(
                 imageUrl: ImageUrl(url: dataUri),

@@ -12,6 +12,7 @@ import '../services/entitlement_service.dart';
 import '../services/family_service.dart';
 import '../services/prescription_service.dart';
 import '../services/prescription_extraction_service.dart';
+import '../services/prescription_ocr_service.dart';
 import '../logic/image_preflight.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
@@ -94,12 +95,57 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
         return;
       }
 
-      final draft = await _aiService.extractPrescription(imageFile: imageFile);
+      // 1. Run local on-device ML Kit OCR
+      PrescriptionOcrResult? ocrResult;
+      try {
+        final ocrService = PrescriptionOcrService();
+        ocrResult = await ocrService.processImage(imageFile);
+        ocrService.dispose();
+      } catch (ocrErr) {
+        debugPrint('On-device OCR scanner error: $ocrErr');
+      }
+
+      // 2. Call cloud AI extraction with image + on-device OCR text
+      PrescriptionDraft? draft;
+      try {
+        draft = await _aiService.extractPrescription(
+          imageFile: imageFile,
+          onDeviceOcrText: ocrResult?.rawText,
+        );
+      } catch (aiErr) {
+        debugPrint('Cloud AI extraction failed: $aiErr');
+        // If AI returned unreadable or errored, check if on-device OCR found medicines
+        if (ocrResult != null && ocrResult.detectedMedicines.isNotEmpty) {
+          final fallbackItems = ocrResult.toPrescriptionItems();
+          if (fallbackItems.isNotEmpty) {
+            draft = PrescriptionDraft(
+              schemaVersion: 1,
+              medicines: fallbackItems,
+              rawText: ocrResult.rawText,
+            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Cloud AI had difficulty with handwriting. Loaded medications detected by on-device scanner for your review.',
+                  ),
+                  backgroundColor: AppColors.warning,
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            }
+          }
+        }
+
+        if (draft == null) {
+          rethrow;
+        }
+      }
 
       unawaited(entitlementService.recordPrescriptionScanUsage());
 
       setState(() {
-        if (draft.doctorName != null && draft.doctorName!.isNotEmpty) {
+        if (draft!.doctorName != null && draft.doctorName!.isNotEmpty) {
           _doctorNameController.text = draft.doctorName!;
         }
         if (draft.date != null) {
