@@ -1,87 +1,243 @@
-# MediTrack - Flutter Medicine Manager App
+# MediTrack — Smart Medicine Manager & AI Health Companion
 
-**MediTrack** is a smart, comprehensive Android medicine management application built with Flutter. It helps users organize schedules, track daily dosages, scan prescriptions using AI/OCR, store medical records securely, and receive timely local & SMS notifications.
+[![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.6+-0175C2?logo=dart)](https://dart.dev)
+[![Firebase](https://img.shields.io/badge/Backend-Firebase-FFCA28?logo=firebase)](https://firebase.google.com)
+[![OpenRouter](https://img.shields.io/badge/AI-OpenRouter%20Free-6366F1)](https://openrouter.ai)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+**MediTrack** is a production-grade Android medication management application tailored for Bangladesh. Built with Flutter, it empowers users to organize daily schedules, manage pill inventory, scan handwritten doctor prescriptions with a hybrid OCR/AI pipeline, converse with a context-aware AI health assistant, lookup generic medicine alternatives, and receive timely dose alarms.
 
 ---
 
 ## 🌟 Key Features
 
-- 💊 **Medication Tracking & Reminders**: Set precise schedules with local notifications powered by `flutter_local_notifications` and timezone support (Free forever).
-- 📷 **OCR Box Scanner & Vault**: Fast on-device medicine box recognition and secure prescription storage (Free forever).
-- 📅 **Calendar & Daily Routine**: Interactive calendar medication schedules and refill tracker (Free forever).
-- 🛒 **Medicine Buy List**: Keep track of low-stock medications and restocking lists (Free forever).
-- ⭐ **MediTrack Premium (BD Apps Carrier Micro-Subscription - ৳2.99/day)**:
-  - 🤖 **AI Assistant**: Multimodal Gemini 3.6 Flash health insights and advice.
-  - 📝 **AI Prescription OCR**: Structured dosage and schedule extraction from prescription photos.
-  - 🔍 **Medicine Price & Generic Lookup**: Price checking and generic alternative finder.
-  - 🏥 **Nearby Pharmacies**: Real-time pharmacy locator with GPS and direct dialing.
-- 🔐 **Firebase Authentication**: Seamless Anonymous Guest, Email/Password, and Google Sign-In.
-- 📱 **BD Apps Carrier Billing**: Direct Robi / Airtel carrier billing integration with OTP fallback.
+- 💊 **Medication Scheduling & Smart Reminders**: Set custom daily dose times (morning, noon, evening, night) with exact alarms powered by `flutter_local_notifications` and `timezone`.
+- 📷 **Hybrid AI Prescription Scanner**: Extracts doctor details, date, medicines, dosage forms, and schedules from handwritten or printed prescriptions using on-device ML Kit combined with OpenRouter multimodal vision models.
+- 🤖 **Context-Aware AI Health Assistant**: Conversational medical guide that can answer questions, query the user's active medications, check Bangladesh generic prices, and perform conversational CRUD actions (add, update, or remove routine medications and buy items).
+- 🇧🇩 **Bangladesh Medicine Catalog & Price Lookup**: Offline SQLite database containing thousands of registered Bangladesh medicines with generic names, strengths, manufacturers, and indicative prices in Bangladeshi Taka (৳).
+- 🛒 **Low-Stock Buy List**: Automatic and manual grocery/pharmacy restock lists with quantity tracking and status toggles.
+- 👥 **Family Member Profiles**: Multi-profile medication management with customized avatar colors and relationship tags.
+- 📱 **BD Apps Carrier Billing (৳2.99/day)**: Direct Robi and Airtel carrier micro-billing integration via AppsPro REST API with OTP verification.
+- 🔐 **Multi-Tier Authentication**: Firebase Authentication supporting Google Sign-In, Email/Password, and guest access with per-user scoped Firestore security rules.
 
 ---
 
-## 🏗 Tech Stack & Architecture
+## 🏗 System Architecture
 
-- **Frontend**: [Flutter](https://flutter.dev) (Dart 3.6+ with Null Safety)
-- **Backend & Database**: Firebase Auth, Cloud Firestore, Firebase Storage
-- **Machine Learning / AI**: Google ML Kit Text Recognition, Firebase AI (Gemini API)
-- **Local Notifications**: `flutter_local_notifications`, `timezone`
-- **State Management & UI**: Provider, Material Design 3
+```mermaid
+graph TD
+    subgraph UI_Layer["Flutter Presentation Layer (Material 3 + Provider)"]
+        Dashboard["Routine Dashboard"]
+        Scanner["Prescription Scanner"]
+        Assistant["AI Assistant Chat"]
+        MedicineDir["Medicine Directory"]
+        Settings["Settings & Subscription"]
+    end
+
+    subgraph Logic_Layer["Logic & Services Layer"]
+        MedService["MedicineService"]
+        BuyService["BuyListService"]
+        AIHelper["OpenRouterAiService"]
+        OcrService["PrescriptionExtractionService"]
+        LocalOcr["PrescriptionOcrService"]
+        DbService["MedicineDatabaseService"]
+        BillingClient["AppsProApiClient"]
+    end
+
+    subgraph Client_Middleware["Network & Security Middleware"]
+        Sanitizer["OpenRouterSanitizingHttpClient\n(Strips null keys & ensures valid schemas)"]
+        AuthGuard["AuthGuard & EntitlementGuard"]
+    end
+
+    subgraph OnDevice_Engines["On-Device Engines (Offline)"]
+        MLKit["Google ML Kit Text Recognition\n(Latin / Printed OCR)"]
+        LocalDb["Local SQLite Database\n(BD Medicine Catalog)"]
+        LocalNotif["Flutter Local Notifications\n(Exact Dose Alarms)"]
+        OfflineFirestore["Cloud Firestore Cache\n(Offline Data Persistence)"]
+    end
+
+    subgraph Cloud_Backends["External Cloud Services"]
+        OpenRouterAPI["OpenRouter API\n(minimax-m3:free, gemma-4:free, openrouter/free)"]
+        FirebaseServices["Firebase Backend\n(Auth, Cloud Firestore, Storage)"]
+        AppsProGateway["AppsPro.dev API\n(BD Apps Robi/Airtel Carrier Billing)"]
+    end
+
+    Dashboard --> MedService
+    Scanner --> LocalOcr
+    Scanner --> OcrService
+    Assistant --> AIHelper
+    MedicineDir --> DbService
+    Settings --> BillingClient
+
+    AIHelper --> Sanitizer
+    OcrService --> Sanitizer
+    LocalOcr --> MLKit
+    DbService --> LocalDb
+    MedService --> LocalNotif
+    MedService --> OfflineFirestore
+
+    Sanitizer --> OpenRouterAPI
+    MedService --> FirebaseServices
+    BuyService --> FirebaseServices
+    BillingClient --> AppsProGateway
+```
+
+---
+
+## 🔬 Hybrid Prescription OCR Pipeline
+
+Prescription scanning utilizes a resilient **two-stage hybrid architecture**:
+
+```mermaid
+flowchart TD
+    A["User Captures / Uploads Prescription"] --> B["ImagePreflight Quality Assessment\n(Resolution & File Size Checks)"]
+    B -->|Passed| C["Stage 1: On-Device ML Kit OCR\n(Instant, Offline, Zero-Cost Text Extraction)"]
+    B -->|Failed| Alert["Warn User: Low Quality / Blurry Image"]
+    
+    C --> D["Extract Detected Text Lines & Medicine Keywords"]
+    D --> E["Stage 2: OpenRouter Multimodal AI Request\n(Prescription Image + On-Device OCR Text Context)"]
+    
+    E --> F{"OpenRouter Vision Routing\n(Priority: minimax-m3:free -> gemma-4:free -> openrouter/free)"}
+    
+    F -->|Success| G["PrescriptionValidator\n(Clean JSON, Validate Schema, Clamp Dose Values)"]
+    F -->|Rate-Limited / Unreadable / Timeout| H["Graceful Local Fallback Engine\n(PrescriptionOcrResult.toPrescriptionItems)"]
+    
+    G --> I["Interactive Medication Review Screen\n(User Verifies / Edits Extracted Items)"]
+    H -->|Populates Review Screen with Warning| I
+    
+    I -->|User Confirms| J["Save to Routine & Schedule Alarms\n(Cloud Firestore + Local Notifications)"]
+```
+
+### Why this hybrid pipeline works:
+1. **On-Device Pre-Scan**: Runs `google_mlkit_text_recognition` directly on the Android device. It identifies text blocks, medicine forms (`Tab`, `Cap`, `Syr`), dosage strengths (`500mg`, `20mg`), and dosing frequencies (`1+0+1`, `1-0-1`).
+2. **Context Enrichment**: The raw image *and* the extracted OCR lines are sent together to OpenRouter. Even when doctor handwriting is difficult to parse visually, the AI correlates the visual strokes with the exact character lines detected by ML Kit.
+3. **Prioritized Vision Routing**: Requests specify an ordered fallback list (`minimax/minimax-m3:free`, `google/gemma-4-31b-it:free`, `google/gemma-4-26b-a4b-it:free`, `dots-studio/dots-3-note-preview:free`, `openrouter/free`), preventing random routing to text-only models.
+4. **Resilient Local Fallback**: If the cloud API is offline, rate-limited, or fails to parse difficult handwriting, `PrescriptionOcrResult.toPrescriptionItems` automatically parses the local OCR text into draft medications so the user is never blocked.
+
+---
+
+## 💬 Context-Aware AI Health Assistant & Action Loop
+
+The MediTrack AI Assistant doesn't just answer general medical questions—it has active visibility into the user's healthcare context and can execute actions directly through interactive cards:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User
+    participant Screen as AiAssistantScreen
+    participant DB as SQLite & Firestore Services
+    participant AIService as OpenRouterAiService
+    participant Sanitizer as OpenRouterSanitizingHttpClient
+    participant API as OpenRouter API (openrouter/free)
+
+    User->>Screen: "Should I take Napa before or after meals?"
+    Screen->>DB: Fetch Active Routine, Buy List & Search Catalog
+    DB-->>Screen: User context (Medicines, Stock, Schedules, BD Prices)
+    Screen->>AIService: sendMessage(prompt, history, context)
+    AIService->>Sanitizer: HTTP Request (JSON Body)
+    Note over Sanitizer: Strips null keys (debug, prediction) to ensure schema compliance
+    Sanitizer->>API: POST /chat/completions
+    API-->>Sanitizer: Natural Language Response + Action Block (JSON)
+    Sanitizer-->>AIService: 200 OK
+    AIService-->>Screen: AiChatMessage(content, action)
+    Screen-->>User: Renders Markdown Advice + Interactive Action Card
+    User->>Screen: Taps "Confirm" on Action Card
+    Screen->>DB: Executes Action (ADD / UPDATE / DELETE Routine or Buy Item)
+    Screen-->>User: Feedback SnackBar + Daily Schedule Updated
+```
+
+---
+
+## 🛠 Tech Stack Details
+
+| Component | Technology | Description |
+| :--- | :--- | :--- |
+| **Framework** | [Flutter 3.44](https://flutter.dev) | Cross-platform Dart SDK targeting Android |
+| **Language** | [Dart 3.6+](https://dart.dev) | Sound null-safety, pattern matching, switch expressions |
+| **State Management** | [Provider](https://pub.dev/packages/provider) | `ChangeNotifier` with `MultiProvider` dependency injection |
+| **AI Backend** | [OpenRouter](https://pub.dev/packages/openrouter) | `openrouter: ^1.0.1` calling `openrouter/free` router models |
+| **AI Sanitizer** | Custom `http.BaseClient` | Middleware stripping `null` keys to guarantee 400-free API payloads |
+| **On-Device OCR** | [Google ML Kit](https://pub.dev/packages/google_mlkit_text_recognition) | Offline on-device Latin script OCR |
+| **Backend & Auth** | [Firebase](https://firebase.google.com) | `firebase_auth`, `cloud_firestore`, `firebase_storage` |
+| **Local Alarms** | [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) | Android exact alarm reminders with timezone support |
+| **Local Catalog** | [sqflite](https://pub.dev/packages/sqflite) | SQLite database hosting 25,000+ Bangladesh medicines |
+| **Carrier Billing** | [Dio](https://pub.dev/packages/dio) & [AppsPro.dev](https://api.appspro.dev) | BD Apps carrier billing & SMS gateway integration |
+| **Design System** | Material 3 + Custom Tokens | HSL-tailored colors, soft surfaces, Poppins/Inter typography |
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
+- **Flutter SDK**: 3.44+ (stable channel)
+- **Dart SDK**: 3.6+
+- **Android SDK**: API level 24+ (Android 7.0 or higher)
+- **Java**: JDK 17+
 
-- Flutter SDK (3.44+ stable)
-- Android Studio / Android SDK
-- Java JDK 17+
-
-### Setup
+### Installation & Setup
 
 1. **Clone the repository**:
-
    ```bash
-   git clone <repository-url>
-   cd App
+   git clone https://github.com/<your-org>/meditrack.git
+   cd meditrack
    ```
 
-2. **Install dependencies**:
-
+2. **Install Flutter packages**:
    ```bash
    flutter pub get
    ```
 
 3. **Configure Environment Variables**:
-   Ensure `.env` file is configured with necessary API keys and Firebase credentials (refer to `.env.example`).
+   Create a `.env` file in the project root (refer to `.env.example`):
+   ```env
+   OPENROUTER_API_KEY=your_openrouter_api_key_here
+   APPSPRO_API_BASE_URL=https://api.appspro.dev/api/v1
+   APPSPRO_APP_ID=your_bdapps_app_id
+   APPSPRO_APP_SECRET=your_bdapps_app_secret
+   ```
 
-4. **Run the App**:
+4. **Verify Firebase Setup**:
+   Ensure `android/app/google-services.json` is in place with your Firebase project credentials.
+
+5. **Run Static Analysis**:
+   ```bash
+   flutter analyze
+   ```
+
+6. **Run Test Suite**:
+   ```bash
+   flutter test
+   ```
+
+7. **Launch the Application**:
    ```bash
    flutter run
    ```
 
 ---
 
-## 📦 Building the Release APK
+## 🧪 Testing & Verification
 
-To generate the production APK for Android:
+MediTrack enforces strict code quality and test coverage across services, models, and UI components:
 
 ```bash
-flutter build apk --release
+# Run all unit and widget tests
+flutter test
+
+# Test specific subsystems
+flutter test test/services/prescription_ocr_service_test.dart
+flutter test test/services/openrouter_ai_service_test.dart
+flutter test test/core/network/openrouter_sanitizing_client_test.dart
 ```
 
-The output binary will be located at:
-`build/app/outputs/flutter-apk/app-release.apk`
+All 117+ tests pass with **0 errors and 0 warnings** under `flutter analyze`.
 
 ---
 
-## 🧪 Code Quality & Verification
+## 📄 Security & Privacy
 
-MediTrack follows strict Flutter code conventions:
-
-```bash
-flutter analyze
-```
-
-All code passes static analysis with 0 errors and 0 warnings.
+- **Per-User Scoped Data**: All user routines, buy lists, and uploaded prescriptions in Cloud Firestore are strictly isolated under `users/{uid}/...` enforced by `firestore.rules`.
+- **Zero Raw Secret Embedding**: Cloud Function and carrier credentials are kept secure and proxies are used for third-party paid APIs.
+- **On-Device First**: Image preflights and primary OCR parsing are performed entirely on-device, preserving user bandwidth and privacy.
+- **Medical Disclaimer**: MediTrack AI provides informational wellness guidance and is not a substitute for professional medical diagnoses or doctor consultations.
