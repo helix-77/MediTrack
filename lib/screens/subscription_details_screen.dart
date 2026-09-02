@@ -98,19 +98,12 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
             // Danger Header icon & title
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.danger.withValues(alpha: 0.14),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.heart_broken_rounded,
-                    color: AppColors.danger,
-                    size: 24,
-                  ),
+                const Icon(
+                  Icons.heart_broken_rounded,
+                  color: AppColors.danger,
+                  size: 24,
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -897,55 +890,63 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.danger.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.phonelink_erase_rounded,
-                  color: AppColors.danger,
-                  size: 20,
-                ),
+              const Icon(
+                Icons.phonelink_erase_rounded,
+                color: AppColors.danger,
+                size: 20,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Method 1: Instant In-App Cancel',
-                      style: AppTypography.headingSmall.copyWith(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'Method 1: Instant In-App Cancel',
+                  style: AppTypography.headingSmall.copyWith(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Stops billing immediately. You can re-enable anytime.',
-            style: AppTypography.bodySmall.copyWith(
-              fontSize: 12,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
-            ),
-          ),
           const SizedBox(height: 14),
-          SoftPrimaryButton(
-            label: 'Cancel Subscription',
-            isLoading: _isCancelling,
-            backgroundColor: AppColors.danger,
-            icon: Icons.close_rounded,
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(46),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              side: BorderSide(
+                color: isDark
+                    ? const Color(0xFFDC2626).withValues(alpha: 0.35)
+                    : const Color(0xFFFECACA),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             onPressed: _isCancelling ? null : _handleInAppCancellation,
+            icon: _isCancelling
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.danger),
+                    ),
+                  )
+                : const Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: AppColors.danger,
+                  ),
+            label: Text(
+              'Cancel Subscription',
+              style: AppTypography.buttonText.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.danger,
+              ),
+            ),
           ),
         ],
       ),
@@ -964,47 +965,25 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.sms_rounded,
-                  color: AppColors.primaryBlue,
-                  size: 20,
-                ),
+              const Icon(
+                Icons.sms_rounded,
+                color: AppColors.primaryBlue,
+                size: 20,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Method 2: Cancel via SMS',
-                      style: AppTypography.headingSmall.copyWith(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'Method 2: Cancel via SMS',
+                  style: AppTypography.headingSmall.copyWith(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Send an SMS from your registered Robi or Airtel number to deactivate the service:',
-            style: AppTypography.bodySmall.copyWith(
-              fontSize: 12,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
-            ),
           ),
           const SizedBox(height: 12),
 
@@ -1055,11 +1034,11 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 11),
-                    side: BorderSide(
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.primaryBlue.withValues(alpha: 0.4),
-                    ),
+                    // side: BorderSide(
+                    //   color: isDark
+                    //       ? AppColors.darkBorder
+                    //       : AppColors.primaryBlue.withValues(alpha: 0.4),
+                    // ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -1074,11 +1053,11 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 11),
-                    side: BorderSide(
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.border,
-                    ),
+                    // side: BorderSide(
+                    //   color: isDark
+                    //       ? AppColors.darkBorder
+                    //       : AppColors.border,
+                    // ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),

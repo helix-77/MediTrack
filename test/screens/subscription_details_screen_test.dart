@@ -68,7 +68,7 @@ void main() {
     expect(find.text('Method 2: Cancel via SMS'), findsOneWidget);
 
     // Tap Cancel Subscription button to open confirmation modal
-    final cancelBtnFinder = find.widgetWithText(SoftPrimaryButton, 'Cancel Subscription');
+    final cancelBtnFinder = find.widgetWithText(OutlinedButton, 'Cancel Subscription');
     expect(cancelBtnFinder, findsOneWidget);
     await tester.ensureVisible(cancelBtnFinder);
     await tester.tap(cancelBtnFinder);
