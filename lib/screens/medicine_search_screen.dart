@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../logic/entitlement_guard.dart';
@@ -25,6 +26,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
   final MedicineReferenceService _searchService = MedicineReferenceService();
   final BuyListService _buyListService = BuyListService();
   final TextEditingController _queryController = TextEditingController();
+  Timer? _debounceTimer;
 
   List<MedicineReference> _results = [];
   bool _isLoading = false;
@@ -35,8 +37,24 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _queryController.dispose();
     super.dispose();
+  }
+
+  void _onQueryChanged(String value) {
+    _debounceTimer?.cancel();
+    final clean = value.trim();
+    if (clean.length >= 3) {
+      _debounceTimer = Timer(const Duration(milliseconds: 200), () {
+        _performSearch(clean);
+      });
+    } else if (clean.isEmpty) {
+      setState(() {
+        _results.clear();
+        _searchedQuery = '';
+      });
+    }
   }
 
   Future<void> _performSearch(String query) async {
@@ -150,6 +168,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
               borderRadius: BorderRadius.circular(30),
               child: TextField(
                 controller: _queryController,
+                onChanged: _onQueryChanged,
                 onSubmitted: _performSearch,
                 textInputAction: TextInputAction.search,
                 style: AppTypography.bodyMedium,
@@ -170,6 +189,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                       ? IconButton(
                           icon: const Icon(Icons.close, size: 18),
                           onPressed: () {
+                            _debounceTimer?.cancel();
                             _queryController.clear();
                             setState(() {
                               _results.clear();
@@ -211,7 +231,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Reference prices • Some prices may differ due to recent market price changes.',
+                    'Some prices may differ due to recent market price changes.',
                     style: AppTypography.caption.copyWith(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w600,
