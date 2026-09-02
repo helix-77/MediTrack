@@ -46,10 +46,29 @@ class LocaleNotifier extends ChangeNotifier {
 }
 
 extension LocalizationExtension on BuildContext {
-  LocaleNotifier get localeNotifier => watch<LocaleNotifier>();
-  bool get isBangla => watch<LocaleNotifier>().isBangla;
-  String tr(String key, [Map<String, String>? params]) =>
-      watch<LocaleNotifier>().tr(key, params);
+  LocaleNotifier get localeNotifier {
+    try {
+      return watch<LocaleNotifier>();
+    } catch (_) {
+      return read<LocaleNotifier>();
+    }
+  }
+
+  bool get isBangla {
+    try {
+      return watch<LocaleNotifier>().isBangla;
+    } catch (_) {
+      return read<LocaleNotifier>().isBangla;
+    }
+  }
+
+  String tr(String key, [Map<String, String>? params]) {
+    try {
+      return watch<LocaleNotifier>().tr(key, params);
+    } catch (_) {
+      return read<LocaleNotifier>().tr(key, params);
+    }
+  }
 }
 
 extension StringLocalizationExtension on String {

@@ -297,13 +297,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   void _showAiSafetyInfoDialog() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isBangla = context.isBangla;
-
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final isBangla = ctx.isBangla;
+
+        return AlertDialog(
+          backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
         titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20),
@@ -471,9 +472,10 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   Widget _buildGuidePoint({
     required IconData icon,
