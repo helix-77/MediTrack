@@ -296,38 +296,234 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     }
   }
 
-  void _showArchitectureInfoDialog() {
+  void _showAiSafetyInfoDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isBangla = context.isBangla;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+        actionsPadding: const EdgeInsets.all(16),
         title: Row(
           children: [
-            const Icon(Icons.shield_outlined, color: AppColors.primaryBlue),
-            const SizedBox(width: 8),
-            Text('OpenRouter AI Security', style: AppTypography.headingMedium),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF1E293B)
+                    : AppColors.primaryBlueLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.health_and_safety_rounded,
+                color: AppColors.primaryBlue,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isBangla ? 'মেডিট্র্যাক এআই নির্দেশিকা' : 'About MediTrack AI',
+                    style: AppTypography.headingSmall.copyWith(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isBangla
+                        ? 'ব্যবহার নির্দেশিকা ও চিকিৎসা সতর্কতা'
+                        : 'Assistant guide & safety disclaimer',
+                    style: AppTypography.caption.copyWith(
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-        content: Text(
-          'MediTrack integrates OpenRouter AI using the OpenRouter Free router model.\n\n'
-          '• Encrypted client access with per-user authentication.\n'
-          '• User data is scoped strictly to users/{uid}/...\n'
-          '• On-device ML Kit fallback for offline text scanning.',
-          style: AppTypography.bodySmall.copyWith(height: 1.45),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Safety Disclaimer Callout Box
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF2B2215)
+                      : AppColors.warningLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppColors.warning,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isBangla
+                                ? 'গুরুত্বপূর্ণ চিকিৎসা সতর্কতা'
+                                : 'Important Medical Advisory',
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? const Color(0xFFFDE68A)
+                                  : const Color(0xFF92400E),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isBangla
+                                ? 'এআই এর প্রতিটি কথা অন্ধভাবে বিশ্বাস করবেন না। এটি কোনো নিবন্ধিত চিকিৎসক নয়। যেকোনো গুরুতর স্বাস্থ্য পরামর্শ, রোগনির্ণয় বা প্রেসক্রিপশন পরিবর্তনের ক্ষেত্রে অবশ্যই বিশেষজ্ঞ ডাক্তারের কাছে যান।'
+                                : "Don't blindly trust every word from the AI. It is an assistant, not a doctor. For actual health conditions, diagnoses, and before making any medication changes, always visit a licensed medical professional.",
+                            style: AppTypography.caption.copyWith(
+                              color: isDark
+                                  ? const Color(0xFFFDE68A)
+                                  : const Color(0xFF92400E),
+                              height: 1.4,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildGuidePoint(
+                icon: Icons.chat_bubble_outline_rounded,
+                iconColor: AppColors.primaryBlue,
+                bgColor: isDark
+                    ? const Color(0xFF1E293B)
+                    : AppColors.primaryBlueLight,
+                title: isBangla
+                    ? 'স্বাস্থ্য পরামর্শ ও জিজ্ঞাসা'
+                    : 'Health Tips & Inquiries',
+                body: isBangla
+                    ? 'ওষুধ সেবনের নিয়মাবলী, খাবার আগে বা পরে নেওয়ার নির্দেশনা ও বাংলাদেশে প্রচলিত জেনেরিক নাম জানতে প্রশ্ন করুন।'
+                    : 'Ask about dosage timings, generic drug alternatives in Bangladesh, and everyday medication guidance.',
+                isDark: isDark,
+              ),
+              const SizedBox(height: 12),
+              _buildGuidePoint(
+                icon: Icons.touch_app_outlined,
+                iconColor: AppColors.success,
+                bgColor:
+                    isDark ? const Color(0xFF132D23) : AppColors.successLight,
+                title: isBangla
+                    ? 'চ্যাটেই স্বয়ংক্রিয় কাজ'
+                    : 'Automated In-App Actions',
+                body: isBangla
+                    ? 'কথোপকথনের মাধ্যমে সরাসরি নতুন ওষুধ আপনার দৈনিক রুটিনে বা কেনার তালিকায় যোগ করতে পারবেন।'
+                    : 'The assistant can suggest actions right in conversation. Tap "Confirm" on action cards to automatically update your routine or buy list.',
+                isDark: isDark,
+              ),
+              const SizedBox(height: 12),
+              _buildGuidePoint(
+                icon: Icons.shield_outlined,
+                iconColor: AppColors.accentPink,
+                bgColor: isDark
+                    ? const Color(0xFF2C1E26)
+                    : AppColors.accentPinkLight,
+                title: isBangla ? 'সুরক্ষিত ও ব্যক্তিগত' : 'Private & Secure',
+                body: isBangla
+                    ? 'আপনার স্বাস্থ্য তথ্য ও চ্যাট শুধুমাত্র আপনার অ্যাকাউন্টে সুরক্ষিতভাবে সংরক্ষিত থাকে।'
+                    : 'Client access is encrypted and your medication records are kept strictly private to your authenticated account.',
+                isDark: isDark,
+              ),
+            ],
+          ),
         ),
         actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-            ),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Understood',
-              style: TextStyle(color: Colors.white),
+          SizedBox(
+            width: double.infinity,
+            child: SoftPrimaryButton(
+              label: isBangla ? 'বুঝেছি' : 'Got it',
+              height: 42,
+              onPressed: () => Navigator.pop(ctx),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGuidePoint({
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required String title,
+    required String body,
+    required bool isDark,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 16, color: iconColor),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTypography.caption.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                body,
+                style: AppTypography.caption.copyWith(
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
+                  height: 1.35,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -457,41 +653,17 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: SoftIconButton(
-              icon: Icons.shield_outlined,
+              icon: Icons.info_outline_rounded,
               size: 40,
               iconColor: AppColors.primaryBlue,
-              tooltip: 'Security & AI Info',
-              onPressed: _showArchitectureInfoDialog,
+              tooltip: 'About AI & Medical Safety',
+              onPressed: _showAiSafetyInfoDialog,
             ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Safety Disclaimer Banner
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: isDark
-                ? const Color(0xFF1E242F)
-                : AppColors.primaryBlueLight.withValues(alpha: 0.5),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.info_outline_rounded,
-                  size: 16,
-                  color: AppColors.primaryBlue,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    context.tr('safety_disclaimer'),
-                    style: AppTypography.caption.copyWith(fontSize: 10.5),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           // Quota Banner: AI Assistant is a Premium-only feature
           // (no free-tier allowance), plus a live daily-cap readout for
           // already-subscribed users.

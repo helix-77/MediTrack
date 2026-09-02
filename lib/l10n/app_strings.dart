@@ -451,6 +451,12 @@ class AppStrings {
       AppLanguage.english: 'Directions',
       AppLanguage.bangla: 'দিকনির্দেশনা',
     },
+    'safety_disclaimer': {
+      AppLanguage.english:
+          'AI is an assistant, not a doctor. Always consult a healthcare professional for medical decisions.',
+      AppLanguage.bangla:
+          'এআই একজন সহকারী, চিকিৎসক নয়। যেকোনো স্বাস্থ্যগত সিদ্ধান্তের জন্য বিশেষজ্ঞ চিকিৎসকের পরামর্শ নিন।',
+    },
   };
 
   static String get(String key, AppLanguage language, [Map<String, String>? params]) {
