@@ -42,4 +42,24 @@ class MedicineSchedule {
       active: map['active'] as bool? ?? true,
     );
   }
+
+  MedicineSchedule copyWith({
+    int? doseAmount,
+    int? timesPerDay,
+    List<String>? doseTimes,
+    List<int>? daysOfWeek,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool? active,
+  }) {
+    return MedicineSchedule(
+      doseAmount: doseAmount ?? this.doseAmount,
+      timesPerDay: timesPerDay ?? this.timesPerDay,
+      doseTimes: doseTimes ?? this.doseTimes,
+      daysOfWeek: daysOfWeek ?? this.daysOfWeek,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      active: active ?? this.active,
+    );
+  }
 }

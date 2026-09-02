@@ -10,11 +10,13 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/locale_notifier.dart';
 import '../models/buy_list_item.dart';
 import '../models/medicine.dart';
+import '../models/medicine_reference.dart';
 import '../models/medicine_schedule.dart';
 import '../logic/entitlement_guard.dart';
 import '../services/buy_list_service.dart';
 import '../services/entitlement_service.dart';
 import '../services/openrouter_ai_service.dart';
+import '../services/medicine_database_service.dart';
 import '../services/medicine_service.dart';
 import '../services/notification_service.dart';
 import '../theme/app_tokens.dart';
@@ -37,6 +39,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   final OpenRouterAiService _aiService = OpenRouterAiService();
   final MedicineService _medicineService = MedicineService();
   final BuyListService _buyListService = BuyListService();
+  final MedicineDatabaseService _medicineDb = MedicineDatabaseService();
   final NotificationService _notificationService = NotificationService();
   final VoiceInputHelper _voiceHelper = VoiceInputHelper();
 
@@ -268,10 +271,83 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     _scrollToBottom();
 
     try {
+      List<Medicine> userMedicines = [];
+      List<BuyListItem> userBuyList = [];
+      List<MedicineReference> catalogMatches = [];
+
+      try {
+        final results = await Future.wait([
+          _medicineService.getMedicines(),
+          _buyListService.getBuyList(),
+        ]);
+        userMedicines = results[0] as List<Medicine>;
+        userBuyList = results[1] as List<BuyListItem>;
+      } catch (e) {
+        debugPrint('Error fetching database context for AI: $e');
+      }
+
+      if (text.isNotEmpty) {
+        try {
+          final words = text
+              .replaceAll(RegExp(r'[^\w\s]'), ' ')
+              .split(RegExp(r'\s+'))
+              .where((w) =>
+                  w.length >= 3 &&
+                  !const [
+                    'the',
+                    'and',
+                    'for',
+                    'with',
+                    'from',
+                    'what',
+                    'which',
+                    'when',
+                    'should',
+                    'can',
+                    'you',
+                    'add',
+                    'update',
+                    'delete',
+                    'remove',
+                    'list',
+                    'take',
+                    'much',
+                    'many',
+                    'have',
+                    'daily',
+                    'routine',
+                    'schedule',
+                    'times',
+                    'dose',
+                    'doses',
+                    'pill',
+                    'pills',
+                    'tablet',
+                    'tablets'
+                  ].contains(w.toLowerCase()))
+              .take(3);
+
+          for (final word in words) {
+            final matches = await _medicineDb.searchMedicines(word, limit: 3);
+            for (final m in matches) {
+              if (!catalogMatches.any((existing) => existing.id == m.id)) {
+                catalogMatches.add(m);
+              }
+            }
+            if (catalogMatches.length >= 6) break;
+          }
+        } catch (e) {
+          debugPrint('Error fetching catalog matches for AI: $e');
+        }
+      }
+
       final response = await _aiService.sendMessage(
         history: _messages,
         userPrompt: text,
         imageFile: userImage,
+        userMedicines: userMedicines,
+        userBuyList: userBuyList,
+        catalogMatches: catalogMatches,
       );
 
       unawaited(entitlement.recordAiUsage());
@@ -580,6 +656,107 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             ),
           );
         }
+      } else if (action.type == AiActionType.updateMedicine) {
+        final data = action.data;
+        final targetId = (data['medicineId'] as String? ?? '').trim();
+        final targetName = (data['name'] as String? ?? '').trim().toLowerCase();
+
+        final medicines = await _medicineService.getMedicines();
+        Medicine? targetMed;
+        if (targetId.isNotEmpty) {
+          targetMed = medicines.where((m) => m.id == targetId).firstOrNull;
+        }
+        if (targetMed == null && targetName.isNotEmpty) {
+          targetMed = medicines
+              .where((m) => m.name.toLowerCase() == targetName)
+              .firstOrNull;
+        }
+
+        if (targetMed == null) {
+          throw Exception(
+            'Medicine "${data['name'] ?? targetId}" not found in your routine to update.',
+          );
+        }
+
+        final rawStock = data['stock'];
+        final newStock = rawStock is num
+            ? rawStock.toInt()
+            : (rawStock is String
+                ? int.tryParse(rawStock) ?? targetMed.quantityCurrent
+                : targetMed.quantityCurrent);
+        final newDosage = data['dosage'] as String? ?? targetMed.strength;
+        final newForm = data['form'] as String? ?? targetMed.dosageForm;
+        final rawTimes = data['doseTimes'] as List<dynamic>?;
+        final newTimes = rawTimes != null
+            ? rawTimes.cast<String>()
+            : targetMed.schedule.doseTimes;
+
+        final updatedMed = Medicine(
+          id: targetMed.id,
+          name: targetMed.name,
+          genericName: targetMed.genericName,
+          dosageForm: newForm,
+          strength: newDosage,
+          quantityCurrent: newStock,
+          quantityTotal: targetMed.quantityTotal,
+          expiryDate: targetMed.expiryDate,
+          batchNumber: targetMed.batchNumber,
+          manufacturer: targetMed.manufacturer,
+          imageUrl: targetMed.imageUrl,
+          lowStockThreshold: targetMed.lowStockThreshold,
+          schedule: targetMed.schedule.copyWith(
+            doseTimes: newTimes,
+            timesPerDay: newTimes.length,
+          ),
+          createdAt: targetMed.createdAt,
+          updatedAt: DateTime.now(),
+        );
+
+        await _medicineService.saveMedicine(updatedMed);
+        try {
+          await _notificationService.scheduleMedicineNotifications(updatedMed);
+        } catch (_) {}
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ ${targetMed.name} routine updated successfully!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else if (action.type == AiActionType.deleteMedicine) {
+        final data = action.data;
+        final targetId = (data['medicineId'] as String? ?? '').trim();
+        final targetName = (data['name'] as String? ?? '').trim().toLowerCase();
+
+        final medicines = await _medicineService.getMedicines();
+        Medicine? targetMed;
+        if (targetId.isNotEmpty) {
+          targetMed = medicines.where((m) => m.id == targetId).firstOrNull;
+        }
+        if (targetMed == null && targetName.isNotEmpty) {
+          targetMed = medicines
+              .where((m) => m.name.toLowerCase() == targetName)
+              .firstOrNull;
+        }
+
+        if (targetMed == null) {
+          throw Exception(
+            'Medicine "${data['name'] ?? targetId}" not found in your routine to remove.',
+          );
+        }
+
+        await _medicineService.deleteMedicine(targetMed.id);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🗑️ ${targetMed.name} removed from your routine.'),
+              backgroundColor: AppColors.textPrimary,
+            ),
+          );
+        }
       } else if (action.type == AiActionType.addBuyItem) {
         final data = action.data;
         final name = data['name'] as String? ?? 'Medicine';
@@ -598,6 +775,85 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             SnackBar(
               content: Text('✅ $name added to your Buy List!'),
               backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else if (action.type == AiActionType.updateBuyItem) {
+        final data = action.data;
+        final targetId = (data['itemId'] as String? ?? '').trim();
+        final targetName = (data['name'] as String? ?? '').trim().toLowerCase();
+
+        final items = await _buyListService.getBuyList();
+        BuyListItem? targetItem;
+        if (targetId.isNotEmpty) {
+          targetItem = items.where((b) => b.id == targetId).firstOrNull;
+        }
+        if (targetItem == null && targetName.isNotEmpty) {
+          targetItem = items
+              .where((b) => b.name.toLowerCase() == targetName)
+              .firstOrNull;
+        }
+
+        if (targetItem == null) {
+          throw Exception(
+            'Item "${data['name'] ?? targetId}" not found in your buy list to update.',
+          );
+        }
+
+        final rawQty = data['quantity'];
+        final newQty = rawQty is num
+            ? rawQty.toInt()
+            : (rawQty is String
+                ? int.tryParse(rawQty) ?? targetItem.quantityToBuy
+                : targetItem.quantityToBuy);
+        final newPurchased = data['isPurchased'] is bool
+            ? data['isPurchased'] as bool
+            : targetItem.isPurchased;
+
+        final updatedItem = targetItem.copyWith(
+          quantityToBuy: newQty,
+          isPurchased: newPurchased,
+        );
+
+        await _buyListService.saveBuyItem(updatedItem);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ ${targetItem.name} updated in Buy List!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else if (action.type == AiActionType.deleteBuyItem) {
+        final data = action.data;
+        final targetId = (data['itemId'] as String? ?? '').trim();
+        final targetName = (data['name'] as String? ?? '').trim().toLowerCase();
+
+        final items = await _buyListService.getBuyList();
+        BuyListItem? targetItem;
+        if (targetId.isNotEmpty) {
+          targetItem = items.where((b) => b.id == targetId).firstOrNull;
+        }
+        if (targetItem == null && targetName.isNotEmpty) {
+          targetItem = items
+              .where((b) => b.name.toLowerCase() == targetName)
+              .firstOrNull;
+        }
+
+        if (targetItem == null) {
+          throw Exception(
+            'Item "${data['name'] ?? targetId}" not found in your buy list to remove.',
+          );
+        }
+
+        await _buyListService.deleteBuyItem(targetItem.id);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🗑️ ${targetItem.name} removed from your Buy List.'),
+              backgroundColor: AppColors.textPrimary,
             ),
           );
         }
@@ -946,6 +1202,99 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     }
   }
 
+  (
+    String title,
+    String buttonLabel,
+    String executedLabel,
+    IconData icon,
+    Color accentColor,
+  ) _getActionMeta(
+    AiAction action,
+    bool isBangla,
+  ) {
+    final name = (action.data['name'] as String? ?? '').trim();
+    final displayName = name.isNotEmpty ? name : (isBangla ? 'আইটেম' : 'Item');
+
+    switch (action.type) {
+      case AiActionType.addMedicine:
+        final dosage = action.data['dosage'] as String?;
+        final label = dosage != null && dosage.isNotEmpty
+            ? '$displayName ($dosage)'
+            : displayName;
+        return (
+          isBangla ? 'রুটিনে যোগ: $label' : 'Action: Add $label to Routine',
+          isBangla ? 'নিশ্চিত করুন' : 'Confirm',
+          isBangla ? 'যোগ হয়েছে' : 'Added',
+          Icons.add_circle_outline_rounded,
+          AppColors.primaryBlue,
+        );
+      case AiActionType.updateMedicine:
+        final stock = action.data['stock'];
+        final detail = stock != null ? ' (Stock: $stock)' : '';
+        return (
+          isBangla
+              ? 'রুটিন আপডেট: $displayName$detail'
+              : 'Action: Update $displayName$detail',
+          isBangla ? 'নিশ্চিত করুন' : 'Confirm',
+          isBangla ? 'আপডেট হয়েছে' : 'Updated',
+          Icons.edit_note_rounded,
+          AppColors.warning,
+        );
+      case AiActionType.deleteMedicine:
+        return (
+          isBangla
+              ? 'রুটিন থেকে অপসারণ: $displayName'
+              : 'Action: Remove $displayName from Routine',
+          isBangla ? 'অপসারণ' : 'Remove',
+          isBangla ? 'অপসারিত' : 'Removed',
+          Icons.delete_outline_rounded,
+          AppColors.danger,
+        );
+      case AiActionType.addBuyItem:
+        final qty = action.data['quantity'];
+        final detail = qty != null ? ' (x$qty)' : '';
+        return (
+          isBangla
+              ? 'ক্রয় তালিকায় যোগ: $displayName$detail'
+              : 'Action: Add $displayName$detail to Buy List',
+          isBangla ? 'নিশ্চিত করুন' : 'Confirm',
+          isBangla ? 'যোগ হয়েছে' : 'Added',
+          Icons.add_shopping_cart_rounded,
+          AppColors.primaryBlue,
+        );
+      case AiActionType.updateBuyItem:
+        final qty = action.data['quantity'];
+        final detail = qty != null ? ' (Qty: $qty)' : '';
+        return (
+          isBangla
+              ? 'ক্রয় তালিকা আপডেট: $displayName$detail'
+              : 'Action: Update $displayName$detail',
+          isBangla ? 'নিশ্চিত করুন' : 'Confirm',
+          isBangla ? 'আপডেট হয়েছে' : 'Updated',
+          Icons.edit_outlined,
+          AppColors.warning,
+        );
+      case AiActionType.deleteBuyItem:
+        return (
+          isBangla
+              ? 'ক্রয় তালিকা থেকে অপসারণ: $displayName'
+              : 'Action: Remove $displayName from Buy List',
+          isBangla ? 'অপসারণ' : 'Remove',
+          isBangla ? 'অপসারিত' : 'Removed',
+          Icons.remove_shopping_cart_outlined,
+          AppColors.danger,
+        );
+      case AiActionType.unknown:
+        return (
+          isBangla ? 'অ্যাকশন: $displayName' : 'Action: $displayName',
+          isBangla ? 'নিশ্চিত করুন' : 'Confirm',
+          isBangla ? 'সম্পন্ন' : 'Done',
+          Icons.touch_app_rounded,
+          AppColors.primaryBlue,
+        );
+    }
+  }
+
   Widget _buildMessageBubble(AiChatMessage msg, bool isDark) {
     final isUser = msg.isUser;
 
@@ -1034,35 +1383,56 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 ),
 
                 // Interactive Action Card
-                if (msg.action != null) ...[
+                if (msg.action != null &&
+                    msg.action!.type != AiActionType.unknown) ...[
                   const SizedBox(height: 8),
                   Builder(
                     builder: (context) {
-                      final isAdded = msg.action!.isExecuted ||
+                      final isExecuted = msg.action!.isExecuted ||
                           _executedActions.contains(msg.action!);
+                      final isBangla = context.read<LocaleNotifier>().isBangla;
+                      final (
+                        title,
+                        btnLabel,
+                        doneLabel,
+                        actionIcon,
+                        accentColor
+                      ) = _getActionMeta(msg.action!, isBangla);
+
+                      final isDelete =
+                          msg.action!.type == AiActionType.deleteMedicine ||
+                              msg.action!.type == AiActionType.deleteBuyItem;
+
+                      final normalBtnColor = isDelete
+                          ? AppColors.danger
+                          : AppColors.primaryBlue;
+                      final executedBtnColor = isDelete
+                          ? AppColors.textSecondary
+                          : AppColors.success;
+
                       return SoftSurface(
                         padding: const EdgeInsets.all(12),
                         color: isDark
                             ? const Color(0xFF16253A)
-                            : AppColors.primaryBlueLight,
+                            : (isDelete
+                                ? AppColors.danger.withValues(alpha: 0.08)
+                                : AppColors.primaryBlueLight),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              isAdded
+                              isExecuted
                                   ? Icons.check_circle_rounded
-                                  : Icons.touch_app_rounded,
-                              color: isAdded
+                                  : actionIcon,
+                              color: isExecuted
                                   ? AppColors.success
-                                  : AppColors.primaryBlue,
+                                  : accentColor,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
                             Flexible(
                               child: Text(
-                                msg.action!.type == AiActionType.addMedicine
-                                    ? 'Action: Add ${msg.action!.data["name"] ?? "Medicine"} to Routine'
-                                    : 'Action: Add to Buy List',
+                                title,
                                 style: AppTypography.caption.copyWith(
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1070,8 +1440,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                             ),
                             const SizedBox(width: 12),
                             SoftPrimaryButton(
-                              label: isAdded ? 'Added' : 'Confirm',
-                              icon: isAdded ? Icons.check_rounded : null,
+                              label: isExecuted ? doneLabel : btnLabel,
+                              icon: isExecuted ? Icons.check_rounded : null,
                               iconSize: 13,
                               height: 32,
                               width: 80,
@@ -1081,12 +1451,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                                 fontWeight: FontWeight.w700,
                                 fontSize: 11,
                               ),
-                              backgroundColor: isAdded
-                                  ? AppColors.success
-                                  : AppColors.primaryBlue,
-                              disabledBackgroundColor: AppColors.success,
+                              backgroundColor: isExecuted
+                                  ? executedBtnColor
+                                  : normalBtnColor,
+                              disabledBackgroundColor: executedBtnColor,
                               disabledForegroundColor: Colors.white,
-                              onPressed: isAdded
+                              onPressed: isExecuted
                                   ? null
                                   : () => _executeAction(msg.action!),
                             ),

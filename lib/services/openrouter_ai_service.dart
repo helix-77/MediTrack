@@ -7,10 +7,21 @@ import 'package:openrouter/openrouter.dart';
 
 import '../config/api_config.dart';
 import '../core/network/openrouter_sanitizing_client.dart';
+import '../models/buy_list_item.dart';
+import '../models/medicine.dart';
+import '../models/medicine_reference.dart';
 import '../logic/ai_action_validator.dart';
 import '../logic/auth_guard.dart';
 
-enum AiActionType { addMedicine, addBuyItem, unknown }
+enum AiActionType {
+  addMedicine,
+  updateMedicine,
+  deleteMedicine,
+  addBuyItem,
+  updateBuyItem,
+  deleteBuyItem,
+  unknown,
+}
 
 class AiAction {
   final AiActionType type;
@@ -30,7 +41,11 @@ class AiAction {
     }
     final type = switch (validated.type) {
       ValidatedActionType.addMedicine => AiActionType.addMedicine,
+      ValidatedActionType.updateMedicine => AiActionType.updateMedicine,
+      ValidatedActionType.deleteMedicine => AiActionType.deleteMedicine,
       ValidatedActionType.addBuyItem => AiActionType.addBuyItem,
+      ValidatedActionType.updateBuyItem => AiActionType.updateBuyItem,
+      ValidatedActionType.deleteBuyItem => AiActionType.deleteBuyItem,
     };
     return AiAction(type: type, data: json);
   }
@@ -66,23 +81,101 @@ class OpenRouterAiService {
 
   OpenRouterAiService({OpenRouterClient? client}) : _customClient = client;
 
-  static const String _systemInstructionText = '''
-You are MediTrack AI, a helpful, friendly, and expert health and medicine assistant powered by OpenRouter.
-Your goal is to help users manage their medication routines, grocery/buy lists, analyze prescription photos, and provide accurate health and wellness advice.
+  static String buildSystemInstruction({
+    List<Medicine>? userMedicines,
+    List<BuyListItem>? userBuyList,
+    List<MedicineReference>? catalogMatches,
+  }) {
+    final buffer = StringBuffer();
+    buffer.writeln(
+      'You are MediTrack AI, a helpful, friendly, and expert health and medicine assistant powered by OpenRouter.',
+    );
+    buffer.writeln(
+      'Your goal is to help users manage their medication routines, grocery/buy lists, query their health database, analyze prescription photos, and provide accurate health and wellness advice in Bangladesh.',
+    );
+    buffer.writeln();
 
-IMPORTANT INSTRUCTION FOR ACTIONS:
-1. If the user wants to add a medicine to their routine/schedule, give a friendly confirmation text AND include a JSON action block at the end of your response formatted EXACTLY like this:
+    if (userMedicines != null && userMedicines.isNotEmpty) {
+      buffer.writeln('CURRENT USER ROUTINE MEDICINES (FROM DATABASE):');
+      for (final m in userMedicines) {
+        final times = m.schedule.doseTimes.join(', ');
+        buffer.writeln(
+          '- ID: "${m.id}", Name: "${m.name}", Strength: "${m.strength ?? 'N/A'}", Form: "${m.dosageForm ?? 'tablet'}", Stock: ${m.quantityCurrent} (Low: ${m.lowStockThreshold}), Schedule: ${m.schedule.timesPerDay}x/day at [$times], Active: ${m.schedule.active}',
+        );
+      }
+      buffer.writeln();
+    } else if (userMedicines != null) {
+      buffer.writeln(
+        'CURRENT USER ROUTINE MEDICINES (FROM DATABASE): None currently saved in routine.',
+      );
+      buffer.writeln();
+    }
+
+    if (userBuyList != null && userBuyList.isNotEmpty) {
+      buffer.writeln('CURRENT USER BUY LIST (FROM DATABASE):');
+      for (final b in userBuyList) {
+        buffer.writeln(
+          '- ID: "${b.id}", Name: "${b.name}", Qty: ${b.quantityToBuy}, Purchased: ${b.isPurchased}',
+        );
+      }
+      buffer.writeln();
+    } else if (userBuyList != null) {
+      buffer.writeln('CURRENT USER BUY LIST (FROM DATABASE): Empty.');
+      buffer.writeln();
+    }
+
+    if (catalogMatches != null && catalogMatches.isNotEmpty) {
+      buffer.writeln('BANGLADESH MEDICINE CATALOG REFERENCES (FROM DATABASE):');
+      for (final c in catalogMatches) {
+        final price =
+            c.unitPriceBdt != null ? '৳${c.unitPriceBdt!.toStringAsFixed(2)}' : 'N/A';
+        buffer.writeln(
+          '- Brand: "${c.brandName}", Generic: "${c.genericName}", Form: "${c.dosageForm ?? 'N/A'}", Strength: "${c.strength ?? 'N/A'}", Mfr: "${c.manufacturer ?? 'N/A'}", Unit Price: $price',
+        );
+      }
+      buffer.writeln();
+    }
+
+    buffer.writeln('''
+DATABASE QUERIES & CRUD INSTRUCTIONS:
+- You have direct access to the user's active routine, buy list, and Bangladesh medicine catalog database above.
+- Use this database for reference to answer queries accurately (e.g. "What medicines do I take?", "How much Napa do I have left?", "What is the price of Napa in Bangladesh?", "Is Napa on my buy list?").
+- When the user asks to add, update, or delete items, provide a friendly explanation in natural text AND append the EXACT corresponding JSON action block at the very end of your response:
+
+1. ADD MEDICINE TO ROUTINE:
 ```json
 {
   "action": "ADD_MEDICINE",
   "name": "Paracetamol",
   "dosage": "500mg",
+  "form": "tablet",
   "frequency": "2 times daily",
+  "doseTimes": ["08:00", "20:00"],
   "stock": 30
 }
 ```
 
-2. If the user wants to add an item to their grocery/buy list, give a friendly confirmation text AND include a JSON action block formatted EXACTLY like this:
+2. UPDATE MEDICINE IN ROUTINE (stock, dosage, times, or frequency):
+```json
+{
+  "action": "UPDATE_MEDICINE",
+  "medicineId": "<ID from database if known>",
+  "name": "Paracetamol",
+  "stock": 25,
+  "doseTimes": ["09:00", "21:00"]
+}
+```
+
+3. DELETE MEDICINE FROM ROUTINE:
+```json
+{
+  "action": "DELETE_MEDICINE",
+  "medicineId": "<ID from database if known>",
+  "name": "Paracetamol"
+}
+```
+
+4. ADD ITEM TO BUY LIST:
 ```json
 {
   "action": "ADD_BUY_ITEM",
@@ -91,9 +184,32 @@ IMPORTANT INSTRUCTION FOR ACTIONS:
 }
 ```
 
-3. If analyzing a prescription image, list the detected medicines, dosage details, and offer to add them to their routine.
+5. UPDATE ITEM IN BUY LIST (quantity or purchased status):
+```json
+{
+  "action": "UPDATE_BUY_ITEM",
+  "itemId": "<ID from database if known>",
+  "name": "Vitamin C 1000mg",
+  "quantity": 3
+}
+```
+
+6. DELETE ITEM FROM BUY LIST:
+```json
+{
+  "action": "DELETE_BUY_ITEM",
+  "itemId": "<ID from database if known>",
+  "name": "Vitamin C 1000mg"
+}
+```
+
+7. If analyzing a prescription image, list the detected medicines, dosage details, and offer to add them to their routine.
+
 Be clear, encouraging, and informative. Remind users to consult qualified healthcare professionals for medical emergencies.
-''';
+''');
+
+    return buffer.toString();
+  }
 
   OpenRouterClient _getClient() {
     if (_customClient != null) return _customClient;
@@ -103,11 +219,14 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
     );
   }
 
-  /// Send message to OpenRouter AI model
+  /// Send message to OpenRouter AI model with optional DB and catalog context
   Future<AiChatMessage> sendMessage({
     required List<AiChatMessage> history,
     required String userPrompt,
     File? imageFile,
+    List<Medicine>? userMedicines,
+    List<BuyListItem>? userBuyList,
+    List<MedicineReference>? catalogMatches,
   }) async {
     requireAuthenticatedUser(FirebaseAuth.instance);
 
@@ -128,10 +247,16 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
           ? 'Please analyze this prescription photo and list the detected medicines, dosages, and schedules.'
           : userPrompt;
 
+      final systemInstruction = buildSystemInstruction(
+        userMedicines: userMedicines,
+        userBuyList: userBuyList,
+        catalogMatches: catalogMatches,
+      );
+
       final messages = <Message>[
-        const Message(
+        Message(
           role: MessageRole.system,
-          content: _systemInstructionText,
+          content: systemInstruction,
         ),
       ];
 

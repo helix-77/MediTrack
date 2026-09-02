@@ -1,26 +1,37 @@
-enum ValidatedActionType { addMedicine, addBuyItem }
+enum ValidatedActionType {
+  addMedicine,
+  updateMedicine,
+  deleteMedicine,
+  addBuyItem,
+  updateBuyItem,
+  deleteBuyItem,
+}
 
 class ValidatedMedicineAction {
   final String name;
   final String? dosage;
   final String? frequency;
   final int stock;
+  final String? medicineId;
 
   ValidatedMedicineAction({
     required this.name,
     this.dosage,
     this.frequency,
     this.stock = 30,
+    this.medicineId,
   });
 }
 
 class ValidatedBuyItemAction {
   final String name;
   final int quantity;
+  final String? itemId;
 
   ValidatedBuyItemAction({
     required this.name,
     this.quantity = 1,
+    this.itemId,
   });
 }
 
@@ -28,16 +39,23 @@ class ValidatedAiAction {
   final ValidatedActionType type;
   final ValidatedMedicineAction? medicineAction;
   final ValidatedBuyItemAction? buyItemAction;
+  final Map<String, dynamic> data;
 
-  ValidatedAiAction.medicine(ValidatedMedicineAction med)
+  ValidatedAiAction.medicine(ValidatedMedicineAction med, {Map<String, dynamic>? raw})
       : type = ValidatedActionType.addMedicine,
         medicineAction = med,
-        buyItemAction = null;
+        buyItemAction = null,
+        data = raw ?? {};
 
-  ValidatedAiAction.buyItem(ValidatedBuyItemAction item)
+  ValidatedAiAction.buyItem(ValidatedBuyItemAction item, {Map<String, dynamic>? raw})
       : type = ValidatedActionType.addBuyItem,
         medicineAction = null,
-        buyItemAction = item;
+        buyItemAction = item,
+        data = raw ?? {};
+
+  ValidatedAiAction.generic(this.type, this.data)
+      : medicineAction = null,
+        buyItemAction = null;
 }
 
 class AiActionValidator {
@@ -71,6 +89,25 @@ class AiActionValidator {
           frequency: frequency?.isNotEmpty == true ? frequency : null,
           stock: stock,
         ),
+        raw: actionJson,
+      );
+    } else if (actionStr == 'UPDATE_MEDICINE') {
+      final name = (actionJson['name'] as String? ?? '').trim();
+      final medicineId = (actionJson['medicineId'] as String? ?? '').trim();
+      if (name.isEmpty && medicineId.isEmpty) return null;
+
+      return ValidatedAiAction.generic(
+        ValidatedActionType.updateMedicine,
+        actionJson,
+      );
+    } else if (actionStr == 'DELETE_MEDICINE') {
+      final name = (actionJson['name'] as String? ?? '').trim();
+      final medicineId = (actionJson['medicineId'] as String? ?? '').trim();
+      if (name.isEmpty && medicineId.isEmpty) return null;
+
+      return ValidatedAiAction.generic(
+        ValidatedActionType.deleteMedicine,
+        actionJson,
       );
     } else if (actionStr == 'ADD_BUY_ITEM') {
       final name = (actionJson['name'] as String? ?? '').trim();
@@ -92,6 +129,25 @@ class AiActionValidator {
           name: name,
           quantity: quantity,
         ),
+        raw: actionJson,
+      );
+    } else if (actionStr == 'UPDATE_BUY_ITEM') {
+      final name = (actionJson['name'] as String? ?? '').trim();
+      final itemId = (actionJson['itemId'] as String? ?? '').trim();
+      if (name.isEmpty && itemId.isEmpty) return null;
+
+      return ValidatedAiAction.generic(
+        ValidatedActionType.updateBuyItem,
+        actionJson,
+      );
+    } else if (actionStr == 'DELETE_BUY_ITEM') {
+      final name = (actionJson['name'] as String? ?? '').trim();
+      final itemId = (actionJson['itemId'] as String? ?? '').trim();
+      if (name.isEmpty && itemId.isEmpty) return null;
+
+      return ValidatedAiAction.generic(
+        ValidatedActionType.deleteBuyItem,
+        actionJson,
       );
     }
 

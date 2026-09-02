@@ -31,6 +31,19 @@ class MedicineService {
     });
   }
 
+  // Get one-shot snapshot list of all medicines for current user
+  Future<List<Medicine>> getMedicines() async {
+    final user = _auth.currentUser;
+    if (user == null) return [];
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('medicines')
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map((doc) => Medicine.fromSnapshot(doc)).toList();
+  }
+
   // Stream today's dose logs safely
   Stream<List<DoseLog>> streamTodayDoseLogs() {
     return streamDateDoseLogs(DateTime.now());

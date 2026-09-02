@@ -30,6 +30,19 @@ class BuyListService {
     });
   }
 
+  // Get one-shot snapshot list of all buy list items for current user
+  Future<List<BuyListItem>> getBuyList() async {
+    final user = _auth.currentUser;
+    if (user == null) return [];
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('buyList')
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map((doc) => BuyListItem.fromSnapshot(doc)).toList();
+  }
+
   // Add or update item on buy list
   Future<void> saveBuyItem(BuyListItem item) async {
     final user = _authenticatedUser();
