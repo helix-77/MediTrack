@@ -221,30 +221,36 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
   }
 
   Future<void> _launchSms() async {
-    final uri = Uri.parse('sms:21213?body=STOP%20MEDI');
+    const recipient = '21213';
+    const message = 'STOP meditrack';
+    final smsUri = Uri(
+      scheme: 'sms',
+      path: recipient,
+      queryParameters: <String, String>{'body': message},
+    );
+
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        await Clipboard.setData(const ClipboardData(text: 'STOP MEDI'));
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Copied "STOP MEDI" to clipboard. Send it to 21213 in your SMS app.',
-              ),
-              backgroundColor: AppColors.info,
-            ),
-          );
+      final launched = await launchUrl(
+        smsUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        final rawUri = Uri.parse('sms:$recipient?body=STOP%20meditrack');
+        final rawLaunched = await launchUrl(
+          rawUri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!rawLaunched) {
+          throw Exception('Could not launch SMS app');
         }
       }
     } catch (_) {
-      await Clipboard.setData(const ClipboardData(text: 'STOP MEDI'));
+      await Clipboard.setData(const ClipboardData(text: message));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Copied "STOP MEDI" to clipboard. Send it to 21213 in your SMS app.',
+              'Copied "$message" to clipboard. Send it to $recipient in your SMS app.',
             ),
             backgroundColor: AppColors.info,
           ),
@@ -256,9 +262,11 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
   Future<void> _launchUssd() async {
     final uri = Uri.parse('tel:*213%23');
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
         await Clipboard.setData(const ClipboardData(text: '*213#'));
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -953,7 +961,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
   }
 
   Widget _buildSmsCancelCard(bool isDark) {
-    const smsKeyword = 'STOP MEDI';
+    const smsKeyword = 'STOP meditrack';
     const smsShortCode = '21213';
 
     return SoftSurface(
