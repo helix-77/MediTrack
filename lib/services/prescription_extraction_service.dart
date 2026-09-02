@@ -104,11 +104,14 @@ CRITICAL RULES:
       }
 
       final request = ChatRequest(
-        model: ApiConfig.openRouterModel,
-        // NOTE: Do not pass a `models` fallback array here — OpenRouter caps it
-        // at 3 items and rejects the request otherwise ("models array must have
-        // 3 items or fewer"). `openrouter/free` is itself a router that picks
-        // the best available free model, so no manual fallback list is needed.
+        // Pin to confirmed vision-capable free models. `openrouter/free` is a
+        // meta-router that may route to a text-only upstream which cannot see
+        // the image and answers {"error": "unreadable"}.
+        model: ApiConfig.openRouterVisionModels.first,
+        // Fallback routing across all confirmed vision-capable models. NOTE:
+        // OpenRouter caps the `models` array at 3 items and rejects the
+        // request otherwise ("models array must have 3 items or fewer").
+        models: ApiConfig.openRouterVisionModels,
         messages: [
           const Message(
             role: MessageRole.system,
@@ -126,7 +129,9 @@ CRITICAL RULES:
             ],
           ),
         ],
-        maxTokens: 2048,
+        // These free models emit hidden reasoning tokens (~1300 in testing)
+        // before the JSON output; a 2048 cap risks truncating the JSON.
+        maxTokens: 4096,
       );
 
       final response = await client.chatCompletion(request);

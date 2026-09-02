@@ -16,6 +16,22 @@ class ApiConfig {
   /// OpenRouter API Model (Free Router: https://openrouter.ai/openrouter/free)
   static const String openRouterModel = 'openrouter/free';
 
+  /// Vision-capable free models for prescription OCR extraction.
+  ///
+  /// Do NOT use [openRouterModel] for vision requests: it is a meta-router that
+  /// may route to a text-only upstream, which cannot see the image and then
+  /// answers {"error": "unreadable"}. Every entry here was verified via
+  /// /api/v1/models to accept image input (architecture.input_modalities
+  /// includes "image").
+  ///
+  /// IMPORTANT: keep this list at 3 items or fewer — OpenRouter rejects
+  /// requests whose `models` fallback array has more than 3 items.
+  static const List<String> openRouterVisionModels = [
+    'dots-studio/dots-3-note-preview:free',
+    'minimax/minimax-m3:free',
+    'google/gemma-4-31b-it:free',
+  ];
+
   /// Legacy Gemini alias kept for migration compatibility
   @Deprecated('Use openRouterApiKey instead')
   static String get geminiApiKey => openRouterApiKey;
