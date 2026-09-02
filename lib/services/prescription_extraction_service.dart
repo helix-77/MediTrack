@@ -105,13 +105,10 @@ CRITICAL RULES:
 
       final request = ChatRequest(
         model: ApiConfig.openRouterModel,
-        models: const [
-          'minimax/minimax-m3:free',
-          'google/gemma-4-31b-it:free',
-          'google/gemma-4-26b-a4b-it:free',
-          'dots-studio/dots-3-note-preview:free',
-          'openrouter/free',
-        ],
+        // NOTE: Do not pass a `models` fallback array here — OpenRouter caps it
+        // at 3 items and rejects the request otherwise ("models array must have
+        // 3 items or fewer"). `openrouter/free` is itself a router that picks
+        // the best available free model, so no manual fallback list is needed.
         messages: [
           const Message(
             role: MessageRole.system,
