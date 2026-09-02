@@ -3,7 +3,7 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.6+-0175C2?logo=dart)](https://dart.dev)
 [![Firebase](https://img.shields.io/badge/Backend-Firebase-FFCA28?logo=firebase)](https://firebase.google.com)
-[![OpenRouter](https://img.shields.io/badge/AI-OpenRouter%20Free-6366F1)](https://openrouter.ai)
+[![OpenRouter](https://img.shields.io/badge/AI-OpenRouter-6366F1)](https://openrouter.ai)
 [![License](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
 
 **MediTrack** is a production-grade Android medication management application tailored for Bangladesh. Built with Flutter, it empowers users to organize daily schedules, manage pill inventory, scan handwritten doctor prescriptions with a hybrid OCR/AI pipeline, converse with a context-aware AI health assistant, lookup generic medicine alternatives, and receive timely dose alarms.
