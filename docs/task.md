@@ -23,7 +23,11 @@ I/flutter (22345): Firebase AI Gemini Error: [firebase_app_check/unknown] com.go
 [x] prescription ocr
 [x] Ui revamp
 [x] add buy list, automatically add low stock product in buy list with separate field
-[] add medicine dataset integration
+[x] add medicine dataset integration
 [x] add options to set morning, noon, evening, night time schedule
 [x] after marking as taken, medicine should move to the bottom in routine dashboard
 [] migrate from firebase storeg to supabase storeg, other backend stuffs should remain in firebase (later)
+[x] switch to openrouter from firebase ai completely. use openrouter/free model (https://openrouter.ai/openrouter/free)
+for flutter integration follow:https://pub.dev/packages/openrouter
+
+[] fetch and update the medicine dataset latest price

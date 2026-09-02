@@ -7,7 +7,7 @@ import '../models/family_member.dart';
 import '../models/medicine.dart';
 import '../models/medicine_schedule.dart';
 import '../services/family_service.dart';
-import '../services/gemini_ai_service.dart';
+import '../services/openrouter_ai_service.dart';
 import '../services/medicine_service.dart';
 import '../services/notification_service.dart';
 import '../theme/colors.dart';
@@ -217,7 +217,7 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Type or dictate a description (e.g. "Napa 500mg, 1 tablet twice daily, 10 tablets"). Gemini AI will auto-populate the form.',
+                    'Type or dictate a description (e.g. "Napa 500mg, 1 tablet twice daily, 10 tablets"). OpenRouter AI will auto-populate the form.',
                     style: AppTypography.bodySmall,
                   ),
                   const SizedBox(height: 16),
@@ -259,15 +259,15 @@ class _AddEditMedicineScreenState extends State<AddEditMedicineScreen> {
                             final nav = Navigator.of(ctx);
                             setModalState(() => isProcessing = true);
                             try {
-                              final gemini = GeminiAiService();
-                              final response = await gemini.sendMessage(
+                              final aiService = OpenRouterAiService();
+                              final response = await aiService.sendMessage(
                                 history: [],
                                 userPrompt:
                                     'User wants to add medication: $prompt. Provide ADD_MEDICINE action JSON block.',
                               );
 
                               if (response.action != null &&
-                                  response.action!.type == GeminiActionType.addMedicine) {
+                                  response.action!.type == AiActionType.addMedicine) {
                                 final data = response.action!.data;
                                 final name = data['name'] as String?;
                                 final stock = data['stock'];

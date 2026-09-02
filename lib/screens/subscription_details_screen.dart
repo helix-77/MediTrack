@@ -783,7 +783,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
               icon: Icons.document_scanner_rounded,
               color: AppColors.primaryBlue,
               title: 'AI Prescription OCR',
-              subtitle: 'Multi-page Gemini 3.6 extraction',
+              subtitle: 'Multi-page OpenRouter extraction',
             ),
             _buildPrivilegeCard(
               isDark: isDark,

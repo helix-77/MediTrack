@@ -13,7 +13,7 @@ import '../models/medicine_schedule.dart';
 import '../logic/entitlement_guard.dart';
 import '../services/buy_list_service.dart';
 import '../services/entitlement_service.dart';
-import '../services/gemini_ai_service.dart';
+import '../services/openrouter_ai_service.dart';
 import '../services/medicine_service.dart';
 import '../services/notification_service.dart';
 import '../theme/app_tokens.dart';
@@ -33,7 +33,7 @@ class AiAssistantScreen extends StatefulWidget {
 }
 
 class _AiAssistantScreenState extends State<AiAssistantScreen> {
-  final GeminiAiService _aiService = GeminiAiService();
+  final OpenRouterAiService _aiService = OpenRouterAiService();
   final MedicineService _medicineService = MedicineService();
   final BuyListService _buyListService = BuyListService();
   final NotificationService _notificationService = NotificationService();
@@ -42,7 +42,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  final List<GeminiChatMessage> _messages = [];
+  final List<AiChatMessage> _messages = [];
   bool _isLoading = false;
   File? _selectedImage;
 
@@ -57,7 +57,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   void initState() {
     super.initState();
     _messages.add(
-      GeminiChatMessage(
+      AiChatMessage(
         role: 'model',
         content:
             'Hello! I am your **MediTrack AI Health Assistant**.\n\nYou can ask me questions about dosage instructions, medication schedules, Bangladesh generic equivalents, or upload a prescription image for advice.',
@@ -89,7 +89,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final pickedFile = await picker.pickImage(
       source: source,
       // Cap resolution before it ever touches the network — an
-      // uncompressed camera photo sent inline to Gemini is the single
+      // uncompressed camera photo sent inline to OpenRouter is the single
       // biggest driver of slow AI responses for image messages.
       maxWidth: 1920,
       maxHeight: 1920,
@@ -255,7 +255,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     setState(() {
       _selectedImage = null;
       _messages.add(
-        GeminiChatMessage(
+        AiChatMessage(
           role: 'user',
           content: text,
           imagePath: userImage?.path,
@@ -280,7 +280,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     } catch (e) {
       setState(() {
         _messages.add(
-          GeminiChatMessage(
+          AiChatMessage(
             role: 'model',
             content:
                 'I apologize, but I encountered an error: $e\nPlease try again.',
@@ -304,12 +304,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           children: [
             const Icon(Icons.shield_outlined, color: AppColors.primaryBlue),
             const SizedBox(width: 8),
-            Text('Firebase AI Security', style: AppTypography.headingMedium),
+            Text('OpenRouter AI Security', style: AppTypography.headingMedium),
           ],
         ),
         content: Text(
-          'MediTrack integrates Gemini 3.6 Flash directly via Firebase AI Logic.\n\n'
-          '• Direct client SDK access gated by Firebase App Check & Auth.\n'
+          'MediTrack integrates OpenRouter AI using the OpenRouter Free router model.\n\n'
+          '• Encrypted client access with per-user authentication.\n'
           '• User data is scoped strictly to users/{uid}/...\n'
           '• On-device ML Kit fallback for offline text scanning.',
           style: AppTypography.bodySmall.copyWith(height: 1.45),
@@ -330,8 +330,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     );
   }
 
-  void _executeAction(GeminiAction action) async {
-    if (action.type == GeminiActionType.addMedicine) {
+  void _executeAction(AiAction action) async {
+    if (action.type == AiActionType.addMedicine) {
       final data = action.data;
       final name = data['name'] as String? ?? 'New Medicine';
       final form = data['form'] as String? ?? 'tablet';
@@ -373,7 +373,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           ),
         );
       }
-    } else if (action.type == GeminiActionType.addBuyItem) {
+    } else if (action.type == AiActionType.addBuyItem) {
       final data = action.data;
       final name = data['name'] as String? ?? 'Medicine';
       final qty = (data['quantity'] as num?)?.toInt() ?? 1;
@@ -637,7 +637,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     );
   }
 
-  Widget _buildMessageBubble(GeminiChatMessage msg, bool isDark) {
+  Widget _buildMessageBubble(AiChatMessage msg, bool isDark) {
     final isUser = msg.isUser;
 
     return Padding(
@@ -735,7 +735,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          msg.action!.type == GeminiActionType.addMedicine
+                          msg.action!.type == AiActionType.addMedicine
                               ? 'Action: Add ${msg.action!.data["name"] ?? "Medicine"} to Routine'
                               : 'Action: Add to Buy List',
                           style: AppTypography.caption.copyWith(

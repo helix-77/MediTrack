@@ -462,7 +462,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
   String _getFeatureTag(int index) {
     switch (index % 4) {
       case 0:
-        return 'Gemini 3.6 Flash';
+        return 'OpenRouter Free';
       case 1:
         return 'Smart AI';
       case 2:

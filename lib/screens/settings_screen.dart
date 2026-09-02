@@ -472,7 +472,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final faqs = [
       {
         'q': 'How does prescription scanning work?',
-        'a': 'MediTrack uses on-device Google ML Kit OCR and Gemini AI to recognize medicine names, dosages, and schedules directly from your camera photo.'
+        'a': 'MediTrack uses on-device Google ML Kit OCR and OpenRouter AI to recognize medicine names, dosages, and schedules directly from your camera photo.'
       },
       {
         'q': 'Are medication alarms active offline?',
@@ -622,7 +622,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text(
               '• Secure Per-User Scoping:\nAll medical logs, prescriptions, and dose schedules are scoped strictly to users/{uid} in Firebase Cloud Firestore.\n\n'
               '• On-Device ML Processing:\nText recognition on medicine boxes is performed locally on your device with Google ML Kit.\n\n'
-              '• Firebase AI Security:\nGemini AI calls are verified with Firebase App Check to prevent unauthorized abuse.',
+              '• OpenRouter AI Security:\nOpenRouter AI calls are routed securely using encrypted API credentials.',
               style: AppTypography.bodySmall.copyWith(
                 height: 1.5,
                 color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,

@@ -29,10 +29,11 @@ how (Section 5).
     allowed to hold a third-party secret key (e.g. Google Places).
   - Monetization: the AppsPro / BD Apps carrier-billing subscription/entitlement
     mechanism (Section 5.10).
-- AI / vision: `firebase_ai` (Firebase AI Logic) calling Gemini 3.6 Flash directly from
-  the Flutter client, gated by App Check + Auth (no server proxy needed — App Check is
-  the abuse control). See `medicine-manager-spec.md` Section 5.2 for the prescription-OCR
-  pipeline design and its execution plan.
+- AI / vision: `openrouter` (OpenRouter API SDK) calling the `openrouter/free` router
+  model directly from the Flutter client with `OPENROUTER_API_KEY` configured in `.env`.
+  Prescription OCR extraction (`PrescriptionExtractionService`) and in-app AI assistant
+  (`OpenRouterAiService`) both use OpenRouter. On-device OCR (`google_mlkit_text_recognition`)
+  remains on-device for box/strip scanning.
 - On-device OCR (medicine boxes/strips): `google_mlkit_text_recognition`. Never call a
   cloud OCR/LLM for this step.
 - Camera/image capture: `image_picker`. Only add `camera` if a fully custom capture UI

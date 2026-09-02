@@ -2,21 +2,25 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Centralized Configuration for API Keys and External Services.
 class ApiConfig {
-  /// Safely retrieves Google Gemini API Key from environment (.env file)
-  static String get geminiApiKey {
+  /// Safely retrieves OpenRouter API Key from environment (.env file)
+  static String get openRouterApiKey {
     try {
-      final key = dotenv.env['GEMINI_API_KEY'];
-      if (key != null && key.isNotEmpty && key != 'YOUR_GEMINI_API_KEY_HERE') {
+      final key = dotenv.env['OPENROUTER_API_KEY'];
+      if (key != null && key.isNotEmpty && key != 'YOUR_OPENROUTER_API_KEY_HERE') {
         return key;
       }
     } catch (_) {}
     return '';
   }
 
-  /// Gemini API Endpoints & Models
-  static const String geminiBaseUrl =
-      'https://generativelanguage.googleapis.com/v1beta';
-  static const String geminiModel = 'gemini-3.6-flash';
+  /// OpenRouter API Model (Free Router: https://openrouter.ai/openrouter/free)
+  static const String openRouterModel = 'openrouter/free';
+
+  /// Legacy Gemini alias kept for migration compatibility
+  @Deprecated('Use openRouterApiKey instead')
+  static String get geminiApiKey => openRouterApiKey;
+  @Deprecated('Use openRouterModel instead')
+  static const String geminiModel = openRouterModel;
 
   /// AppsPro API Base URL (default: https://api.appspro.dev/api/v1)
   static String get appsProBaseUrl {

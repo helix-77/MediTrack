@@ -41,7 +41,7 @@ class ValidatedAiAction {
 }
 
 class AiActionValidator {
-  /// Validates a parsed JSON action map from Gemini AI responses.
+  /// Validates a parsed JSON action map from AI responses.
   /// Returns a [ValidatedAiAction] if the action has valid required fields, or `null` if invalid.
   static ValidatedAiAction? validate(Map<String, dynamic> actionJson) {
     final actionStr = (actionJson['action'] as String?)?.toUpperCase() ?? '';

@@ -77,12 +77,10 @@ flag it instead of silently switching):
     Firebase CLI when needed) is the ONLY place allowed to hold a third-party secret key
     (e.g. Google Places for Section 5.5). The Flutter client must never embed a raw
     secret key for a paid external API.
-- AI / vision (prescription OCR, in-app AI assistant): `firebase_ai` (Firebase AI Logic)
-  calling Gemini 3.6 Flash **directly from the Flutter client**, gated by
-  `firebase_app_check` + `firebase_auth`. This is Firebase AI Logic's supported
-  client-calling pattern — App Check attestation is the abuse control, so this does not
-  violate the "no embedded secret key" rule above (there is no secret to embed). See
-  Section 5.2 for the full pipeline and the exact prompt/schema contract.
+- AI / vision (prescription OCR, in-app AI assistant): `openrouter` (OpenRouter API SDK)
+  calling the `openrouter/free` router model directly from the Flutter client with
+  `OPENROUTER_API_KEY` in `.env`. See Section 5.2 for the full pipeline and the exact
+  prompt/schema contract.
 - OCR (printed text — medicine boxes/strips): `google_mlkit_text_recognition`, on-device,
   offline, free. Do not call any cloud OCR/LLM for this step — it's solved on-device.
 - Camera/image capture: `image_picker` (camera + gallery). Only add the lower-level

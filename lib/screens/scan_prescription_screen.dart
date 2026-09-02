@@ -398,7 +398,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Analyzing Prescription with Gemini AI...',
+                        'Analyzing Prescription with OpenRouter AI...',
                         style: AppTypography.headingSmall,
                       ),
                       const SizedBox(height: 4),
@@ -601,7 +601,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
             Text('Capture Prescription', style: AppTypography.headingMedium),
             const SizedBox(height: 6),
             Text(
-              'Take a clear photo in good lighting to let Gemini AI extract medications and doctor instructions.',
+              'Take a clear photo in good lighting to let OpenRouter AI extract medications and doctor instructions.',
               textAlign: TextAlign.center,
               style: AppTypography.bodySmall,
             ),

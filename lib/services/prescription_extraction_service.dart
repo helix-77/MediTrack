@@ -1,8 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
-import 'package:firebase_ai/firebase_ai.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:openrouter/openrouter.dart';
 
 import '../config/api_config.dart';
 import '../logic/auth_guard.dart';
@@ -10,11 +11,11 @@ import '../logic/prescription_validator.dart';
 import '../models/prescription_extraction.dart';
 
 class PrescriptionExtractionService {
-  final GenerativeModel? _customModel;
-  GenerativeModel? _cachedModel;
+  final OpenRouterClient? _customClient;
+  OpenRouterClient? _cachedClient;
 
-  PrescriptionExtractionService({GenerativeModel? model})
-    : _customModel = model;
+  PrescriptionExtractionService({OpenRouterClient? client})
+      : _customClient = client;
 
   static const String _systemPrompt = '''
 You are a medical prescription OCR assistant. You will receive one or more images of a doctor's prescription, which may be handwritten and may mix Bangla and English. Extract only what is visibly present on the page — never infer or guess a medicine name, dosage, or duration that is not legible. If a field is not clearly readable, output null for it rather than guessing.
@@ -40,23 +41,10 @@ Return ONLY valid JSON, no prose, no markdown code fences, matching exactly this
 If the image is unreadable or is not a prescription, return {"error": "unreadable"}.
 ''';
 
-  GenerativeModel _getModel() {
-    if (_customModel != null) return _customModel;
-    return _cachedModel ??= _buildModel();
-  }
-
-  GenerativeModel _buildModel() {
-    final googleAI = FirebaseAI.googleAI();
-
-    return googleAI.generativeModel(
-      model: ApiConfig.geminiModel,
-      systemInstruction: Content.system(_systemPrompt),
-      generationConfig: GenerationConfig(
-        // See the note in GeminiAiService._buildModel: disabling "thinking"
-        // via ThinkingConfig would help latency further but requires
-        // upgrading firebase_ai past the currently pinned 2.3.0.
-        maxOutputTokens: 2048,
-      ),
+  OpenRouterClient _getClient() {
+    if (_customClient != null) return _customClient;
+    return _cachedClient ??= OpenRouterClient(
+      apiKey: ApiConfig.openRouterApiKey,
     );
   }
 
@@ -66,6 +54,14 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
   }) async {
     requireAuthenticatedUser(FirebaseAuth.instance);
 
+    final apiKey = ApiConfig.openRouterApiKey;
+    if (apiKey.isEmpty) {
+      throw PrescriptionExtractionException(
+        PrescriptionErrorType.unknown,
+        'OpenRouter API Key is not configured. Please add OPENROUTER_API_KEY to your .env file.',
+      );
+    }
+
     if (!imageFile.existsSync()) {
       throw PrescriptionExtractionException(
         PrescriptionErrorType.unreadable,
@@ -74,18 +70,36 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
     }
 
     try {
+      final client = _getClient();
       final bytes = await imageFile.readAsBytes();
-      final model = _getModel();
+      final base64Image = base64Encode(bytes);
+      final dataUri = 'data:$mimeType;base64,$base64Image';
 
-      final content = Content.multi([
-        TextPart(
-          'Extract the medicines and details from this prescription according to the schema.',
-        ),
-        InlineDataPart(mimeType, bytes),
-      ]);
+      final request = ChatRequest(
+        model: ApiConfig.openRouterModel,
+        messages: [
+          const Message(
+            role: MessageRole.system,
+            content: _systemPrompt,
+          ),
+          Message(
+            role: MessageRole.user,
+            content: [
+              const TextContentItem(
+                text:
+                    'Extract the medicines and details from this prescription according to the schema.',
+              ),
+              ImageContentItem(
+                imageUrl: ImageUrl(url: dataUri),
+              ),
+            ],
+          ),
+        ],
+        maxTokens: 2048,
+      );
 
-      final response = await model.generateContent([content]);
-      final rawText = response.text ?? '';
+      final response = await client.chatCompletion(request);
+      final rawText = response.content ?? '';
 
       if (rawText.trim().isEmpty) {
         throw PrescriptionExtractionException(
@@ -97,10 +111,30 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
       return PrescriptionValidator.parseAndValidate(rawText);
     } on PrescriptionExtractionException {
       rethrow;
+    } on RateLimitException catch (e) {
+      debugPrint('Prescription extraction rate limit: $e');
+      throw PrescriptionExtractionException(
+        PrescriptionErrorType.quotaLimit,
+        'AI service quota or rate limit reached. Please try again shortly.',
+      );
+    } on AuthenticationException catch (e) {
+      debugPrint('Prescription extraction auth error: $e');
+      throw PrescriptionExtractionException(
+        PrescriptionErrorType.unknown,
+        'OpenRouter authentication failed: ${e.message}',
+      );
+    } on OpenRouterException catch (e) {
+      debugPrint('Prescription extraction API error: $e');
+      throw PrescriptionExtractionException(
+        PrescriptionErrorType.unknown,
+        'OpenRouter API error: ${e.message}',
+      );
     } catch (e) {
       debugPrint('PrescriptionExtractionService Error: $e');
       final errorString = e.toString().toLowerCase();
-      if (errorString.contains('network') || errorString.contains('timeout')) {
+      if (errorString.contains('network') ||
+          errorString.contains('timeout') ||
+          errorString.contains('socketexception')) {
         throw PrescriptionExtractionException(
           PrescriptionErrorType.networkTimeout,
           'Network connection timed out. Please check your internet connection.',

@@ -1,26 +1,16 @@
+import 'dart:convert';
 import 'dart:typed_data';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_ai/firebase_ai.dart';
+import 'package:openrouter/openrouter.dart';
 
-import '../firebase_options.dart';
 import '../config/api_config.dart';
 
-/// Service for analyzing prescriptions and medicine labels using Firebase AI Logic.
+/// Legacy service for analyzing prescriptions and medicine labels using OpenRouter.
+/// For structured OCR extraction, use [PrescriptionExtractionService] instead.
 class AIPrescriptionService {
-  GenerativeModel? _model;
+  OpenRouterClient? _client;
 
-  /// Initializes Firebase and the Firebase AI Logic GenerativeModel.
   Future<void> initialize() async {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
-
-    // Initialize Gemini Developer API using the centralized model configuration.
-    _model = FirebaseAI.googleAI().generativeModel(
-      model: ApiConfig.geminiModel,
-    );
+    _client ??= OpenRouterClient(apiKey: ApiConfig.openRouterApiKey);
   }
 
   /// Analyzes a prescription image or medicine label provided as raw bytes.
@@ -33,21 +23,30 @@ class AIPrescriptionService {
     required String mimeType,
     String? promptText,
   }) async {
-    if (_model == null) {
-      await initialize();
-    }
+    await initialize();
 
-    final defaultPrompt = TextPart(
-      promptText ??
-          'Analyze this prescription image or medicine label. Extract the medicine name, dosage, frequency, and any special instructions.',
+    final base64Image = base64Encode(imageBytes);
+    final dataUri = 'data:$mimeType;base64,$base64Image';
+
+    final text = promptText ??
+        'Analyze this prescription image or medicine label. Extract the medicine name, dosage, frequency, and any special instructions.';
+
+    final request = ChatRequest(
+      model: ApiConfig.openRouterModel,
+      messages: [
+        Message(
+          role: MessageRole.user,
+          content: [
+            TextContentItem(text: text),
+            ImageContentItem(
+              imageUrl: ImageUrl(url: dataUri),
+            ),
+          ],
+        ),
+      ],
     );
 
-    final imagePart = InlineDataPart(mimeType, imageBytes);
-
-    final response = await _model!.generateContent([
-      Content.multi([defaultPrompt, imagePart]),
-    ]);
-
-    return response.text;
+    final response = await _client!.chatCompletion(request);
+    return response.content;
   }
 }
