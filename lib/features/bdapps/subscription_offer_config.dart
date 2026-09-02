@@ -35,7 +35,7 @@ class SubscriptionOfferConfig {
     {
       'title': 'AI Prescription Extraction',
       'subtitle':
-          'Scan handwritten & digital prescriptions with OpenRouter Free AI',
+          'Scan handwritten & digital prescriptions with Gemini 3.6 Flash AI',
       'icon': 'document_scanner',
     },
     {
@@ -55,6 +55,22 @@ class SubscriptionOfferConfig {
       'subtitle': 'Locate open pharmacies near you with one-tap directions',
       'icon': 'local_pharmacy',
     },
+  ];
+
+  /// Core features included 100% free for all users
+  static const List<String> freeForeverFeatures = [
+    'Pill schedule & routine dose tracking',
+    'In-app dose alarms & notifications (unlimited)',
+    'On-device box & strip OCR scanner',
+    'Prescription photo vault storage',
+    'Low-stock medicine buy list',
+  ];
+
+  /// Introductory free trial allowances for unsubscribed users
+  static const List<String> freeTrialAllowances = [
+    '1 AI Prescription Scan (Gemini Flash)',
+    '3 AI Health Assistant Messages',
+    '3 Generic Medicine Price Lookups',
   ];
 
   static const String consentText =

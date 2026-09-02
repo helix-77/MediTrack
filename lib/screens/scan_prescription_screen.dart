@@ -68,6 +68,12 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
 
   Future<void> _pickAndAnalyzeImage(ImageSource source) async {
     final entitlementService = context.read<EntitlementService>();
+    final allowed = await entitlementService.requirePremium(
+      context,
+      feature: EntitlementFeature.prescriptionOcr,
+    );
+    if (!allowed || !mounted) return;
+
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
       source: source,
@@ -928,7 +934,49 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
               textAlign: TextAlign.center,
               style: AppTypography.bodySmall,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            Builder(
+              builder: (context) {
+                final entitlement = context.watch<EntitlementService>();
+                if (entitlement.isSubscribed) return const SizedBox.shrink();
+                final remaining = entitlement.freePrescriptionScansRemaining;
+                final isAvailable = remaining > 0;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isAvailable
+                        ? (isDark ? const Color(0xFF132A38) : const Color(0xFFE0F2FE))
+                        : (isDark ? const Color(0xFF2B2215) : AppColors.warningLight),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isAvailable ? Icons.stars_rounded : Icons.lock_outline_rounded,
+                        size: 15,
+                        color: isAvailable
+                            ? (isDark ? const Color(0xFF7DD3FC) : AppColors.primaryBlueDark)
+                            : (isDark ? const Color(0xFFFBBF24) : AppColors.warning),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        isAvailable
+                            ? '✨ Free Trial: 1 Free AI Scan available'
+                            : 'Free scan used • Upgrade for unlimited scans',
+                        style: AppTypography.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isAvailable
+                              ? (isDark ? const Color(0xFF7DD3FC) : AppColors.primaryBlueDark)
+                              : (isDark ? const Color(0xFFFBBF24) : AppColors.warning),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(

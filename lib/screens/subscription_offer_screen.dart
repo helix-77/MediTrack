@@ -525,6 +525,10 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
             ),
             const SizedBox(height: 4),
             _buildFeaturesList(isDark),
+            const SizedBox(height: 20),
+
+            // ==================== TIER COMPARISON ====================
+            _buildTierComparisonCard(isDark),
             const SizedBox(height: 24),
 
             // ==================== SUBSCRIPTION INPUT CARD ====================
@@ -966,6 +970,177 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
           ),
         );
       }),
+    );
+  }
+
+  Widget _buildTierComparisonCard(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(
+          title: 'Free vs. Premium Breakdown',
+        ),
+        const SizedBox(height: 8),
+        SoftSurface(
+          padding: const EdgeInsets.all(18),
+          borderRadius: AppRadii.cardRadius,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Free Tier Section
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'ALWAYS FREE',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Included for all users',
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildTierItem(
+                Icons.notifications_active_outlined,
+                'In-App Dose Notifications & Alarms',
+                'Unlimited, reliable local reminders on your device',
+                Colors.green,
+                isDark,
+              ),
+              _buildTierItem(
+                Icons.calendar_today_outlined,
+                'Routine & Pill Schedules',
+                'Track medication courses, history, & buy list',
+                Colors.blue,
+                isDark,
+              ),
+              _buildTierItem(
+                Icons.card_giftcard_rounded,
+                'Introductory Free Trial',
+                '1 AI prescription scan, 3 AI messages, 3 price lookups',
+                Colors.amber,
+                isDark,
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1),
+              ),
+              // Premium Tier Section
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'PREMIUM (৳2.99/DAY)',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Full Pro Access',
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryBlue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildTierItem(
+                Icons.all_inclusive_rounded,
+                'Unlimited AI Prescription Scans',
+                'Powered by Gemini 3.6 Flash for handwritten Rx',
+                AppColors.primaryBlue,
+                isDark,
+              ),
+              _buildTierItem(
+                Icons.chat_bubble_outline_rounded,
+                'Unlimited AI Health Assistant',
+                '24/7 medicine guidance and consultation answers',
+                const Color(0xFF8B5CF6),
+                isDark,
+              ),
+              _buildTierItem(
+                Icons.currency_exchange_rounded,
+                'Unlimited Medicine Price Lookups',
+                'Search Bangladesh MRPs and find cheaper alternatives',
+                const Color(0xFF10B981),
+                isDark,
+              ),
+              _buildTierItem(
+                Icons.near_me_outlined,
+                'Nearby Pharmacy Locator',
+                'GPS discovery of open pharmacies with directions',
+                const Color(0xFFF59E0B),
+                isDark,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTierItem(
+    IconData icon,
+    String title,
+    String subtitle,
+    Color color,
+    bool isDark,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: AppTypography.caption.copyWith(
+                    fontSize: 11,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

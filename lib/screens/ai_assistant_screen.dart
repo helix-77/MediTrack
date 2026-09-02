@@ -923,42 +923,81 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       ),
       body: Column(
         children: [
-          // Quota Banner: AI Assistant is a Premium-only feature
-          // (no free-tier allowance), plus a live daily-cap readout for
-          // already-subscribed users.
+          // Quota Banner: Displays free trial progress or daily limit for subscribed users
           if (!isPro)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              color: isDark ? const Color(0xFF2B2215) : AppColors.warningLight,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.isBangla ? 'মেডিট্র্যাক এআই প্রিমিয়াম সেবা (৳২.৯৯/দিন)' : 'MediTrack AI is a Premium feature (৳2.99/day)',
-                      style: AppTypography.caption.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.warning,
+            Builder(
+              builder: (context) {
+                final remaining = entitlement.freeAiMessagesRemaining;
+                final isAvailable = remaining > 0;
+                final bgColor = isAvailable
+                    ? (isDark ? const Color(0xFF132A38) : const Color(0xFFE0F2FE))
+                    : (isDark ? const Color(0xFF2B2215) : AppColors.warningLight);
+                final textColor = isAvailable
+                    ? (isDark ? const Color(0xFF7DD3FC) : AppColors.primaryBlueDark)
+                    : (isDark ? const Color(0xFFFBBF24) : AppColors.warning);
+                final text = isAvailable
+                    ? (context.isBangla
+                        ? '✨ ফ্রি ট্রায়াল: ৩ টির মধ্যে $remaining টি প্রশ্ন বাকি'
+                        : '✨ Free Trial: $remaining of 3 AI messages left')
+                    : (context.isBangla
+                        ? 'ফ্রি ট্রায়াল শেষ (৩/৩)। আনলিমিটেড এআই-এর জন্য সাবস্ক্রাইব করুন'
+                        : 'Free trial used (3/3). Subscribe for unlimited AI access');
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: bgColor,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              isAvailable ? Icons.stars_rounded : Icons.lock_clock_outlined,
+                              size: 16,
+                              color: textColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                text,
+                                style: AppTypography.caption.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SubscriptionOfferScreen(),
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBlue,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            context.isBangla ? 'আনলিমিটেড ⚡' : 'Unlimited ⚡',
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SubscriptionOfferScreen(),
-                      ),
-                    ),
-                    child: Text(
-                      context.isBangla ? 'সাবস্ক্রাইব ⚡' : 'Subscribe ⚡',
-                      style: AppTypography.caption.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryBlue,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             )
           else
             Builder(

@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../logic/entitlement_guard.dart';
 import '../models/buy_list_item.dart';
 import '../models/generic_reference.dart';
 import '../models/medicine_reference.dart';
 import '../services/buy_list_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/medicine_reference_service.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
@@ -14,6 +16,7 @@ import '../widgets/empty_state_view.dart';
 import '../widgets/premium_gate.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
+import 'subscription_offer_screen.dart';
 
 class MedicineSearchScreen extends StatefulWidget {
   const MedicineSearchScreen({super.key});
@@ -109,6 +112,17 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
   }
 
   void _showGenericDetails(String genericName) async {
+    final entitlement = context.read<EntitlementService>();
+    final allowed = await entitlement.requirePremium(
+      context,
+      feature: EntitlementFeature.priceLookup,
+    );
+    if (!allowed || !mounted) return;
+
+    if (!entitlement.isSubscribed) {
+      unawaited(entitlement.recordPriceLookupUsage());
+    }
+
     final details = await _searchService.getGenericDetails(genericName);
     if (!mounted) return;
 
@@ -123,6 +137,7 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -160,6 +175,81 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
       ),
       body: Column(
         children: [
+          // Trial Progress Banner for Unsubscribed Users
+          Builder(
+            builder: (context) {
+              final entitlement = context.watch<EntitlementService>();
+              if (entitlement.isSubscribed) return const SizedBox.shrink();
+              final remaining = entitlement.freePriceLookupsRemaining;
+              final isAvailable = remaining > 0;
+              return Container(
+                margin: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isAvailable
+                      ? (isDark ? const Color(0xFF132A38) : const Color(0xFFE0F2FE))
+                      : (isDark ? const Color(0xFF2B2215) : AppColors.warningLight),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            isAvailable ? Icons.stars_rounded : Icons.lock_outline_rounded,
+                            size: 16,
+                            color: isAvailable
+                                ? (isDark ? const Color(0xFF7DD3FC) : AppColors.primaryBlueDark)
+                                : (isDark ? const Color(0xFFFBBF24) : AppColors.warning),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isAvailable
+                                  ? '✨ Free Trial: $remaining of 3 price lookups left'
+                                  : 'Free lookups used (3/3) • Upgrade for unlimited',
+                              style: AppTypography.caption.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: isAvailable
+                                    ? (isDark ? const Color(0xFF7DD3FC) : AppColors.primaryBlueDark)
+                                    : (isDark ? const Color(0xFFFBBF24) : AppColors.warning),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SubscriptionOfferScreen(),
+                        ),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryBlue,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'Unlimited ⚡',
+                          style: AppTypography.caption.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           // Search Input Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -383,14 +473,24 @@ class _MedicineSearchScreenState extends State<MedicineSearchScreen> {
                         ? Icons.expand_less
                         : Icons.swap_horiz_rounded,
                     height: 36,
-                    onPressed: () {
-                      setState(() {
-                        if (isExpanded) {
-                          _expandedAlternatives.remove(med.id);
-                        } else {
-                          _expandedAlternatives.add(med.id);
-                        }
-                      });
+                    onPressed: () async {
+                      if (isExpanded) {
+                        setState(() => _expandedAlternatives.remove(med.id));
+                        return;
+                      }
+
+                      final entitlement = context.read<EntitlementService>();
+                      final allowed = await entitlement.requirePremium(
+                        context,
+                        feature: EntitlementFeature.priceLookup,
+                      );
+                      if (!allowed || !mounted) return;
+
+                      if (!entitlement.isSubscribed) {
+                        unawaited(entitlement.recordPriceLookupUsage());
+                      }
+
+                      setState(() => _expandedAlternatives.add(med.id));
                     },
                   ),
                 ),
