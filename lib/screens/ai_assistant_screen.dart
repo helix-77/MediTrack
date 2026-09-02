@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -833,6 +834,118 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     );
   }
 
+  void _showMessageOptions(
+    BuildContext context,
+    Offset globalPosition,
+    AiChatMessage msg,
+  ) async {
+    if (msg.content.trim().isEmpty) return;
+    HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isBangla = context.read<LocaleNotifier>().isBangla;
+
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final position = RelativeRect.fromRect(
+      Rect.fromCenter(
+        center: globalPosition,
+        width: 48,
+        height: 48,
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final selected = await showMenu<String>(
+      context: context,
+      position: position,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: isDark ? AppColors.darkDivider : AppColors.divider,
+          width: 0.8,
+        ),
+      ),
+      color: isDark ? AppColors.darkSurface : AppColors.surface,
+      elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.25),
+      items: [
+        PopupMenuItem<String>(
+          value: 'copy',
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.copy_rounded,
+                size: 18,
+                color: AppColors.primaryBlue,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                isBangla ? 'কপি করুন' : 'Copy',
+                style: AppTypography.bodySmall.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (selected == 'copy') {
+      _copyMessage(msg.content);
+    }
+  }
+
+  void _copyMessage(String text) {
+    if (text.trim().isEmpty) return;
+    Clipboard.setData(ClipboardData(text: text));
+    HapticFeedback.mediumImpact();
+    final isBangla = context.read<LocaleNotifier>().isBangla;
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isBangla
+                      ? 'বার্তাটি ক্লিপবোর্ডে কপি করা হয়েছে'
+                      : 'Message copied to clipboard',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Widget _buildMessageBubble(AiChatMessage msg, bool isDark) {
     final isUser = msg.isUser;
 
@@ -867,49 +980,56 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                GestureDetector(
+                  onLongPressStart: (details) => _showMessageOptions(
+                    context,
+                    details.globalPosition,
+                    msg,
                   ),
-                  decoration: BoxDecoration(
-                    color: isUser
-                        ? AppColors.primaryBlue
-                        : (isDark ? AppColors.darkSurface : AppColors.surface),
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(18),
-                      topRight: const Radius.circular(18),
-                      bottomLeft: Radius.circular(isUser ? 18 : 4),
-                      bottomRight: Radius.circular(isUser ? 4 : 18),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
                     ),
-                    boxShadow: AppShadows.subtle,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (msg.imagePath != null &&
-                          File(msg.imagePath!).existsSync()) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.file(
-                            File(msg.imagePath!),
-                            height: 140,
-                            fit: BoxFit.cover,
+                    decoration: BoxDecoration(
+                      color: isUser
+                          ? AppColors.primaryBlue
+                          : (isDark ? AppColors.darkSurface : AppColors.surface),
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(18),
+                        topRight: const Radius.circular(18),
+                        bottomLeft: Radius.circular(isUser ? 18 : 4),
+                        bottomRight: Radius.circular(isUser ? 4 : 18),
+                      ),
+                      boxShadow: AppShadows.subtle,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (msg.imagePath != null &&
+                            File(msg.imagePath!).existsSync()) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              File(msg.imagePath!),
+                              height: 140,
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
+                          const SizedBox(height: 8),
+                        ],
+                        if (isUser)
+                          Text(
+                            msg.content,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: Colors.white,
+                              height: 1.45,
+                            ),
+                          )
+                        else
+                          _buildFormattedMarkdown(msg.content, isDark),
                       ],
-                      if (isUser)
-                        Text(
-                          msg.content,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: Colors.white,
-                            height: 1.45,
-                          ),
-                        )
-                      else
-                        _buildFormattedMarkdown(msg.content, isDark),
-                    ],
+                    ),
                   ),
                 ),
 

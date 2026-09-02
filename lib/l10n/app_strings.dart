@@ -457,6 +457,18 @@ class AppStrings {
       AppLanguage.bangla:
           'এআই একজন সহকারী, চিকিৎসক নয়। যেকোনো স্বাস্থ্যগত সিদ্ধান্তের জন্য বিশেষজ্ঞ চিকিৎসকের পরামর্শ নিন।',
     },
+    'copy': {
+      AppLanguage.english: 'Copy',
+      AppLanguage.bangla: 'কপি করুন',
+    },
+    'copy_text': {
+      AppLanguage.english: 'Copy Text',
+      AppLanguage.bangla: 'টেক্সট কপি করুন',
+    },
+    'message_copied': {
+      AppLanguage.english: 'Message copied to clipboard',
+      AppLanguage.bangla: 'বার্তাটি ক্লিপবোর্ডে কপি করা হয়েছে',
+    },
   };
 
   static String get(String key, AppLanguage language, [Map<String, String>? params]) {
