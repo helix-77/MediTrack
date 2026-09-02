@@ -43,6 +43,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   final ScrollController _scrollController = ScrollController();
 
   final List<AiChatMessage> _messages = [];
+  final Set<AiAction> _executedActions = {};
   bool _isLoading = false;
   File? _selectedImage;
 
@@ -331,66 +332,87 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   void _executeAction(AiAction action) async {
-    if (action.type == AiActionType.addMedicine) {
-      final data = action.data;
-      final name = data['name'] as String? ?? 'New Medicine';
-      final form = data['form'] as String? ?? 'tablet';
-      final dosage = data['dosage'] as String?;
-      final times =
-          (data['doseTimes'] as List<dynamic>?)?.cast<String>() ??
-          ['08:00', '20:00'];
+    if (action.isExecuted || _executedActions.contains(action)) return;
+    setState(() {
+      action.isExecuted = true;
+      _executedActions.add(action);
+    });
 
-      final newMed = Medicine(
-        id: '',
-        name: name,
-        dosageForm: form,
-        strength: dosage,
-        quantityCurrent: 30,
-        quantityTotal: 30,
-        lowStockThreshold: 5,
-        schedule: MedicineSchedule(
-          doseAmount: 1,
-          timesPerDay: times.length,
-          doseTimes: times,
-          daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
-          startDate: DateTime.now(),
-          active: true,
-        ),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+    try {
+      if (action.type == AiActionType.addMedicine) {
+        final data = action.data;
+        final name = data['name'] as String? ?? 'New Medicine';
+        final form = data['form'] as String? ?? 'tablet';
+        final dosage = data['dosage'] as String?;
+        final times =
+            (data['doseTimes'] as List<dynamic>?)?.cast<String>() ??
+            ['08:00', '20:00'];
 
-      final saved = await _medicineService.saveMedicine(newMed);
-      try {
-        await _notificationService.scheduleMedicineNotifications(saved);
-      } catch (_) {}
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ $name added to your daily schedule!'),
-            backgroundColor: AppColors.success,
+        final newMed = Medicine(
+          id: '',
+          name: name,
+          dosageForm: form,
+          strength: dosage,
+          quantityCurrent: 30,
+          quantityTotal: 30,
+          lowStockThreshold: 5,
+          schedule: MedicineSchedule(
+            doseAmount: 1,
+            timesPerDay: times.length,
+            doseTimes: times,
+            daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+            startDate: DateTime.now(),
+            active: true,
           ),
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
+
+        final saved = await _medicineService.saveMedicine(newMed);
+        try {
+          await _notificationService.scheduleMedicineNotifications(saved);
+        } catch (_) {}
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ $name added to your daily schedule!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else if (action.type == AiActionType.addBuyItem) {
+        final data = action.data;
+        final name = data['name'] as String? ?? 'Medicine';
+        final qty = (data['quantity'] as num?)?.toInt() ?? 1;
+
+        final item = BuyListItem(
+          id: '',
+          name: name,
+          quantityToBuy: qty,
+          createdAt: DateTime.now(),
+        );
+
+        await _buyListService.saveBuyItem(item);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ $name added to your Buy List!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
       }
-    } else if (action.type == AiActionType.addBuyItem) {
-      final data = action.data;
-      final name = data['name'] as String? ?? 'Medicine';
-      final qty = (data['quantity'] as num?)?.toInt() ?? 1;
-
-      final item = BuyListItem(
-        id: '',
-        name: name,
-        quantityToBuy: qty,
-        createdAt: DateTime.now(),
-      );
-
-      await _buyListService.saveBuyItem(item);
+    } catch (e) {
       if (mounted) {
+        setState(() {
+          action.isExecuted = false;
+          _executedActions.remove(action);
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ $name added to your Buy List!'),
-            backgroundColor: AppColors.success,
+            content: Text('Failed to complete action: $e'),
+            backgroundColor: AppColors.danger,
           ),
         );
       }
@@ -720,37 +742,64 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 // Interactive Action Card
                 if (msg.action != null) ...[
                   const SizedBox(height: 8),
-                  SoftSurface(
-                    padding: const EdgeInsets.all(12),
-                    color: isDark
-                        ? const Color(0xFF16253A)
-                        : AppColors.primaryBlueLight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.touch_app_rounded,
-                          color: AppColors.primaryBlue,
-                          size: 18,
+                  Builder(
+                    builder: (context) {
+                      final isAdded = msg.action!.isExecuted ||
+                          _executedActions.contains(msg.action!);
+                      return SoftSurface(
+                        padding: const EdgeInsets.all(12),
+                        color: isDark
+                            ? const Color(0xFF16253A)
+                            : AppColors.primaryBlueLight,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isAdded
+                                  ? Icons.check_circle_rounded
+                                  : Icons.touch_app_rounded,
+                              color: isAdded
+                                  ? AppColors.success
+                                  : AppColors.primaryBlue,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                msg.action!.type == AiActionType.addMedicine
+                                    ? 'Action: Add ${msg.action!.data["name"] ?? "Medicine"} to Routine'
+                                    : 'Action: Add to Buy List',
+                                style: AppTypography.caption.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SoftPrimaryButton(
+                              label: isAdded ? 'Added' : 'Confirm',
+                              icon: isAdded ? Icons.check_rounded : null,
+                              iconSize: 13,
+                              height: 32,
+                              width: 80,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              textStyle: AppTypography.caption.copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                              backgroundColor: isAdded
+                                  ? AppColors.success
+                                  : AppColors.primaryBlue,
+                              disabledBackgroundColor: AppColors.success,
+                              disabledForegroundColor: Colors.white,
+                              onPressed: isAdded
+                                  ? null
+                                  : () => _executeAction(msg.action!),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          msg.action!.type == AiActionType.addMedicine
-                              ? 'Action: Add ${msg.action!.data["name"] ?? "Medicine"} to Routine'
-                              : 'Action: Add to Buy List',
-                          style: AppTypography.caption.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        SoftPrimaryButton(
-                          label: 'Confirm',
-                          height: 32,
-                          width: 80,
-                          onPressed: () => _executeAction(msg.action!),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ],
               ],

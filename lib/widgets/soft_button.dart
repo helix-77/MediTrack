@@ -13,6 +13,8 @@ class SoftPrimaryButton extends StatelessWidget {
   final double? width;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final Color? disabledBackgroundColor;
+  final Color? disabledForegroundColor;
   final EdgeInsetsGeometry? padding;
   final TextStyle? textStyle;
   final double? iconSize;
@@ -27,6 +29,8 @@ class SoftPrimaryButton extends StatelessWidget {
     this.width,
     this.backgroundColor,
     this.foregroundColor,
+    this.disabledBackgroundColor,
+    this.disabledForegroundColor,
     this.padding,
     this.textStyle,
     this.iconSize,
@@ -56,8 +60,10 @@ class SoftPrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: bg,
           foregroundColor: fg,
-          disabledBackgroundColor: bg.withValues(alpha: 0.5),
-          disabledForegroundColor: fg.withValues(alpha: 0.7),
+          disabledBackgroundColor:
+              disabledBackgroundColor ?? bg.withValues(alpha: 0.5),
+          disabledForegroundColor:
+              disabledForegroundColor ?? fg.withValues(alpha: 0.7),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: AppRadii.standardRadius,

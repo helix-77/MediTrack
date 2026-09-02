@@ -15,8 +15,13 @@ enum AiActionType { addMedicine, addBuyItem, unknown }
 class AiAction {
   final AiActionType type;
   final Map<String, dynamic> data;
+  bool isExecuted;
 
-  AiAction({required this.type, required this.data});
+  AiAction({
+    required this.type,
+    required this.data,
+    this.isExecuted = false,
+  });
 
   factory AiAction.fromJson(Map<String, dynamic> json) {
     final validated = AiActionValidator.validate(json);
