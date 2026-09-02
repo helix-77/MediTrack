@@ -104,6 +104,41 @@ void main() {
       expect(draft.medicines.length, 1);
       expect(draft.medicines[0].extractedName, 'Ace');
     });
+
+    test('returns valid draft with empty medicines when medicines array is empty', () {
+      const emptyJson = '''
+      {
+        "schema_version": 1,
+        "doctor_name": "Dr. Karim",
+        "date": "2026-09-01",
+        "medicines": []
+      }
+      ''';
+      final draft = PrescriptionValidator.parseAndValidate(emptyJson);
+      expect(draft.doctorName, 'Dr. Karim');
+      expect(draft.date, '2026-09-01');
+      expect(draft.medicines, isEmpty);
+    });
+
+    test('cleans thinking tags and conversational preambles', () {
+      const thinkingJson = '''
+      <think>
+      The user wants to extract medicines. Napa is visible.
+      </think>
+      Here is the extracted prescription:
+      ```json
+      {
+        "doctor_name": "Dr. Hasan",
+        "medicines": [{"name": "Napa", "strength": "500mg"}]
+      }
+      ```
+      Hope this helps!
+      ''';
+      final draft = PrescriptionValidator.parseAndValidate(thinkingJson);
+      expect(draft.doctorName, 'Dr. Hasan');
+      expect(draft.medicines.length, 1);
+      expect(draft.medicines.first.extractedName, 'Napa');
+    });
   });
 
   group('ImagePreflight Tests', () {

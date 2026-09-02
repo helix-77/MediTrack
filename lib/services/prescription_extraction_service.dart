@@ -87,7 +87,20 @@ CRITICAL RULES:
       final client = _getClient();
       final bytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(bytes);
-      final dataUri = 'data:$mimeType;base64,$base64Image';
+
+      var effectiveMimeType = mimeType;
+      final pathLower = imageFile.path.toLowerCase();
+      if (pathLower.endsWith('.png')) {
+        effectiveMimeType = 'image/png';
+      } else if (pathLower.endsWith('.webp')) {
+        effectiveMimeType = 'image/webp';
+      } else if (pathLower.endsWith('.gif')) {
+        effectiveMimeType = 'image/gif';
+      } else if (pathLower.endsWith('.jpg') || pathLower.endsWith('.jpeg')) {
+        effectiveMimeType = 'image/jpeg';
+      }
+
+      final dataUri = 'data:$effectiveMimeType;base64,$base64Image';
 
       final userPromptBuffer = StringBuffer(
         'Extract all medicines and details from this prescription according to the schema.',
@@ -136,6 +149,7 @@ CRITICAL RULES:
 
       final response = await client.chatCompletion(request);
       final rawText = response.content ?? '';
+      debugPrint('Prescription extraction raw response from OpenRouter: $rawText');
 
       if (rawText.trim().isEmpty) {
         throw PrescriptionExtractionException(

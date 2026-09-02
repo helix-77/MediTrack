@@ -14,6 +14,7 @@ import '../services/prescription_service.dart';
 import '../services/prescription_extraction_service.dart';
 import '../services/prescription_ocr_service.dart';
 import '../logic/image_preflight.dart';
+import '../logic/prescription_validator.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -138,7 +139,46 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
         }
 
         if (draft == null) {
-          rethrow;
+          String userMessage;
+          if (aiErr is PrescriptionExtractionException) {
+            switch (aiErr.type) {
+              case PrescriptionErrorType.unreadable:
+                userMessage =
+                    'The image was not recognized as a clear prescription. You can add medicines manually below or retake the photo.';
+                break;
+              case PrescriptionErrorType.networkTimeout:
+                userMessage =
+                    'Network connection timed out. You can add medicines manually below or try again.';
+                break;
+              case PrescriptionErrorType.quotaLimit:
+                userMessage =
+                    'AI extraction is busy right now. You can enter medicines manually or try again shortly.';
+                break;
+              default:
+                userMessage =
+                    'Could not detect medicines automatically. You can add them manually below.';
+            }
+          } else {
+            userMessage =
+                'Could not detect medicines automatically. You can add them manually below.';
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(userMessage),
+                backgroundColor: AppColors.warning,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+
+          // Fallback draft so the user can continue and add medicines manually
+          draft = PrescriptionDraft(
+            schemaVersion: 1,
+            medicines: const [],
+            rawText: ocrResult?.rawText,
+          );
         }
       }
 
@@ -153,7 +193,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
           if (parsedDate != null) _visitDate = parsedDate;
         }
         if (_titleController.text.isEmpty) {
-          final doc = draft.doctorName != null
+          final doc = draft.doctorName != null && draft.doctorName!.isNotEmpty
               ? ' - Dr. ${draft.doctorName}'
               : '';
           _titleController.text =
@@ -162,18 +202,198 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
 
         _extractedReviewItems = List.from(draft.medicines);
       });
+
+      if (draft.medicines.isEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No medicines detected automatically. Tap "Add Medicine Manually" below to add medications from your prescription.',
+            ),
+            backgroundColor: AppColors.primaryBlue,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('AI extraction notice: $e'),
-            backgroundColor: AppColors.danger,
+            content: Text('Notice: $e'),
+            backgroundColor: AppColors.warning,
           ),
         );
       }
     } finally {
       if (mounted) setState(() => _isAnalyzing = false);
     }
+  }
+
+  void _addNewMedicine() {
+    final nameCtrl = TextEditingController();
+    final dosageCtrl = TextEditingController();
+    final formCtrl = TextEditingController(text: 'tablet');
+    final durationCtrl = TextEditingController(text: '7');
+    final instructionsCtrl = TextEditingController();
+    int timesPerDay = 2;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+          title: Text(
+            'Add Medicine',
+            style: AppTypography.headingMedium,
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SoftTextField(
+                  controller: nameCtrl,
+                  labelText: 'Medicine Name *',
+                  hintText: 'e.g. Napa Extra',
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SoftTextField(
+                        controller: formCtrl,
+                        labelText: 'Form',
+                        hintText: 'tablet',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SoftTextField(
+                        controller: dosageCtrl,
+                        labelText: 'Dosage / Strength',
+                        hintText: '500mg',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Times per day',
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<int>(
+                            initialValue: timesPerDay,
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                            ),
+                            items: [1, 2, 3, 4]
+                                .map(
+                                  (v) => DropdownMenuItem(
+                                    value: v,
+                                    child: Text('$v times'),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) =>
+                                setDialogState(() => timesPerDay = v ?? 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SoftTextField(
+                        controller: durationCtrl,
+                        labelText: 'Duration (days)',
+                        hintText: '7',
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SoftTextField(
+                  controller: instructionsCtrl,
+                  labelText: 'Instructions',
+                  hintText: 'After meal',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryBlue,
+              ),
+              onPressed: () {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a medicine name.'),
+                      backgroundColor: AppColors.danger,
+                    ),
+                  );
+                  return;
+                }
+                final newMed = PrescriptionItem(
+                  id: '',
+                  extractedName: name,
+                  extractedForm: formCtrl.text.trim().isEmpty
+                      ? 'tablet'
+                      : formCtrl.text.trim(),
+                  extractedStrength: dosageCtrl.text.trim().isEmpty
+                      ? null
+                      : dosageCtrl.text.trim(),
+                  extractedFrequencyPerDay: timesPerDay,
+                  extractedDurationDays: int.tryParse(durationCtrl.text) ?? 7,
+                  extractedInstructions: instructionsCtrl.text.trim().isEmpty
+                      ? null
+                      : instructionsCtrl.text.trim(),
+                  confidence: 'high',
+                  confirmed: true,
+                );
+                setState(() {
+                  _extractedReviewItems.add(newMed);
+                });
+                Navigator.pop(dialogContext);
+              },
+              child: const Text(
+                'Add Medicine',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _removeExtractedMedicine(int index) {
+    setState(() {
+      _extractedReviewItems.removeAt(index);
+    });
   }
 
   void _editExtractedMedicine(int index) {
@@ -465,26 +685,43 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                 title: 'Extracted Medicines (${_extractedReviewItems.length})',
                 subtitle:
                     'Review and confirm medicines to add to your daily schedule',
-                trailing: TextButton(
-                  onPressed: () {
-                    final allSelected = _extractedReviewItems.every(
-                      (i) => i.confirmed,
-                    );
-                    setState(() {
-                      _extractedReviewItems = _extractedReviewItems
-                          .map((item) => item.copyWith(confirmed: !allSelected))
-                          .toList();
-                    });
-                  },
-                  child: Text(
-                    _extractedReviewItems.every((i) => i.confirmed)
-                        ? 'Deselect All'
-                        : 'Select All',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.primaryBlue,
-                      fontWeight: FontWeight.w700,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        final allSelected = _extractedReviewItems.every(
+                          (i) => i.confirmed,
+                        );
+                        setState(() {
+                          _extractedReviewItems = _extractedReviewItems
+                              .map((item) => item.copyWith(confirmed: !allSelected))
+                              .toList();
+                        });
+                      },
+                      child: Text(
+                        _extractedReviewItems.every((i) => i.confirmed)
+                            ? 'Deselect All'
+                            : 'Select All',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 4),
+                    TextButton.icon(
+                      onPressed: _addNewMedicine,
+                      icon: const Icon(Icons.add, size: 16, color: AppColors.primaryBlue),
+                      label: Text(
+                        'Add Med',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               ..._extractedReviewItems.asMap().entries.map((entry) {
@@ -492,6 +729,46 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                 final item = entry.value;
                 return _buildExtractedMedCard(item, idx, isDark);
               }),
+              const SizedBox(height: 24),
+            ] else if (_capturedImage != null && !_isAnalyzing) ...[
+              SoftSurface(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryBlueLight,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.medication_outlined,
+                        color: AppColors.primaryBlue,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No medicines listed yet',
+                      style: AppTypography.headingSmall.copyWith(fontSize: 15),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'If handwriting was unclear or no medicines were detected, you can add medications manually from your prescription.',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.caption,
+                    ),
+                    const SizedBox(height: 16),
+                    SoftPrimaryButton(
+                      label: 'Add Medicine Manually',
+                      icon: Icons.add_rounded,
+                      height: 44,
+                      onPressed: _addNewMedicine,
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
             ],
 
@@ -800,13 +1077,26 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.edit_outlined,
-                size: 18,
-                color: AppColors.primaryBlue,
-              ),
-              onPressed: () => _editExtractedMedicine(index),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 18,
+                    color: AppColors.primaryBlue,
+                  ),
+                  onPressed: () => _editExtractedMedicine(index),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    size: 18,
+                    color: AppColors.danger,
+                  ),
+                  onPressed: () => _removeExtractedMedicine(index),
+                ),
+              ],
             ),
           ],
         ),

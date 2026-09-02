@@ -27,9 +27,8 @@ class ApiConfig {
   /// IMPORTANT: keep this list at 3 items or fewer — OpenRouter rejects
   /// requests whose `models` fallback array has more than 3 items.
   static const List<String> openRouterVisionModels = [
-    'dots-studio/dots-3-note-preview:free',
     'minimax/minimax-m3:free',
-    'google/gemma-4-31b-it:free',
+    'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
   ];
 
   /// Legacy Gemini alias kept for migration compatibility

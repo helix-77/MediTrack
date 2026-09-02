@@ -22,18 +22,26 @@ class PrescriptionExtractionException implements Exception {
 }
 
 class PrescriptionValidator {
-  /// Strips markdown code blocks and trims whitespace.
+  /// Strips markdown code blocks, thinking tags, conversational preambles, and trims whitespace.
   static String cleanJsonText(String raw) {
     var cleaned = raw.trim();
-    if (cleaned.startsWith('```json')) {
-      cleaned = cleaned.substring(7);
-    } else if (cleaned.startsWith('```')) {
-      cleaned = cleaned.substring(3);
+    // Remove thinking tags if present (e.g. <think>...</think>)
+    cleaned = cleaned.replaceAll(RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false), '').trim();
+
+    // If wrapped in markdown code fence (```json ... ``` or ``` ...)
+    final fenceMatch = RegExp(r'```(?:json)?\s*([\s\S]*?)\s*```', caseSensitive: false).firstMatch(cleaned);
+    if (fenceMatch != null) {
+      cleaned = fenceMatch.group(1)!.trim();
     }
-    if (cleaned.endsWith('```')) {
-      cleaned = cleaned.substring(0, cleaned.length - 3);
+
+    // If still surrounded by other text, locate the outermost JSON object
+    final start = cleaned.indexOf('{');
+    final end = cleaned.lastIndexOf('}');
+    if (start != -1 && end != -1 && end > start) {
+      cleaned = cleaned.substring(start, end + 1).trim();
     }
-    return cleaned.trim();
+
+    return cleaned;
   }
 
   /// Parses raw LLM text, validates JSON and schema, applies clamping / confidence heuristics.
@@ -78,69 +86,64 @@ class PrescriptionValidator {
     final date = decoded['date'] as String?;
 
     final rawMedicines = decoded['medicines'];
-    if (rawMedicines is! List) {
+    if (rawMedicines != null && rawMedicines is! List) {
       throw PrescriptionExtractionException(
         PrescriptionErrorType.invalidSchema,
-        'Missing or invalid "medicines" array in JSON response.',
+        'Invalid "medicines" property in JSON response; expected an array.',
       );
     }
 
     final List<PrescriptionItem> validatedItems = [];
 
-    for (var m in rawMedicines) {
-      if (m is! Map<String, dynamic>) continue;
+    if (rawMedicines is List) {
+      for (var m in rawMedicines) {
+        if (m is! Map<String, dynamic>) continue;
 
-      final name = (m['name'] as String? ?? '').trim();
-      if (name.isEmpty) {
-        // Skip items without a medicine name
-        continue;
+        final name = (m['name'] as String? ?? '').trim();
+        if (name.isEmpty) {
+          // Skip items without a medicine name
+          continue;
+        }
+
+        final strength = (m['strength'] as String?)?.trim();
+        final form = (m['form'] as String?)?.trim();
+        final instructions = (m['instructions'] as String?)?.trim();
+
+        int? freq = m['frequency_per_day'] is int
+            ? m['frequency_per_day'] as int
+            : (m['frequency_per_day'] is num ? (m['frequency_per_day'] as num).toInt() : null);
+
+        int? duration = m['duration_days'] is int
+            ? m['duration_days'] as int
+            : (m['duration_days'] is num ? (m['duration_days'] as num).toInt() : null);
+
+        var confidence = (m['confidence'] as String?)?.toLowerCase() ?? 'medium';
+        if (confidence != 'high' && confidence != 'medium' && confidence != 'low') {
+          confidence = 'medium';
+        }
+
+        // Suspicious heuristics: lower confidence if outside physiological ranges
+        if (freq != null && (freq < 1 || freq > 6)) {
+          confidence = 'low';
+        }
+        if (duration != null && (duration < 1 || duration > 180)) {
+          confidence = 'low';
+        }
+
+        validatedItems.add(
+          PrescriptionItem(
+            id: '',
+            extractedName: name,
+            extractedStrength: strength,
+            extractedForm: form,
+            extractedFrequencyPerDay: freq,
+            extractedDurationDays: duration,
+            extractedInstructions: instructions,
+            confidence: confidence,
+            confirmed: confidence == 'high',
+          ),
+        );
       }
-
-      final strength = (m['strength'] as String?)?.trim();
-      final form = (m['form'] as String?)?.trim();
-      final instructions = (m['instructions'] as String?)?.trim();
-
-      int? freq = m['frequency_per_day'] is int
-          ? m['frequency_per_day'] as int
-          : (m['frequency_per_day'] is num ? (m['frequency_per_day'] as num).toInt() : null);
-
-      int? duration = m['duration_days'] is int
-          ? m['duration_days'] as int
-          : (m['duration_days'] is num ? (m['duration_days'] as num).toInt() : null);
-
-      var confidence = (m['confidence'] as String?)?.toLowerCase() ?? 'medium';
-      if (confidence != 'high' && confidence != 'medium' && confidence != 'low') {
-        confidence = 'medium';
-      }
-
-      // Suspicious heuristics: lower confidence if outside physiological ranges
-      if (freq != null && (freq < 1 || freq > 6)) {
-        confidence = 'low';
-      }
-      if (duration != null && (duration < 1 || duration > 180)) {
-        confidence = 'low';
-      }
-
-      validatedItems.add(
-        PrescriptionItem(
-          id: '',
-          extractedName: name,
-          extractedStrength: strength,
-          extractedForm: form,
-          extractedFrequencyPerDay: freq,
-          extractedDurationDays: duration,
-          extractedInstructions: instructions,
-          confidence: confidence,
-          confirmed: confidence == 'high',
-        ),
-      );
-    }
-
-    if (validatedItems.isEmpty) {
-      throw PrescriptionExtractionException(
-        PrescriptionErrorType.emptyExtraction,
-        'No valid medicines could be extracted from the prescription.',
-      );
     }
 
     return PrescriptionDraft(
