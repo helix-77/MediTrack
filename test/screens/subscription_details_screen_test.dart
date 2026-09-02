@@ -7,10 +7,11 @@ import 'package:meditrack/models/user_profile.dart';
 import 'package:meditrack/screens/subscription_details_screen.dart';
 import 'package:meditrack/services/entitlement_service.dart';
 import 'package:meditrack/theme/app_theme.dart';
+import 'package:meditrack/widgets/soft_button.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  testWidgets('subscription details screen renders active subscription, privileges and all 3 cancellation methods',
+  testWidgets('subscription details screen renders active status, privileges and cancellation options',
       (tester) async {
     final dio = DioClient.create(baseUrl: 'https://example.com');
     final bdApiClient = BdAppsApiClient(dio);
@@ -62,12 +63,29 @@ void main() {
     expect(find.text('Price & Generics'), findsOneWidget);
     expect(find.text('Nearby Pharmacies'), findsOneWidget);
 
-    // Cancellation Section Header & 3 Methods
-    expect(find.text('Cancel Subscription'), findsOneWidget);
+    // Cancellation Section Header & Methods
     expect(find.text('Method 1: Instant In-App Cancel'), findsOneWidget);
-    expect(find.text('Cancel Subscription in App'), findsOneWidget);
-    expect(find.text('Method 2: Cancel via Telco SMS'), findsOneWidget);
-    expect(find.text('Method 3: Cancel via USSD Menu'), findsOneWidget);
+    expect(find.text('Method 2: Cancel via SMS'), findsOneWidget);
+
+    // Tap Cancel Subscription button to open confirmation modal
+    final cancelBtnFinder = find.widgetWithText(SoftPrimaryButton, 'Cancel Subscription');
+    expect(cancelBtnFinder, findsOneWidget);
+    await tester.ensureVisible(cancelBtnFinder);
+    await tester.tap(cancelBtnFinder);
+    await tester.pumpAndSettle();
+
+    // Verify confirmation modal content
+    expect(find.text('Do you really want to unsubscribe from Premium?'), findsOneWidget);
+    expect(find.text('Immediate Stop of Charges'), findsOneWidget);
+    expect(find.text('Locked Premium Features'), findsOneWidget);
+    expect(find.text('Free Core Features Stay Safe'), findsOneWidget);
+    expect(find.text('Yes, Unsubscribe'), findsOneWidget);
+    expect(find.text('Keep Subscription'), findsOneWidget);
+
+    // Dismiss modal by tapping Keep Subscription
+    await tester.tap(find.text('Keep Subscription'));
+    await tester.pumpAndSettle();
+    expect(find.text('Do you really want to unsubscribe from Premium?'), findsNothing);
   });
 
   testWidgets('subscription details screen renders inactive banner when not subscribed',

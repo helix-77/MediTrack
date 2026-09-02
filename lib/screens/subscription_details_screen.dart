@@ -13,6 +13,7 @@ import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../widgets/soft_button.dart';
+import '../widgets/soft_modal_sheet.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/status_pill.dart';
 import 'subscription_offer_screen.dart';
@@ -73,111 +74,156 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
   Future<void> _handleInAppCancellation() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.warning_amber_rounded,
-                color: AppColors.danger,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Cancel Subscription?',
-                style: AppTypography.headingSmall.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
+      builder: (modalContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Are you sure you want to cancel MediTrack Premium? Your carrier billing (৳2.99/day) will be stopped immediately.',
-              style: AppTypography.bodyMedium.copyWith(
-                color: isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.textSecondary,
+            // Drag handle
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkDivider : AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
+
+            // Danger Header icon & title
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.heart_broken_rounded,
+                    color: AppColors.danger,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cancel Subscription?',
+                        style: AppTypography.headingMedium.copyWith(
+                          fontSize: 17,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Do you really want to unsubscribe from Premium?',
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+
+            // Information summary card
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isDark
                     ? AppColors.darkBackground
-                    : AppColors.primaryBlueLight.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(10),
+                    : AppColors.primaryBlueLight.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isDark ? AppColors.darkBorder : AppColors.border,
                 ),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  const Icon(
-                    Icons.health_and_safety_outlined,
-                    color: AppColors.primaryBlue,
-                    size: 20,
+                  _buildModalImpactRow(
+                    isDark: isDark,
+                    icon: Icons.check_circle_outline_rounded,
+                    iconColor: AppColors.success,
+                    title: 'Immediate Stop of Charges',
+                    desc: 'Daily ৳2.99 carrier billing stops right away.',
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Your medicine vault, pill alarms, and routines remain 100% free and saved forever.',
-                      style: AppTypography.caption.copyWith(
-                        fontSize: 11.5,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
-                      ),
-                    ),
+                  const SizedBox(height: 10),
+                  _buildModalImpactRow(
+                    isDark: isDark,
+                    icon: Icons.lock_outline_rounded,
+                    iconColor: AppColors.danger,
+                    title: 'Locked Premium Features',
+                    desc: 'AI Prescription OCR and Health Assistant will be locked.',
+                  ),
+                  const SizedBox(height: 10),
+                  _buildModalImpactRow(
+                    isDark: isDark,
+                    icon: Icons.health_and_safety_outlined,
+                    iconColor: AppColors.primaryBlue,
+                    title: 'Free Core Features Stay Safe',
+                    desc: 'Pill alarms, schedules, and prescription vault remain free forever.',
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 22),
+
+            // Dual CTA Buttons
+            Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      side: BorderSide(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(modalContext, true),
+                    child: Text(
+                      'Yes, Unsubscribe',
+                      style: AppTypography.buttonText.copyWith(
+                        fontSize: 13,
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 1,
+                  child: SoftPrimaryButton(
+                    label: 'Keep Subscription',
+                    height: 46,
+                    backgroundColor: AppColors.primaryBlue,
+                    icon: Icons.check_rounded,
+                    onPressed: () => Navigator.pop(modalContext, false),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Keep Premium',
-              style: AppTypography.buttonText.copyWith(
-                color: isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.textSecondary,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Yes, Cancel'),
-          ),
-        ],
       ),
     );
 
@@ -221,74 +267,39 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
   }
 
   Future<void> _launchSms() async {
-    const recipient = '21213';
-    const message = 'STOP meditrack';
-    final smsUri = Uri(
-      scheme: 'sms',
-      path: recipient,
-      queryParameters: <String, String>{'body': message},
-    );
-
+    final uri = Uri.parse('sms:21213?body=STOP%20MEDI');
     try {
-      final launched = await launchUrl(
-        smsUri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched) {
-        final rawUri = Uri.parse('sms:$recipient?body=STOP%20meditrack');
-        final rawLaunched = await launchUrl(
-          rawUri,
-          mode: LaunchMode.externalApplication,
-        );
-        if (!rawLaunched) {
-          throw Exception('Could not launch SMS app');
-        }
-      }
-    } catch (_) {
-      await Clipboard.setData(const ClipboardData(text: message));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Copied "$message" to clipboard. Send it to $recipient in your SMS app.',
-            ),
-            backgroundColor: AppColors.info,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _launchUssd() async {
-    final uri = Uri.parse('tel:*213%23');
-    try {
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched) {
-        await Clipboard.setData(const ClipboardData(text: '*213#'));
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        await Clipboard.setData(const ClipboardData(text: 'STOP meditrack'));
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Copied dial code *213# to clipboard.'),
+              content: Text(
+                'Copied "STOP meditrack" to clipboard. Send it to 21213 in your SMS app.',
+              ),
               backgroundColor: AppColors.info,
             ),
           );
         }
       }
     } catch (_) {
-      await Clipboard.setData(const ClipboardData(text: '*213#'));
+      await Clipboard.setData(const ClipboardData(text: 'STOP meditrack'));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Copied dial code *213# to clipboard.'),
+            content: Text(
+              'Copied "STOP meditrack" to clipboard. Send it to 21213 in your SMS app.',
+            ),
             backgroundColor: AppColors.info,
           ),
         );
       }
     }
   }
+
+
 
   void _copyToClipboard(String text, String message) {
     Clipboard.setData(ClipboardData(text: text));
@@ -414,16 +425,11 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
               const SizedBox(height: 14),
               _buildSmsCancelCard(isDark),
               const SizedBox(height: 14),
-              _buildUssdCancelCard(isDark),
               const SizedBox(height: 24),
             ] else ...[
               _buildInactiveBanner(isDark),
               const SizedBox(height: 24),
             ],
-
-            // 5. TELCO BILLING FAQ & POLICIES
-            _buildFaqSection(isDark),
-            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -874,16 +880,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Choose any of the three options below to stop auto-renewal at zero penalty:',
-          style: AppTypography.caption.copyWith(
-            fontSize: 11.5,
-            color: isDark
-                ? AppColors.darkTextSecondary
-                : AppColors.textSecondary,
-          ),
-        ),
       ],
     );
   }
@@ -928,10 +924,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                             : AppColors.textPrimary,
                       ),
                     ),
-                    Text(
-                      'Deactivates directly via AppsPro API',
-                      style: AppTypography.caption.copyWith(fontSize: 11),
-                    ),
                   ],
                 ),
               ),
@@ -939,7 +931,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Stops daily ৳2.99 carrier billing immediately. You can re-enable anytime.',
+            'Stops billing immediately. You can re-enable anytime.',
             style: AppTypography.bodySmall.copyWith(
               fontSize: 12,
               color: isDark
@@ -949,7 +941,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
           ),
           const SizedBox(height: 14),
           SoftPrimaryButton(
-            label: 'Cancel Subscription in App',
+            label: 'Cancel Subscription',
             isLoading: _isCancelling,
             backgroundColor: AppColors.danger,
             icon: Icons.close_rounded,
@@ -990,7 +982,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Method 2: Cancel via Telco SMS',
+                      'Method 2: Cancel via SMS',
                       style: AppTypography.headingSmall.copyWith(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
@@ -999,10 +991,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                             : AppColors.textPrimary,
                       ),
                     ),
-                    Text(
-                      'Works from any phone with your SIM',
-                      style: AppTypography.caption.copyWith(fontSize: 11),
-                    ),
                   ],
                 ),
               ),
@@ -1010,7 +998,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Send an SMS from your registered Robi or Airtel number to de-register via BDApps gateway:',
+            'Send an SMS from your registered Robi or Airtel number to deactivate the service:',
             style: AppTypography.bodySmall.copyWith(
               fontSize: 12,
               color: isDark
@@ -1056,18 +1044,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                       ),
                     ),
                   ],
-                ),
-                IconButton(
-                  tooltip: 'Copy SMS format',
-                  onPressed: () => _copyToClipboard(
-                    smsKeyword,
-                    'Copied "$smsKeyword" to clipboard',
-                  ),
-                  icon: const Icon(
-                    Icons.copy_rounded,
-                    size: 18,
-                    color: AppColors.primaryBlue,
-                  ),
                 ),
               ],
             ),
@@ -1122,94 +1098,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     );
   }
 
-  Widget _buildUssdCancelCard(bool isDark) {
-    return SoftSurface(
-      padding: const EdgeInsets.all(16),
-      borderRadius: AppRadii.cardRadius,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.accentOrange.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.dialpad_rounded,
-                  color: AppColors.accentOrange,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Method 3: Cancel via USSD Menu',
-                      style: AppTypography.headingSmall.copyWith(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      'Robi & Airtel Telco Menu (*213#)',
-                      style: AppTypography.caption.copyWith(fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Dial *213# on your phone, choose "Active Services", and select MediTrack to cancel.',
-            style: AppTypography.bodySmall.copyWith(
-              fontSize: 12,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(42),
-              side: BorderSide(
-                color: isDark
-                    ? AppColors.darkBorder
-                    : AppColors.accentOrange.withValues(alpha: 0.4),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: _launchUssd,
-            icon: const Icon(
-              Icons.phone_forwarded_rounded,
-              size: 16,
-              color: AppColors.accentOrange,
-            ),
-            label: Text(
-              'Dial *213# on Dialer',
-              style: TextStyle(
-                color: isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildInactiveBanner(bool isDark) {
     return SoftSurface(
@@ -1259,89 +1147,44 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     );
   }
 
-  Widget _buildFaqSection(bool isDark) {
-    return SoftSurface(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      borderRadius: AppRadii.cardRadius,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: EdgeInsets.zero,
-          childrenPadding: const EdgeInsets.only(bottom: 8),
-          leading: const Icon(
-            Icons.help_outline_rounded,
-            color: AppColors.primaryBlue,
-            size: 22,
-          ),
-          title: Text(
-            'Carrier Billing FAQs & Help',
-            style: AppTypography.headingSmall.copyWith(
-              fontSize: 13.5,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-            ),
-          ),
-          children: [
-            _buildFaqItem(
-              isDark: isDark,
-              question: 'How does daily billing work?',
-              answer:
-                  'The ৳2.99 (+VAT, SD, SC) charge is deducted every 24 hours directly from your Robi or Airtel mobile balance by BDApps.',
-            ),
-            const SizedBox(height: 10),
-            _buildFaqItem(
-              isDark: isDark,
-              question: 'What happens to my data if I cancel?',
-              answer:
-                  'Your pill schedules, prescriptions in vault, and medicine logs are always 100% free and stored securely. Only AI/OCR API centers are locked.',
-            ),
-            const SizedBox(height: 10),
-            _buildFaqItem(
-              isDark: isDark,
-              question: 'How do I reactivate later?',
-              answer:
-                  'You can upgrade again at any time from your Profile tab with 1-tap OTP verification.',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildFaqItem({
+
+  Widget _buildModalImpactRow({
     required bool isDark,
-    required String question,
-    required String answer,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String desc,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkBackground : AppColors.primaryBlueLight.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            question,
-            style: AppTypography.bodyMedium.copyWith(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-            ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: iconColor, size: 18),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTypography.bodyMedium.copyWith(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                desc,
+                style: AppTypography.caption.copyWith(
+                  fontSize: 11,
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            answer,
-            style: AppTypography.caption.copyWith(
-              fontSize: 11,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
