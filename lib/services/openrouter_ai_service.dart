@@ -293,7 +293,10 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
       }
 
       final request = ChatRequest(
-        model: ApiConfig.openRouterModel,
+        model: hasImage
+            ? ApiConfig.openRouterVisionModels.first
+            : ApiConfig.openRouterModel,
+        models: hasImage ? ApiConfig.openRouterVisionModels : null,
         messages: messages,
         maxTokens: 1024,
       );
