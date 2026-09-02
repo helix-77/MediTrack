@@ -7,7 +7,6 @@ import 'package:meditrack/models/user_profile.dart';
 import 'package:meditrack/screens/subscription_details_screen.dart';
 import 'package:meditrack/services/entitlement_service.dart';
 import 'package:meditrack/theme/app_theme.dart';
-import 'package:meditrack/widgets/soft_button.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -68,7 +67,7 @@ void main() {
     expect(find.text('Method 2: Cancel via SMS'), findsOneWidget);
 
     // Tap Cancel Subscription button to open confirmation modal
-    final cancelBtnFinder = find.widgetWithText(OutlinedButton, 'Cancel Subscription');
+    final cancelBtnFinder = find.widgetWithText(TextButton, 'Cancel Subscription');
     expect(cancelBtnFinder, findsOneWidget);
     await tester.ensureVisible(cancelBtnFinder);
     await tester.tap(cancelBtnFinder);

@@ -881,10 +881,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     return SoftSurface(
       padding: const EdgeInsets.all(16),
       borderRadius: AppRadii.cardRadius,
-      borderColor: isDark
-          ? const Color(0xFFDC2626).withValues(alpha: 0.3)
-          : const Color(0xFFFECACA),
-      borderWidth: 1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -911,15 +907,10 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
+          TextButton.icon(
+            style: TextButton.styleFrom(
               minimumSize: const Size.fromHeight(46),
               padding: const EdgeInsets.symmetric(vertical: 12),
-              side: BorderSide(
-                color: isDark
-                    ? const Color(0xFFDC2626).withValues(alpha: 0.35)
-                    : const Color(0xFFFECACA),
-              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
