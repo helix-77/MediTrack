@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:openrouter/openrouter.dart';
 
 import '../config/api_config.dart';
+import '../core/network/openrouter_sanitizing_client.dart';
 import '../logic/auth_guard.dart';
 import '../logic/prescription_validator.dart';
 import '../models/prescription_extraction.dart';
@@ -45,6 +46,7 @@ If the image is unreadable or is not a prescription, return {"error": "unreadabl
     if (_customClient != null) return _customClient;
     return _cachedClient ??= OpenRouterClient(
       apiKey: ApiConfig.openRouterApiKey,
+      httpClient: OpenRouterSanitizingHttpClient(),
     );
   }
 

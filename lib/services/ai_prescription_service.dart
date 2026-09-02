@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:openrouter/openrouter.dart';
 
 import '../config/api_config.dart';
+import '../core/network/openrouter_sanitizing_client.dart';
 
 /// Legacy service for analyzing prescriptions and medicine labels using OpenRouter.
 /// For structured OCR extraction, use [PrescriptionExtractionService] instead.
@@ -10,7 +11,10 @@ class AIPrescriptionService {
   OpenRouterClient? _client;
 
   Future<void> initialize() async {
-    _client ??= OpenRouterClient(apiKey: ApiConfig.openRouterApiKey);
+    _client ??= OpenRouterClient(
+      apiKey: ApiConfig.openRouterApiKey,
+      httpClient: OpenRouterSanitizingHttpClient(),
+    );
   }
 
   /// Analyzes a prescription image or medicine label provided as raw bytes.

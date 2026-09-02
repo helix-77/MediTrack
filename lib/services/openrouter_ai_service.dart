@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:openrouter/openrouter.dart';
 
 import '../config/api_config.dart';
+import '../core/network/openrouter_sanitizing_client.dart';
 import '../logic/ai_action_validator.dart';
 import '../logic/auth_guard.dart';
 
@@ -93,6 +94,7 @@ Be clear, encouraging, and informative. Remind users to consult qualified health
     if (_customClient != null) return _customClient;
     return _cachedClient ??= OpenRouterClient(
       apiKey: ApiConfig.openRouterApiKey,
+      httpClient: OpenRouterSanitizingHttpClient(),
     );
   }
 
