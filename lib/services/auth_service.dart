@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -7,10 +9,46 @@ import '../logic/auth_guard.dart';
 class AuthService {
   AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
     : _auth = auth ?? FirebaseAuth.instance,
-      _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
+      _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
+    _ensureListenersInitialized();
+  }
 
   final FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
+
+  static final StreamController<User?> _userStreamController =
+      StreamController<User?>.broadcast();
+  static bool _listenersInitialized = false;
+
+  void _ensureListenersInitialized() {
+    if (_listenersInitialized) return;
+    try {
+      _auth.authStateChanges().listen((user) {
+        if (!_userStreamController.isClosed) {
+          _userStreamController.add(user);
+        }
+      });
+      _auth.idTokenChanges().listen((user) {
+        if (!_userStreamController.isClosed) {
+          _userStreamController.add(user);
+        }
+      });
+      _auth.userChanges().listen((user) {
+        if (!_userStreamController.isClosed) {
+          _userStreamController.add(user);
+        }
+      });
+      _listenersInitialized = true;
+    } catch (e) {
+      debugPrint('AuthService stream listener init notice: $e');
+    }
+  }
+
+  void notifyUserChanged() {
+    if (!_userStreamController.isClosed) {
+      _userStreamController.add(_auth.currentUser);
+    }
+  }
 
   static const String googleServerClientId =
       '363299282373-9s91kgtsf1uj94f3dnv8k0pbr6ng7b7e.apps.googleusercontent.com';
@@ -30,7 +68,11 @@ class AuthService {
   }
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-  Stream<User?> get userChanges => _auth.userChanges();
+
+  Stream<User?> get userChanges async* {
+    yield _auth.currentUser;
+    yield* _userStreamController.stream;
+  }
 
   User? get currentUser => _auth.currentUser;
 
@@ -52,6 +94,7 @@ class AuthService {
       debugPrint('Triggering sendEmailVerification for ${credential.user?.email}...');
       await credential.user?.sendEmailVerification();
       debugPrint('sendEmailVerification request submitted successfully.');
+      notifyUserChanged();
 
       return credential;
     } on FirebaseAuthException catch (error) {
@@ -81,6 +124,7 @@ class AuthService {
       // Force token refresh to ensure updated claims (including emailVerified)
       // are propagated to auth state listeners immediately.
       await user.getIdToken(true);
+      notifyUserChanged();
       return _auth.currentUser?.emailVerified ?? false;
     } catch (e) {
       debugPrint('reloadUser error: $e');
@@ -103,6 +147,7 @@ class AuthService {
           await credential.user!.getIdToken(true);
         } catch (_) {}
       }
+      notifyUserChanged();
       return credential;
     } on FirebaseAuthException catch (error) {
       throw Exception(_authErrorMessage(error));
@@ -113,7 +158,9 @@ class AuthService {
     try {
       final credential = await _googleCredential();
       if (credential == null) return null;
-      return await _auth.signInWithCredential(credential);
+      final userCredential = await _auth.signInWithCredential(credential);
+      notifyUserChanged();
+      return userCredential;
     } on FirebaseAuthException catch (error) {
       throw Exception(_authErrorMessage(error));
     } catch (error) {
@@ -136,6 +183,7 @@ class AuthService {
       if (displayName != null && displayName.trim().isNotEmpty) {
         await credential.user?.updateDisplayName(displayName.trim());
       }
+      notifyUserChanged();
       return credential;
     } on FirebaseAuthException catch (error) {
       throw Exception(_authErrorMessage(error));
@@ -147,7 +195,9 @@ class AuthService {
     try {
       final credential = await _googleCredential();
       if (credential == null) return null;
-      return await user.linkWithCredential(credential);
+      final userCredential = await user.linkWithCredential(credential);
+      notifyUserChanged();
+      return userCredential;
     } on FirebaseAuthException catch (error) {
       throw Exception(_authErrorMessage(error));
     } catch (error) {
@@ -165,6 +215,7 @@ class AuthService {
 
   Future<void> signOut() async {
     await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
+    notifyUserChanged();
   }
 
   bool get isPasswordAccount {
@@ -196,6 +247,7 @@ class AuthService {
 
       await user.delete();
       await _googleSignIn.signOut();
+      notifyUserChanged();
     } on FirebaseAuthException catch (error) {
       throw Exception(_authErrorMessage(error));
     }

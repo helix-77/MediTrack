@@ -194,9 +194,11 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
             darkTheme: AppTheme.darkTheme,
             themeMode: themeNotifier.themeMode,
             home: StreamBuilder<User?>(
+              initialData: _authService.currentUser,
               stream: _authService.userChanges,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
                   return const Scaffold(
                     body: Center(
                       child: CircularProgressIndicator(

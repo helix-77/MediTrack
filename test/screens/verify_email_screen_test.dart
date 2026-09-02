@@ -42,6 +42,9 @@ class _FakeAuthService implements AuthService {
   }
 
   @override
+  void notifyUserChanged() {}
+
+  @override
   bool get isPasswordAccount => false;
 
   @override

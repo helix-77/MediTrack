@@ -16,7 +16,6 @@ import '../widgets/soft_modal_sheet.dart';
 import '../widgets/soft_surface.dart';
 import '../widgets/soft_text_field.dart';
 import 'edit_profile_screen.dart';
-import 'welcome_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -65,11 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(dialogContext);
               await _authService.signOut();
               if (!mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                (route) => false,
-              );
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
             child: Text(context.tr('log_out'), style: const TextStyle(color: Colors.white)),
           ),
