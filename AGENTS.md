@@ -29,11 +29,10 @@ how (Section 5).
     allowed to hold a third-party secret key (e.g. Google Places).
   - Monetization: the AppsPro / BD Apps carrier-billing subscription/entitlement
     mechanism (Section 5.10).
-- AI / vision: `openrouter` (OpenRouter API SDK) calling the `openrouter/free` router
-  model directly from the Flutter client with `OPENROUTER_API_KEY` configured in `.env`.
-  Prescription OCR extraction (`PrescriptionExtractionService`) and in-app AI assistant
-  (`OpenRouterAiService`) both use OpenRouter. On-device OCR (`google_mlkit_text_recognition`)
-  remains on-device for box/strip scanning.
+- AI / vision: Hybrid setup:
+  - **Prescription OCR** (`PrescriptionExtractionService`): Firebase AI Logic (`firebase_ai` calling `gemini-3.6-flash`).
+  - **In-App AI Assistant** (`OpenRouterAiService`): `openrouter` (OpenRouter API SDK) calling the `openrouter/free` router model directly from the Flutter client with `OPENROUTER_API_KEY` configured in `.env`.
+  - **On-device OCR** (`google_mlkit_text_recognition`) remains on-device for box/strip scanning and local preflight assistance.
 - On-device OCR (medicine boxes/strips): `google_mlkit_text_recognition`. Never call a
   cloud OCR/LLM for this step.
 - Camera/image capture: `image_picker`. Only add `camera` if a fully custom capture UI

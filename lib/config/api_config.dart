@@ -31,11 +31,8 @@ class ApiConfig {
     'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
   ];
 
-  /// Legacy Gemini alias kept for migration compatibility
-  @Deprecated('Use openRouterApiKey instead')
-  static String get geminiApiKey => openRouterApiKey;
-  @Deprecated('Use openRouterModel instead')
-  static const String geminiModel = openRouterModel;
+  /// Firebase AI Logic Gemini Model for Prescription OCR extraction.
+  static const String geminiModel = 'gemini-3.6-flash';
 
   /// AppsPro API Base URL (default: https://api.appspro.dev/api/v1)
   static String get appsProBaseUrl {

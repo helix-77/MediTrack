@@ -1,22 +1,20 @@
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:openrouter/openrouter.dart';
 
 import '../config/api_config.dart';
-import '../core/network/openrouter_sanitizing_client.dart';
 import '../logic/auth_guard.dart';
 import '../logic/prescription_validator.dart';
 import '../models/prescription_extraction.dart';
 
 class PrescriptionExtractionService {
-  final OpenRouterClient? _customClient;
-  OpenRouterClient? _cachedClient;
+  final GenerativeModel? _customModel;
+  GenerativeModel? _cachedModel;
 
-  PrescriptionExtractionService({OpenRouterClient? client})
-      : _customClient = client;
+  PrescriptionExtractionService({GenerativeModel? model})
+      : _customModel = model;
 
   static const String _systemPrompt = '''
 You are an expert medical prescription assistant. You are analyzing a doctor's prescription which may be handwritten, printed, or mixed English and Bengali.
@@ -51,15 +49,24 @@ CRITICAL RULES:
 5. Return ONLY the raw JSON object, without any prose, markdown explanations, or code blocks.
 ''';
 
-  OpenRouterClient _getClient() {
-    if (_customClient != null) return _customClient;
-    return _cachedClient ??= OpenRouterClient(
-      apiKey: ApiConfig.openRouterApiKey,
-      httpClient: OpenRouterSanitizingHttpClient(),
+  GenerativeModel _getModel() {
+    if (_customModel != null) return _customModel;
+    return _cachedModel ??= _buildModel();
+  }
+
+  GenerativeModel _buildModel() {
+    final googleAI = FirebaseAI.googleAI();
+
+    return googleAI.generativeModel(
+      model: ApiConfig.geminiModel,
+      systemInstruction: Content.system(_systemPrompt),
+      generationConfig: GenerationConfig(
+        maxOutputTokens: 2048,
+      ),
     );
   }
 
-  /// Extracts prescription details using OpenRouter multimodal vision with
+  /// Extracts prescription details using Firebase AI Logic (Gemini) with
   /// on-device OCR text assistance.
   Future<PrescriptionDraft> extractPrescription({
     required File imageFile,
@@ -67,14 +74,6 @@ CRITICAL RULES:
     String? onDeviceOcrText,
   }) async {
     requireAuthenticatedUser(FirebaseAuth.instance);
-
-    final apiKey = ApiConfig.openRouterApiKey;
-    if (apiKey.isEmpty) {
-      throw PrescriptionExtractionException(
-        PrescriptionErrorType.unknown,
-        'OpenRouter API Key is not configured. Please add OPENROUTER_API_KEY to your .env file.',
-      );
-    }
 
     if (!imageFile.existsSync()) {
       throw PrescriptionExtractionException(
@@ -84,9 +83,8 @@ CRITICAL RULES:
     }
 
     try {
-      final client = _getClient();
       final bytes = await imageFile.readAsBytes();
-      final base64Image = base64Encode(bytes);
+      final model = _getModel();
 
       var effectiveMimeType = mimeType;
       final pathLower = imageFile.path.toLowerCase();
@@ -99,8 +97,6 @@ CRITICAL RULES:
       } else if (pathLower.endsWith('.jpg') || pathLower.endsWith('.jpeg')) {
         effectiveMimeType = 'image/jpeg';
       }
-
-      final dataUri = 'data:$effectiveMimeType;base64,$base64Image';
 
       final userPromptBuffer = StringBuffer(
         'Extract all medicines and details from this prescription according to the schema.',
@@ -116,40 +112,14 @@ CRITICAL RULES:
         userPromptBuffer.writeln('"""');
       }
 
-      final request = ChatRequest(
-        // Pin to confirmed vision-capable free models. `openrouter/free` is a
-        // meta-router that may route to a text-only upstream which cannot see
-        // the image and answers {"error": "unreadable"}.
-        model: ApiConfig.openRouterVisionModels.first,
-        // Fallback routing across all confirmed vision-capable models. NOTE:
-        // OpenRouter caps the `models` array at 3 items and rejects the
-        // request otherwise ("models array must have 3 items or fewer").
-        models: ApiConfig.openRouterVisionModels,
-        messages: [
-          const Message(
-            role: MessageRole.system,
-            content: _systemPrompt,
-          ),
-          Message(
-            role: MessageRole.user,
-            content: [
-              TextContentItem(
-                text: userPromptBuffer.toString(),
-              ),
-              ImageContentItem(
-                imageUrl: ImageUrl(url: dataUri),
-              ),
-            ],
-          ),
-        ],
-        // These free models emit hidden reasoning tokens (~1300 in testing)
-        // before the JSON output; a 2048 cap risks truncating the JSON.
-        maxTokens: 4096,
-      );
+      final content = Content.multi([
+        TextPart(userPromptBuffer.toString()),
+        InlineDataPart(effectiveMimeType, bytes),
+      ]);
 
-      final response = await client.chatCompletion(request);
-      final rawText = response.content ?? '';
-      debugPrint('Prescription extraction raw response from OpenRouter: $rawText');
+      final response = await model.generateContent([content]);
+      final rawText = response.text ?? '';
+      debugPrint('Prescription extraction raw response from Firebase AI: $rawText');
 
       if (rawText.trim().isEmpty) {
         throw PrescriptionExtractionException(
@@ -161,24 +131,6 @@ CRITICAL RULES:
       return PrescriptionValidator.parseAndValidate(rawText);
     } on PrescriptionExtractionException {
       rethrow;
-    } on RateLimitException catch (e) {
-      debugPrint('Prescription extraction rate limit: $e');
-      throw PrescriptionExtractionException(
-        PrescriptionErrorType.quotaLimit,
-        'AI service quota or rate limit reached. Please try again shortly.',
-      );
-    } on AuthenticationException catch (e) {
-      debugPrint('Prescription extraction auth error: $e');
-      throw PrescriptionExtractionException(
-        PrescriptionErrorType.unknown,
-        'OpenRouter authentication failed: ${e.message}',
-      );
-    } on OpenRouterException catch (e) {
-      debugPrint('Prescription extraction API error: $e');
-      throw PrescriptionExtractionException(
-        PrescriptionErrorType.unknown,
-        'OpenRouter API error: ${e.message}',
-      );
     } catch (e) {
       debugPrint('PrescriptionExtractionService Error: $e');
       final errorString = e.toString().toLowerCase();
