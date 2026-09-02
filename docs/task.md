@@ -37,3 +37,4 @@ for flutter integration follow:https://pub.dev/packages/openrouter
 
 [x] The AI should be able to add, update, query and delete item if the user request. currently it can only add
 [x] The AI should also be able to look the the db for reference
+[] improve the ai chat ui, add more features like new chat, archived chat (later)

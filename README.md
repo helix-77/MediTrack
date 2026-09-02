@@ -94,24 +94,25 @@ flowchart TD
     A["User Captures / Uploads Prescription"] --> B["ImagePreflight Quality Assessment\n(Resolution & File Size Checks)"]
     B -->|Passed| C["Stage 1: On-Device ML Kit OCR\n(Instant, Offline, Zero-Cost Text Extraction)"]
     B -->|Failed| Alert["Warn User: Low Quality / Blurry Image"]
-    
+
     C --> D["Extract Detected Text Lines & Medicine Keywords"]
     D --> E["Stage 2: OpenRouter Multimodal AI Request\n(Prescription Image + On-Device OCR Text Context)"]
-    
+
     E --> F{"OpenRouter Vision Routing\n(Priority: minimax-m3:free -> gemma-4:free -> openrouter/free)"}
-    
+
     F -->|Success| G["PrescriptionValidator\n(Clean JSON, Validate Schema, Clamp Dose Values)"]
     F -->|Rate-Limited / Unreadable / Timeout| H["Graceful Local Fallback Engine\n(PrescriptionOcrResult.toPrescriptionItems)"]
-    
+
     G --> I["Interactive Medication Review Screen\n(User Verifies / Edits Extracted Items)"]
     H -->|Populates Review Screen with Warning| I
-    
+
     I -->|User Confirms| J["Save to Routine & Schedule Alarms\n(Cloud Firestore + Local Notifications)"]
 ```
 
 ### Why this hybrid pipeline works:
+
 1. **On-Device Pre-Scan**: Runs `google_mlkit_text_recognition` directly on the Android device. It identifies text blocks, medicine forms (`Tab`, `Cap`, `Syr`), dosage strengths (`500mg`, `20mg`), and dosing frequencies (`1+0+1`, `1-0-1`).
-2. **Context Enrichment**: The raw image *and* the extracted OCR lines are sent together to OpenRouter. Even when doctor handwriting is difficult to parse visually, the AI correlates the visual strokes with the exact character lines detected by ML Kit.
+2. **Context Enrichment**: The raw image _and_ the extracted OCR lines are sent together to OpenRouter. Even when doctor handwriting is difficult to parse visually, the AI correlates the visual strokes with the exact character lines detected by ML Kit.
 3. **Prioritized Vision Routing**: Requests specify an ordered fallback list (`minimax/minimax-m3:free`, `google/gemma-4-31b-it:free`, `google/gemma-4-26b-a4b-it:free`, `dots-studio/dots-3-note-preview:free`, `openrouter/free`), preventing random routing to text-only models.
 4. **Resilient Local Fallback**: If the cloud API is offline, rate-limited, or fails to parse difficult handwriting, `PrescriptionOcrResult.toPrescriptionItems` automatically parses the local OCR text into draft medications so the user is never blocked.
 
@@ -151,25 +152,26 @@ sequenceDiagram
 
 ## 🛠 Tech Stack Details
 
-| Component | Technology | Description |
-| :--- | :--- | :--- |
-| **Framework** | [Flutter 3.44](https://flutter.dev) | Cross-platform Dart SDK targeting Android |
-| **Language** | [Dart 3.6+](https://dart.dev) | Sound null-safety, pattern matching, switch expressions |
-| **State Management** | [Provider](https://pub.dev/packages/provider) | `ChangeNotifier` with `MultiProvider` dependency injection |
-| **AI Backend** | [OpenRouter](https://pub.dev/packages/openrouter) | `openrouter: ^1.0.1` calling `openrouter/free` router models |
-| **AI Sanitizer** | Custom `http.BaseClient` | Middleware stripping `null` keys to guarantee 400-free API payloads |
-| **On-Device OCR** | [Google ML Kit](https://pub.dev/packages/google_mlkit_text_recognition) | Offline on-device Latin script OCR |
-| **Backend & Auth** | [Firebase](https://firebase.google.com) | `firebase_auth`, `cloud_firestore`, `firebase_storage` |
-| **Local Alarms** | [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) | Android exact alarm reminders with timezone support |
-| **Local Catalog** | [sqflite](https://pub.dev/packages/sqflite) | SQLite database hosting 25,000+ Bangladesh medicines |
-| **Carrier Billing** | [Dio](https://pub.dev/packages/dio) & [AppsPro.dev](https://api.appspro.dev) | BD Apps carrier billing & SMS gateway integration |
-| **Design System** | Material 3 + Custom Tokens | HSL-tailored colors, soft surfaces, Poppins/Inter typography |
+| Component            | Technology                                                                          | Description                                                         |
+| :------------------- | :---------------------------------------------------------------------------------- | :------------------------------------------------------------------ |
+| **Framework**        | [Flutter 3.44](https://flutter.dev)                                                 | Cross-platform Dart SDK targeting Android                           |
+| **Language**         | [Dart 3.6+](https://dart.dev)                                                       | Sound null-safety, pattern matching, switch expressions             |
+| **State Management** | [Provider](https://pub.dev/packages/provider)                                       | `ChangeNotifier` with `MultiProvider` dependency injection          |
+| **AI Backend**       | [OpenRouter](https://pub.dev/packages/openrouter)                                   | `openrouter: ^1.0.1` calling `openrouter/free` router models        |
+| **AI Sanitizer**     | Custom `http.BaseClient`                                                            | Middleware stripping `null` keys to guarantee 400-free API payloads |
+| **On-Device OCR**    | [Google ML Kit](https://pub.dev/packages/google_mlkit_text_recognition)             | Offline on-device Latin script OCR                                  |
+| **Backend & Auth**   | [Firebase](https://firebase.google.com)                                             | `firebase_auth`, `cloud_firestore`, `firebase_storage`              |
+| **Local Alarms**     | [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) | Android exact alarm reminders with timezone support                 |
+| **Local Catalog**    | [sqflite](https://pub.dev/packages/sqflite)                                         | SQLite database hosting 25,000+ Bangladesh medicines                |
+| **Carrier Billing**  | [Dio](https://pub.dev/packages/dio) & [AppsPro.dev](https://api.appspro.dev)        | BD Apps carrier billing & SMS gateway integration                   |
+| **Design System**    | Material 3 + Custom Tokens                                                          | HSL-tailored colors, soft surfaces, Poppins/Inter typography        |
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - **Flutter SDK**: 3.44+ (stable channel)
 - **Dart SDK**: 3.6+
 - **Android SDK**: API level 24+ (Android 7.0 or higher)
@@ -178,18 +180,21 @@ sequenceDiagram
 ### Installation & Setup
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/<your-org>/meditrack.git
    cd meditrack
    ```
 
 2. **Install Flutter packages**:
+
    ```bash
    flutter pub get
    ```
 
 3. **Configure Environment Variables**:
    Create a `.env` file in the project root (refer to `.env.example`):
+
    ```env
    OPENROUTER_API_KEY=your_openrouter_api_key_here
    APPSPRO_API_BASE_URL=https://api.appspro.dev/api/v1
@@ -201,11 +206,13 @@ sequenceDiagram
    Ensure `android/app/google-services.json` is in place with your Firebase project credentials.
 
 5. **Run Static Analysis**:
+
    ```bash
    flutter analyze
    ```
 
 6. **Run Test Suite**:
+
    ```bash
    flutter test
    ```
