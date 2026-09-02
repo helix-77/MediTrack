@@ -4,7 +4,7 @@
 [![Dart](https://img.shields.io/badge/Dart-3.6+-0175C2?logo=dart)](https://dart.dev)
 [![Firebase](https://img.shields.io/badge/Backend-Firebase-FFCA28?logo=firebase)](https://firebase.google.com)
 [![OpenRouter](https://img.shields.io/badge/AI-OpenRouter%20Free-6366F1)](https://openrouter.ai)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
 
 **MediTrack** is a production-grade Android medication management application tailored for Bangladesh. Built with Flutter, it empowers users to organize daily schedules, manage pill inventory, scan handwritten doctor prescriptions with a hybrid OCR/AI pipeline, converse with a context-aware AI health assistant, lookup generic medicine alternatives, and receive timely dose alarms.
 
@@ -248,3 +248,13 @@ All 117+ tests pass with **0 errors and 0 warnings** under `flutter analyze`.
 - **Zero Raw Secret Embedding**: Cloud Function and carrier credentials are kept secure and proxies are used for third-party paid APIs.
 - **On-Device First**: Image preflights and primary OCR parsing are performed entirely on-device, preserving user bandwidth and privacy.
 - **Medical Disclaimer**: MediTrack AI provides informational wellness guidance and is not a substitute for professional medical diagnoses or doctor consultations.
+
+---
+
+## 📜 License
+
+This project is licensed under the **PolyForm Noncommercial License 1.0.0** — see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2026 **Md. Atik Mouhtasim**. All rights reserved.
+
+> Personal study, local development, education, and noncommercial research are permitted. Commercial exploitation, production deployment, and redistribution to public app stores (e.g. Google Play Store) are strictly prohibited without prior written permission.
