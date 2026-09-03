@@ -14,6 +14,7 @@ import '../widgets/empty_state_view.dart';
 import '../widgets/section_header.dart';
 import '../widgets/soft_button.dart';
 import '../widgets/soft_surface.dart';
+import '../widgets/soft_text_field.dart';
 import '../widgets/status_pill.dart';
 import '../widgets/soft_modal_sheet.dart';
 import 'scan_prescription_screen.dart';
@@ -43,6 +44,7 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
     final patientLabel = rx.familyMemberId != null
         ? (memberNameMap[rx.familyMemberId] ?? 'Family Member')
         : 'Myself';
+    String? currentNote = rx.notes;
 
     showAppModalBottomSheet(
       context: context,
@@ -144,6 +146,67 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
 
                 const SizedBox(height: 20),
 
+                // Patient note (e.g. disease / visit reason)
+                StatefulBuilder(
+                  builder: (sheetCtx, setSheetState) {
+                    final hasNote =
+                        currentNote != null && currentNote!.trim().isNotEmpty;
+                    return SoftSurface(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.sticky_note_2_outlined,
+                            color: AppColors.primaryBlue,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.tr('note'),
+                                  style: AppTypography.caption.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  hasNote
+                                      ? currentNote!
+                                      : context.tr('no_note'),
+                                  style: AppTypography.bodySmall.copyWith(
+                                    fontStyle: hasNote
+                                        ? FontStyle.normal
+                                        : FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SoftIconButton(
+                            icon: hasNote
+                                ? Icons.edit_outlined
+                                : Icons.add_rounded,
+                            size: 32,
+                            iconSize: 16,
+                            iconColor: AppColors.primaryBlue,
+                            onPressed: () => _editPrescriptionNote(
+                              rx,
+                              onSaved: (updated) =>
+                                  setSheetState(() => currentNote = updated),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
                 // Extracted Items from subcollection
                 StreamBuilder<List<PrescriptionItem>>(
                   stream: _prescriptionService.streamPrescriptionItems(rx.id),
@@ -213,6 +276,74 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editPrescriptionNote(
+    Prescription rx, {
+    void Function(String?)? onSaved,
+  }) {
+    final noteCtrl = TextEditingController(text: rx.notes ?? '');
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+        title: Text(context.tr('edit_note'), style: AppTypography.headingMedium),
+        content: SoftTextField(
+          controller: noteCtrl,
+          labelText: context.tr('prescription_note_label'),
+          hintText: context.tr('prescription_note_hint'),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+            ),
+            onPressed: () async {
+              final note = noteCtrl.text.trim();
+              try {
+                await _prescriptionService.updatePrescriptionNotes(
+                  rx.id,
+                  note,
+                );
+                onSaved?.call(note.isEmpty ? null : note);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('✅ ${context.tr('note_saved')}'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Save failed: $e'),
+                      backgroundColor: AppColors.danger,
+                    ),
+                  );
+                }
+              }
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+            },
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -551,6 +682,27 @@ class _PrescriptionVaultScreenState extends State<PrescriptionVaultScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (rx.notes != null && rx.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.sticky_note_2_outlined,
+                        size: 11,
+                        color: AppColors.primaryBlue,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          rx.notes!,
+                          style: AppTypography.caption.copyWith(fontSize: 10),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 3),
                 Row(
                   children: [

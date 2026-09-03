@@ -469,6 +469,42 @@ class AppStrings {
       AppLanguage.english: 'Message copied to clipboard',
       AppLanguage.bangla: 'বার্তাটি ক্লিপবোর্ডে কপি করা হয়েছে',
     },
+
+    // Prescription notes (disease / visit reason)
+    'prescription_note_label': {
+      AppLanguage.english: 'Prescription Note (e.g. disease / reason)',
+      AppLanguage.bangla: 'প্রেসক্রিপশন নোট (যেমন: রোগ / কারণ)',
+    },
+    'prescription_note_hint': {
+      AppLanguage.english: 'e.g. Fever and cough follow-up',
+      AppLanguage.bangla: 'যেমন: জ্বর ও কাশির ফলোআপ',
+    },
+    'note': {
+      AppLanguage.english: 'Note',
+      AppLanguage.bangla: 'নোট',
+    },
+    'no_note': {
+      AppLanguage.english: 'No note added yet',
+      AppLanguage.bangla: 'এখনও কোনো নোট যোগ করা হয়নি',
+    },
+    'edit_note': {
+      AppLanguage.english: 'Edit Note',
+      AppLanguage.bangla: 'নোট সম্পাদনা করুন',
+    },
+    'note_saved': {
+      AppLanguage.english: 'Note saved',
+      AppLanguage.bangla: 'নোট সংরক্ষিত হয়েছে',
+    },
+
+    // PDF export
+    'pdf_export_success': {
+      AppLanguage.english: 'PDF exported',
+      AppLanguage.bangla: 'পিডিএফ এক্সপোর্ট হয়েছে',
+    },
+    'pdf_export_failed': {
+      AppLanguage.english: 'Could not export PDF',
+      AppLanguage.bangla: 'পিডিএফ এক্সপোর্ট করা যায়নি',
+    },
   };
 
   static String get(String key, AppLanguage language, [Map<String, String>? params]) {

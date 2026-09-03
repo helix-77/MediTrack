@@ -215,6 +215,23 @@ class PrescriptionService {
     await batch.commit();
   }
 
+  // Update only the user's free-text note (e.g. disease / visit reason)
+  Future<void> updatePrescriptionNotes(
+    String prescriptionId,
+    String notes,
+  ) async {
+    final user = _authenticatedUser();
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('prescriptions')
+        .doc(prescriptionId)
+        .update({
+      // Empty note removes the field instead of persisting an empty string
+      'notes': notes.trim().isEmpty ? null : notes.trim(),
+    });
+  }
+
   // Delete prescription from Firestore & Firebase Storage
   Future<void> deletePrescription(String id, String? imageUrl) async {
     final user = _authenticatedUser();

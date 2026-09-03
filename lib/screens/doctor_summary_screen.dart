@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
+import '../l10n/locale_notifier.dart';
 import '../models/user_profile.dart';
 import '../models/medicine.dart';
 import '../models/dose_log.dart';
@@ -23,6 +26,7 @@ class DoctorSummaryScreen extends StatefulWidget {
 class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
   final UserProfileService _profileService = UserProfileService();
   final MedicineService _medicineService = MedicineService();
+  bool _isExporting = false;
 
   void _copyToClipboard(String summary) {
     Clipboard.setData(ClipboardData(text: summary));
@@ -32,6 +36,45 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
         backgroundColor: AppColors.success,
       ),
     );
+  }
+
+  Future<void> _exportPdf({
+    required UserProfile profile,
+    required List<Medicine> medicines,
+    required List<DoseLog> logs,
+  }) async {
+    setState(() => _isExporting = true);
+    try {
+      final pdfBytes = await PdfExportService.generateDoctorSummaryPdf(
+        profile: profile,
+        medicines: medicines,
+        recentLogs: logs,
+      );
+      await Printing.sharePdf(
+        bytes: pdfBytes,
+        filename:
+            'meditrack-summary-${DateFormat('yyyyMMdd_hhmm').format(DateTime.now())}.pdf',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${context.tr('pdf_export_success')}'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${context.tr('pdf_export_failed')}: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   @override
@@ -148,6 +191,21 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
                         label: 'Copy Report to Clipboard',
                         icon: Icons.copy_rounded,
                         onPressed: () => _copyToClipboard(summaryText),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Export PDF Action Button
+                      SoftSecondaryButton(
+                        label: context.tr('export_pdf'),
+                        icon: Icons.picture_as_pdf_rounded,
+                        isLoading: _isExporting,
+                        onPressed: _isExporting
+                            ? null
+                            : () => _exportPdf(
+                                  profile: profile,
+                                  medicines: medicines,
+                                  logs: logs,
+                                ),
                       ),
                       const SizedBox(height: 32),
                     ],

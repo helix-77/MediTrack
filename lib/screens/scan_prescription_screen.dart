@@ -15,6 +15,7 @@ import '../services/prescription_extraction_service.dart';
 import '../services/prescription_ocr_service.dart';
 import '../logic/image_preflight.dart';
 import '../logic/prescription_validator.dart';
+import '../l10n/locale_notifier.dart';
 import '../theme/app_tokens.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -49,6 +50,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
   // Metadata form
   final _titleController = TextEditingController();
   final _doctorNameController = TextEditingController();
+  final _noteController = TextEditingController();
   DateTime _visitDate = DateTime.now();
 
   List<PrescriptionItem> _extractedReviewItems = [];
@@ -63,6 +65,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
   void dispose() {
     _titleController.dispose();
     _doctorNameController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -570,6 +573,9 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
             ? _doctorNameController.text.trim()
             : null,
         date: _visitDate,
+        notes: _noteController.text.trim().isNotEmpty
+            ? _noteController.text.trim()
+            : null,
         extractedText: _extractedReviewItems
             .map((m) => '${m.extractedName} ${m.extractedStrength ?? ""}')
             .join(', '),
@@ -798,6 +804,13 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                       controller: _doctorNameController,
                       labelText: 'Doctor Name',
                       hintText: 'e.g. Prof. Ahmed',
+                    ),
+                    const SizedBox(height: 14),
+                    SoftTextField(
+                      controller: _noteController,
+                      labelText: context.tr('prescription_note_label'),
+                      hintText: context.tr('prescription_note_hint'),
+                      maxLines: 2,
                     ),
                     const SizedBox(height: 14),
                     ListTile(
