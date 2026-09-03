@@ -670,7 +670,7 @@ class _ScanPrescriptionScreenState extends State<ScanPrescriptionScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Analyzing Prescription with OpenRouter AI...',
+                        'Analyzing Prescription with Gemini AI...',
                         style: AppTypography.headingSmall,
                       ),
                       const SizedBox(height: 4),
