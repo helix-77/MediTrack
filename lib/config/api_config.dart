@@ -6,7 +6,9 @@ class ApiConfig {
   static String get openRouterApiKey {
     try {
       final key = dotenv.env['OPENROUTER_API_KEY'];
-      if (key != null && key.isNotEmpty && key != 'YOUR_OPENROUTER_API_KEY_HERE') {
+      if (key != null &&
+          key.isNotEmpty &&
+          key != 'YOUR_OPENROUTER_API_KEY_HERE') {
         return key;
       }
     } catch (_) {}

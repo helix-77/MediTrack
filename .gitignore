@@ -59,6 +59,6 @@ ios/GoogleService-Info.plist
 .firebaserc.local
 firebase-debug.log*
 
-# Backend secret configs
-backend/config.php
-
+.zcode/
+.puku-cli/
+.docs/

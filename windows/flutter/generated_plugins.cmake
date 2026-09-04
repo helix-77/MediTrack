@@ -12,6 +12,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_timezone
   geolocator_windows
   openrouter
+  printing
   speech_to_text_windows
   url_launcher_windows
 )
