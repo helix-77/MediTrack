@@ -51,26 +51,22 @@ class UnsubscribeResponse {
   /// Error message if the request failed.
   final String? error;
 
-  /// `true` only when the backend reports `statusCode == "S1000"`, `success == true`,
-  /// or when the carrier confirms the user is already unregistered (`E1951`).
+  /// `true` only when the backend reports `statusCode == "S1000"` or `success == true`,
+  /// or when the carrier confirms the user is unregistered without error.
   bool get isSuccess =>
-      statusCode == 'S1000' ||
-      success == true ||
-      isUnregistered ||
-      isAlreadyUnregistered;
+      (statusCode == 'S1000' || success == true || isUnregistered) &&
+      !isCarrierAddressRejected;
 
   /// Helper: whether the user is confirmed unregistered / cancelled.
-  bool get isUnregistered => subscriptionStatus?.toUpperCase() == 'UNREGISTERED';
+  bool get isUnregistered =>
+      subscriptionStatus?.toUpperCase() == 'UNREGISTERED' &&
+      statusCode != 'E1951';
 
-  /// Helper: whether the carrier reported that the user is already unregistered
-  /// (e.g. BDApps code `E1951` / "Format of the address is invalid Or User Already UnRegistered").
-  bool get isAlreadyUnregistered {
-    final detail = (statusDetail ?? '').toLowerCase();
-    final err = (error ?? '').toLowerCase();
-    return statusCode == 'E1951' ||
-        detail.contains('already unregister') ||
-        err.contains('already unregister');
-  }
+  /// Helper: whether the carrier rejected direct unregistration due to address format / privacy masking (BDApps E1951).
+  bool get isCarrierAddressRejected => statusCode == 'E1951';
+
+  /// Backward-compatible alias for carrier unregistration error
+  bool get isAlreadyUnregistered => false;
 
   factory UnsubscribeResponse.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic>? rawMap;
@@ -106,14 +102,18 @@ class UnsubscribeResponse {
         (rawMap?['subscriber_id'] as String?);
 
     final explicitSuccess = _parseBool(json['success']);
-    final isAlreadyUnregistered = code == 'E1951' ||
-        (detail?.toLowerCase().contains('already unregister') ?? false) ||
-        (rawMap?['statusDetail']?.toString().toLowerCase().contains('already unregister') ?? false);
+    final isCarrierAddressRejected = code == 'E1951';
 
-    final isSuccess = explicitSuccess == true ||
-        code == 'S1000' ||
-        subStatus?.toUpperCase() == 'UNREGISTERED' ||
-        isAlreadyUnregistered;
+    final isSuccess = (explicitSuccess == true ||
+            code == 'S1000' ||
+            (subStatus?.toUpperCase() == 'UNREGISTERED' && code != 'E1951')) &&
+        !isCarrierAddressRejected;
+
+    final errorMessage = isCarrierAddressRejected
+        ? 'Carrier direct unregistration rejected by BDApps (E1951: Masked privacy address). Please cancel via SMS (STOP meditrack to 21213) or USSD (*213#).'
+        : ((json['error'] as String?) ??
+            (json['message'] as String?) ??
+            (isSuccess ? null : detail));
 
     return UnsubscribeResponse(
       success: isSuccess,
@@ -124,9 +124,7 @@ class UnsubscribeResponse {
       statusDetail: detail,
       subscriptionStatus: subStatus ?? (isSuccess ? 'UNREGISTERED' : null),
       rawResponse: json['rawResponse'] as String?,
-      error: isAlreadyUnregistered
-          ? null
-          : ((json['error'] as String?) ?? (json['message'] as String?)),
+      error: errorMessage,
     );
   }
 

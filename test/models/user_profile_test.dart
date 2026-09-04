@@ -69,5 +69,15 @@ void main() {
       expect(updated.bdMobile, '01812345678');
       expect(updated.subscriptionStatus, 'REGISTERED');
     });
+
+    test('fromMap prioritizes explicit or data uid over empty string', () {
+      final mapWithUid = {'uid': 'auth-uid-123', 'displayName': 'Auth User'};
+      final profile1 = UserProfile.fromMap(mapWithUid);
+      expect(profile1.uid, 'auth-uid-123');
+
+      final mapWithoutUid = {'displayName': 'No UID User'};
+      final profile2 = UserProfile.fromMap(mapWithoutUid, uid: 'explicit-uid-456');
+      expect(profile2.uid, 'explicit-uid-456');
+    });
   });
 }

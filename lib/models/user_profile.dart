@@ -134,9 +134,19 @@ class UserProfile {
     };
   }
 
-  factory UserProfile.fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot) {
+  factory UserProfile.fromSnapshot(
+    DocumentSnapshot<Map<String, dynamic>> snapshot, {
+    String? uid,
+  }) {
     final data = snapshot.data() ?? {};
-    return UserProfile.fromMap(data, uid: snapshot.id);
+    // Profile documents live at users/{userId}/profile/main.
+    // If snapshot.id is 'main', extract real userId from data['uid'] or the parent collection reference.
+    final parentUserId = snapshot.reference.parent.parent?.id;
+    final resolvedUid = uid ??
+        (data['uid'] as String?) ??
+        (parentUserId != null && parentUserId.isNotEmpty ? parentUserId : null) ??
+        (snapshot.id != 'main' ? snapshot.id : '');
+    return UserProfile.fromMap(data, uid: resolvedUid);
   }
 
   factory UserProfile.fromMap(Map<String, dynamic> data, {String uid = ''}) {

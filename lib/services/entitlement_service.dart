@@ -479,12 +479,15 @@ class EntitlementService extends ChangeNotifier {
 
   /// Persists unsubscription state to Firestore and updates in-memory flags
   Future<void> recordUnsubscribed({String? userId}) async {
-    final uid = userId ?? _auth.currentUser?.uid;
+    final currentAuthUid = _auth.currentUser?.uid;
+    final uid = (userId != null && userId.isNotEmpty && userId != 'main')
+        ? userId
+        : currentAuthUid;
     _isSubscribed = false;
     _lastVerifiedAt = DateTime.now();
     notifyListeners();
 
-    if (uid != null && uid.isNotEmpty) {
+    if (uid != null && uid.isNotEmpty && uid != 'main') {
       try {
         await _firestore
             .collection('users')

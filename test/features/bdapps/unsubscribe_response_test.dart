@@ -52,7 +52,7 @@ void main() {
       expect(res3.isSuccess, isFalse);
     });
 
-    test('parses BDApps E1951 already unregistered response as success', () {
+    test('parses BDApps E1951 carrier address rejection as failure', () {
       final json = {
         'status_code': 'E1951',
         'status_detail':
@@ -66,14 +66,13 @@ void main() {
 
       final response = UnsubscribeResponse.fromJson(json);
       expect(response.statusCode, 'E1951');
-      expect(response.isAlreadyUnregistered, isTrue);
-      expect(response.isSuccess, isTrue);
-      expect(response.isUnregistered, isTrue);
-      expect(response.subscriptionStatus, 'UNREGISTERED');
-      expect(response.error, isNull);
+      expect(response.isCarrierAddressRejected, isTrue);
+      expect(response.isSuccess, isFalse);
+      expect(response.isUnregistered, isFalse);
+      expect(response.error, contains('E1951'));
     });
 
-    test('handles string-encoded raw json payload', () {
+    test('handles string-encoded raw json payload for E1951 as failure', () {
       final json = {
         'raw':
             '{"statusCode":"E1951","statusDetail":"Format of the address is invalid Or User Already UnRegistered"}',
@@ -81,9 +80,9 @@ void main() {
 
       final response = UnsubscribeResponse.fromJson(json);
       expect(response.statusCode, 'E1951');
-      expect(response.isAlreadyUnregistered, isTrue);
-      expect(response.isSuccess, isTrue);
-      expect(response.subscriptionStatus, 'UNREGISTERED');
+      expect(response.isCarrierAddressRejected, isTrue);
+      expect(response.isSuccess, isFalse);
+      expect(response.isUnregistered, isFalse);
     });
   });
 }

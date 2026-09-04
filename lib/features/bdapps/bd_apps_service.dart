@@ -353,21 +353,25 @@ class BdAppsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.checkSubscription(userMobile: mobile);
+      final subId = lastVerifyOtpResponse?.subscriberId ??
+          lastCheckSubscriptionResponse?.subscriberId ??
+          lastSendOtpResponse?.subscriberId;
+
+      final CheckSubscriptionResponse response;
+      if (subId != null && subId.isNotEmpty) {
+        response = await _apiClient.verifySubscriber(subscriberId: subId);
+      } else {
+        response = await _apiClient.checkSubscription(userMobile: mobile);
+      }
       lastCheckSubscriptionResponse = response;
-      final status = response.subscriptionStatus ??
-          (response.isAlreadyActive
-              ? 'REGISTERED'
-              : (response.statusCode == 'E1951' || !response.isSubscribed
-                  ? 'UNREGISTERED'
-                  : null));
-      if (status != null && status.isNotEmpty) {
-        subscriptionStatus = status;
-        if (status.toUpperCase() == 'REGISTERED') {
-          subscriptionState = SubscriptionState.registered;
-        } else if (status.toUpperCase() == 'UNREGISTERED') {
-          subscriptionState = SubscriptionState.idle;
-        }
+
+      if (response.isAlreadyActive) {
+        subscriptionStatus = 'REGISTERED';
+        subscriptionState = SubscriptionState.registered;
+      } else if (response.subscriptionStatus?.toUpperCase() == 'UNREGISTERED' &&
+          response.statusCode != 'E1951') {
+        subscriptionStatus = 'UNREGISTERED';
+        subscriptionState = SubscriptionState.idle;
       }
     } on DioException catch (e) {
       errorMessage = _messageForDioException(e);
@@ -401,17 +405,14 @@ class BdAppsService extends ChangeNotifier {
         referenceNo: pendingReferenceNo ?? lastSendOtpResponse?.referenceNo,
       );
       lastUnsubscribeResponse = response;
-      final isSuccess = response.isSuccess ||
-          response.isAlreadyUnregistered ||
-          (response.statusDetail?.toLowerCase().contains('already unregister') ?? false);
-      if (isSuccess) {
+      if (response.isSuccess) {
         subscriptionStatus = response.subscriptionStatus ?? 'UNREGISTERED';
         subscriptionState = SubscriptionState.idle;
         return true;
       }
       errorMessage =
-          response.statusDetail ??
           response.error ??
+          response.statusDetail ??
           'Failed to cancel subscription via BD Apps (status: ${response.statusCode ?? 'unknown'}).';
       return false;
     } on DioException catch (e) {

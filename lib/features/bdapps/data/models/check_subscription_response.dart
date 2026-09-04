@@ -60,7 +60,9 @@ class CheckSubscriptionResponse {
   }
 
   /// Whether the response indicates a non-error carrier communication.
-  bool get isSuccess => statusCode == 'S1000' || error == null;
+  bool get isSuccess =>
+      (statusCode == 'S1000' || isSubscribed || error == null) &&
+      statusCode != 'E1951';
 
   factory CheckSubscriptionResponse.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic>? rawMap;
@@ -89,16 +91,27 @@ class CheckSubscriptionResponse {
         (rawMap?['statusDetail'] as String?) ??
         (rawMap?['status_detail'] as String?);
 
-    final isAlreadyUnregistered = code == 'E1951' ||
-        (detail?.toLowerCase().contains('already unregister') ?? false) ||
-        (rawMap?['statusDetail']?.toString().toLowerCase().contains('already unregister') ?? false);
+    final isCarrierAddressRejected = code == 'E1951';
 
     final subStatus = (json['subscription_status'] as String?) ??
         (json['subscriptionStatus'] as String?) ??
         (subscriberMap?['status'] as String?) ??
         (rawMap?['subscriptionStatus'] as String?) ??
-        (rawMap?['subscription_status'] as String?) ??
-        (isAlreadyUnregistered ? 'UNREGISTERED' : null);
+        (rawMap?['subscription_status'] as String?);
+
+    final isValid = json['valid'] == true;
+
+    final isAlreadyActiveSubscriber = (subStatus?.toUpperCase() == 'REGISTERED' ||
+            subStatus?.toUpperCase() == 'ACTIVE' ||
+            subscriberMap?['status']?.toString().toUpperCase() == 'ACTIVE' ||
+            isValid == true);
+
+    final isExplicitUnregistered =
+        subStatus?.toUpperCase() == 'UNREGISTERED' && !isCarrierAddressRejected;
+
+    final normalizedStatus = isAlreadyActiveSubscriber
+        ? 'REGISTERED'
+        : (isExplicitUnregistered ? 'UNREGISTERED' : subStatus);
 
     final subId = (json['subscriber_id'] as String?) ??
         (json['subscriberId'] as String?) ??
@@ -106,23 +119,22 @@ class CheckSubscriptionResponse {
         (rawMap?['subscriberId'] as String?) ??
         (rawMap?['subscriber_id'] as String?);
 
-    final isValid = json['valid'] == true;
-
-    final isSub = !isAlreadyUnregistered &&
-        ((subStatus?.toUpperCase() == 'REGISTERED') ||
-            isValid ||
+    final isSub = isAlreadyActiveSubscriber ||
+        (!isCarrierAddressRejected &&
             (_parseBool(json['isSubscribed']) ?? false));
 
+    final errorMessage = isCarrierAddressRejected
+        ? 'Carrier address format invalid for direct query (E1951: Masked privacy address)'
+        : ((json['error'] as String?) ?? (json['reason'] as String?));
+
     return CheckSubscriptionResponse(
-      subscriptionStatus: subStatus,
+      subscriptionStatus: normalizedStatus,
       isSubscribed: isSub,
       statusCode: code,
       statusDetail: detail,
       version: json['version'] as String?,
       subscriberId: subId,
-      error: isAlreadyUnregistered
-          ? null
-          : ((json['error'] as String?) ?? (json['reason'] as String?)),
+      error: errorMessage,
       details: json['details'] as String?,
     );
   }

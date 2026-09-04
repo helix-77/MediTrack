@@ -230,9 +230,9 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     final success = await bdService.unsubscribe();
 
     if (mounted) {
+      setState(() => _isCancelling = false);
       if (success) {
         await entitlement.recordUnsubscribed(userId: widget.profile?.uid);
-        setState(() => _isCancelling = false);
 
         messenger.showSnackBar(
           const SnackBar(
@@ -244,23 +244,203 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
           ),
         );
       } else {
-        setState(() => _isCancelling = false);
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              bdService.errorMessage ??
-                  'Failed to cancel via app. Please try SMS or USSD method below.',
-            ),
-            backgroundColor: AppColors.danger,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        _showCarrierCancellationSheet(bdService.errorMessage);
       }
     }
   }
 
+  Future<void> _showCarrierCancellationSheet(String? reason) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final entitlement = context.read<EntitlementService>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    await showAppModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkDivider : AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.security_rounded,
+                    color: AppColors.warning,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Carrier Direct Confirmation Needed',
+                        style: AppTypography.headingMedium.copyWith(
+                          fontSize: 16,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Robi / Airtel carrier privacy protection',
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.warningLight.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : AppColors.warning.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Text(
+                'Due to carrier user privacy rules on your SIM, automated 3rd-party unsubscription is restricted by BDApps. To guarantee that daily billing stops immediately, please cancel directly through your carrier using SMS or USSD:',
+                style: AppTypography.bodySmall.copyWith(
+                  height: 1.45,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            // Carrier Action 1: SMS
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                side: BorderSide(
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : AppColors.primaryBlue.withValues(alpha: 0.5),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                _launchSms();
+              },
+              icon: const Icon(Icons.sms_rounded,
+                  size: 20, color: AppColors.primaryBlue),
+              label: Text(
+                'Send SMS "STOP meditrack" to 21213',
+                style: AppTypography.buttonText.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryBlue,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Carrier Action 2: USSD
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                side: BorderSide(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                _launchUssd();
+              },
+              icon: const Icon(Icons.dialpad_rounded, size: 20),
+              label: Text(
+                'Dial *213# on your phone',
+                style: AppTypography.buttonText.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            // Carrier Action 3: Sync In-App
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                Navigator.pop(sheetContext);
+                await entitlement.recordUnsubscribed(userId: widget.profile?.uid);
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      '✅ In-app status synced to Free Tier. Carrier charges will stop once processed.',
+                    ),
+                    backgroundColor: AppColors.success,
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.sync_rounded,
+                  size: 18, color: AppColors.textSecondary),
+              label: Text(
+                'I Already Cancelled with Carrier (Sync In-App)',
+                style: AppTypography.caption.copyWith(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _launchSms() async {
-    final uri = Uri.parse('sms:21213?body=STOP%20MEDI');
+    final uri = Uri.parse('sms:21213?body=STOP%20meditrack');
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
@@ -289,6 +469,25 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _launchUssd() async {
+    final uri = Uri.parse('tel:*213%23');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        _copyToClipboard(
+          '*213#',
+          'Copied "*213#" to clipboard. Dial it on your phone.',
+        );
+      }
+    } catch (_) {
+      _copyToClipboard(
+        '*213#',
+        'Copied "*213#" to clipboard. Dial it on your phone.',
+      );
     }
   }
 
@@ -418,6 +617,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
               const SizedBox(height: 14),
               _buildSmsCancelCard(isDark),
               const SizedBox(height: 14),
+              _buildUssdCancelCard(isDark),
               const SizedBox(height: 24),
             ] else ...[
               _buildInactiveBanner(isDark),
@@ -1068,6 +1268,116 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     );
   }
 
+  Widget _buildUssdCancelCard(bool isDark) {
+    const ussdCode = '*213#';
+
+    return SoftSurface(
+      padding: const EdgeInsets.all(16),
+      borderRadius: AppRadii.cardRadius,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.dialpad_rounded,
+                color: AppColors.accentOrange,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Method 3: Cancel via USSD (*213#)',
+                  style: AppTypography.headingSmall.copyWith(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.darkBackground
+                  : AppColors.accentOrangeLight.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.border,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'DIAL USSD CODE:',
+                      style: AppTypography.caption.copyWith(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$ussdCode (Robi / Airtel)',
+                      style: AppTypography.headingSmall.copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.accentOrange,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: _launchUssd,
+                  icon: const Icon(Icons.call_rounded, size: 16),
+                  label: const Text('Dial *213#'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: () => _copyToClipboard(
+                    ussdCode,
+                    'Copied "$ussdCode" to clipboard',
+                  ),
+                  icon: const Icon(Icons.content_copy_rounded, size: 16),
+                  label: const Text('Copy Code'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildInactiveBanner(bool isDark) {
     return SoftSurface(

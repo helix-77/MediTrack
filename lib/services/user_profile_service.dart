@@ -29,7 +29,7 @@ class UserProfileService {
                 email: user.email ?? '',
               );
             }
-            return UserProfile.fromSnapshot(snapshot);
+            return UserProfile.fromSnapshot(snapshot, uid: user.uid);
           });
     });
   }
