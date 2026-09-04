@@ -1,7 +1,6 @@
 # List (working or not )
 
 [x] Test SMS service
-[] Subscription service
 [x] ai service
 [x] prescription ocr
 [x] Ui revamp
@@ -12,8 +11,9 @@
 [x] switch to openrouter from firebase ai completely. use openrouter/free model (https://openrouter.ai/openrouter/free)
 for flutter integration follow:https://pub.dev/packages/openrouter
 [x] not subscribed users can do 1 prescription ocr, 3 ai messages in total, 3 generic price lookup and in-app notifications
-[] migrate from firebase storeg to supabase storeg, other backend stuffs should remain in firebase (later)
-[] fetch and update the medicine dataset latest price
 [x] The AI should be able to add, update, query and delete item if the user request. currently it can only add
 [x] The AI should also be able to look the the db for reference
-[] improve the ai chat ui, add more features like new chat, archived chat (later)
+[] migrate from firebase storeg to supabase storeg, other backend stuffs should remain in firebase (later)
+[] improve the ai chat ui, add more features like new chat, archived chat
+[] Improve the Subscription service (add monthly, yearly plan)
+[] fetch and update the medicine dataset latest price
