@@ -355,7 +355,12 @@ class BdAppsService extends ChangeNotifier {
     try {
       final response = await _apiClient.checkSubscription(userMobile: mobile);
       lastCheckSubscriptionResponse = response;
-      final status = response.subscriptionStatus;
+      final status = response.subscriptionStatus ??
+          (response.isAlreadyActive
+              ? 'REGISTERED'
+              : (response.statusCode == 'E1951' || !response.isSubscribed
+                  ? 'UNREGISTERED'
+                  : null));
       if (status != null && status.isNotEmpty) {
         subscriptionStatus = status;
         if (status.toUpperCase() == 'REGISTERED') {
@@ -396,7 +401,10 @@ class BdAppsService extends ChangeNotifier {
         referenceNo: pendingReferenceNo ?? lastSendOtpResponse?.referenceNo,
       );
       lastUnsubscribeResponse = response;
-      if (response.isSuccess) {
+      final isSuccess = response.isSuccess ||
+          response.isAlreadyUnregistered ||
+          (response.statusDetail?.toLowerCase().contains('already unregister') ?? false);
+      if (isSuccess) {
         subscriptionStatus = response.subscriptionStatus ?? 'UNREGISTERED';
         subscriptionState = SubscriptionState.idle;
         return true;

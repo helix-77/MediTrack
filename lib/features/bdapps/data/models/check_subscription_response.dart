@@ -1,4 +1,6 @@
-/// Parsed payload from `POST check_subscription.php`.
+import 'dart:convert';
+
+/// Parsed payload from `POST check_subscription.php` or `POST /sdk/status`.
 ///
 /// Mirrors the JSON shape produced by `check_subscription.php` — a wrapped
 /// status object with `subscriptionStatus`, `isSubscribed`, and the
@@ -61,36 +63,55 @@ class CheckSubscriptionResponse {
   bool get isSuccess => statusCode == 'S1000' || error == null;
 
   factory CheckSubscriptionResponse.fromJson(Map<String, dynamic> json) {
-    final rawMap = json['raw'] is Map<String, dynamic>
-        ? json['raw'] as Map<String, dynamic>
-        : null;
+    Map<String, dynamic>? rawMap;
+    if (json['raw'] is Map<String, dynamic>) {
+      rawMap = json['raw'] as Map<String, dynamic>;
+    } else if (json['raw'] is String) {
+      try {
+        final decoded = jsonDecode(json['raw'] as String);
+        if (decoded is Map<String, dynamic>) {
+          rawMap = decoded;
+        }
+      } catch (_) {}
+    }
 
     final subscriberMap = json['subscriber'] is Map<String, dynamic>
         ? json['subscriber'] as Map<String, dynamic>
         : null;
 
-    final subStatus = (json['subscription_status'] as String?) ??
-        (json['subscriptionStatus'] as String?) ??
-        (subscriberMap?['status'] as String?) ??
-        (rawMap?['subscriptionStatus'] as String?);
-
     final code = (json['status_code'] as String?) ??
         (json['statusCode'] as String?) ??
-        (rawMap?['statusCode'] as String?);
+        (rawMap?['statusCode'] as String?) ??
+        (rawMap?['status_code'] as String?);
 
     final detail = (json['status_detail'] as String?) ??
         (json['statusDetail'] as String?) ??
-        (rawMap?['statusDetail'] as String?);
+        (rawMap?['statusDetail'] as String?) ??
+        (rawMap?['status_detail'] as String?);
+
+    final isAlreadyUnregistered = code == 'E1951' ||
+        (detail?.toLowerCase().contains('already unregister') ?? false) ||
+        (rawMap?['statusDetail']?.toString().toLowerCase().contains('already unregister') ?? false);
+
+    final subStatus = (json['subscription_status'] as String?) ??
+        (json['subscriptionStatus'] as String?) ??
+        (subscriberMap?['status'] as String?) ??
+        (rawMap?['subscriptionStatus'] as String?) ??
+        (rawMap?['subscription_status'] as String?) ??
+        (isAlreadyUnregistered ? 'UNREGISTERED' : null);
 
     final subId = (json['subscriber_id'] as String?) ??
         (json['subscriberId'] as String?) ??
-        (subscriberMap?['bdapps_subscriber_id'] as String?);
+        (subscriberMap?['bdapps_subscriber_id'] as String?) ??
+        (rawMap?['subscriberId'] as String?) ??
+        (rawMap?['subscriber_id'] as String?);
 
     final isValid = json['valid'] == true;
 
-    final isSub = (subStatus?.toUpperCase() == 'REGISTERED') ||
-        isValid ||
-        (_parseBool(json['isSubscribed']) ?? false);
+    final isSub = !isAlreadyUnregistered &&
+        ((subStatus?.toUpperCase() == 'REGISTERED') ||
+            isValid ||
+            (_parseBool(json['isSubscribed']) ?? false));
 
     return CheckSubscriptionResponse(
       subscriptionStatus: subStatus,
@@ -99,7 +120,9 @@ class CheckSubscriptionResponse {
       statusDetail: detail,
       version: json['version'] as String?,
       subscriberId: subId,
-      error: (json['error'] as String?) ?? (json['reason'] as String?),
+      error: isAlreadyUnregistered
+          ? null
+          : ((json['error'] as String?) ?? (json['reason'] as String?)),
       details: json['details'] as String?,
     );
   }

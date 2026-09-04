@@ -51,5 +51,39 @@ void main() {
       final res3 = UnsubscribeResponse.fromJson({'success': 0, 'statusCode': 'E1000'});
       expect(res3.isSuccess, isFalse);
     });
+
+    test('parses BDApps E1951 already unregistered response as success', () {
+      final json = {
+        'status_code': 'E1951',
+        'status_detail':
+            'Format of the address is invalid Or User Already UnRegistered',
+        'raw': {
+          'statusCode': 'E1951',
+          'statusDetail':
+              'Format of the address is invalid Or User Already UnRegistered',
+        },
+      };
+
+      final response = UnsubscribeResponse.fromJson(json);
+      expect(response.statusCode, 'E1951');
+      expect(response.isAlreadyUnregistered, isTrue);
+      expect(response.isSuccess, isTrue);
+      expect(response.isUnregistered, isTrue);
+      expect(response.subscriptionStatus, 'UNREGISTERED');
+      expect(response.error, isNull);
+    });
+
+    test('handles string-encoded raw json payload', () {
+      final json = {
+        'raw':
+            '{"statusCode":"E1951","statusDetail":"Format of the address is invalid Or User Already UnRegistered"}',
+      };
+
+      final response = UnsubscribeResponse.fromJson(json);
+      expect(response.statusCode, 'E1951');
+      expect(response.isAlreadyUnregistered, isTrue);
+      expect(response.isSuccess, isTrue);
+      expect(response.subscriptionStatus, 'UNREGISTERED');
+    });
   });
 }

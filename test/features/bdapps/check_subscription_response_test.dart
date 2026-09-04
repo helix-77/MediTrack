@@ -55,5 +55,25 @@ void main() {
       expect(response.isSubscribed, isFalse);
       expect(response.subscriptionStatus, 'UNREGISTERED');
     });
+
+    test('parses BDApps E1951 status response as UNREGISTERED', () {
+      final json = {
+        'status_code': 'E1951',
+        'status_detail':
+            'Format of the address is invalid Or User Already UnRegistered',
+        'raw': {
+          'statusCode': 'E1951',
+          'statusDetail':
+              'Format of the address is invalid Or User Already UnRegistered',
+        },
+      };
+
+      final response = CheckSubscriptionResponse.fromJson(json);
+      expect(response.statusCode, 'E1951');
+      expect(response.isAlreadyActive, isFalse);
+      expect(response.isSubscribed, isFalse);
+      expect(response.subscriptionStatus, 'UNREGISTERED');
+      expect(response.error, isNull);
+    });
   });
 }

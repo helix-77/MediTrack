@@ -1,4 +1,6 @@
-/// Parsed payload from `POST unsubscribe.php`.
+import 'dart:convert';
+
+/// Parsed payload from `POST /sdk/unsubscribe`.
 ///
 /// Doubles as both DTO and UI-facing entity. Mirrors the shape documented
 /// by the BD Apps unsubscribe sample response.
@@ -49,37 +51,69 @@ class UnsubscribeResponse {
   /// Error message if the request failed.
   final String? error;
 
-  /// `true` only when the backend reports `statusCode == "S1000"` or `success == true`.
-  bool get isSuccess => statusCode == 'S1000' || success == true;
+  /// `true` only when the backend reports `statusCode == "S1000"`, `success == true`,
+  /// or when the carrier confirms the user is already unregistered (`E1951`).
+  bool get isSuccess =>
+      statusCode == 'S1000' ||
+      success == true ||
+      isUnregistered ||
+      isAlreadyUnregistered;
 
   /// Helper: whether the user is confirmed unregistered / cancelled.
   bool get isUnregistered => subscriptionStatus?.toUpperCase() == 'UNREGISTERED';
 
+  /// Helper: whether the carrier reported that the user is already unregistered
+  /// (e.g. BDApps code `E1951` / "Format of the address is invalid Or User Already UnRegistered").
+  bool get isAlreadyUnregistered {
+    final detail = (statusDetail ?? '').toLowerCase();
+    final err = (error ?? '').toLowerCase();
+    return statusCode == 'E1951' ||
+        detail.contains('already unregister') ||
+        err.contains('already unregister');
+  }
+
   factory UnsubscribeResponse.fromJson(Map<String, dynamic> json) {
-    final rawMap = json['raw'] is Map<String, dynamic>
-        ? json['raw'] as Map<String, dynamic>
-        : null;
+    Map<String, dynamic>? rawMap;
+    if (json['raw'] is Map<String, dynamic>) {
+      rawMap = json['raw'] as Map<String, dynamic>;
+    } else if (json['raw'] is String) {
+      try {
+        final decoded = jsonDecode(json['raw'] as String);
+        if (decoded is Map<String, dynamic>) {
+          rawMap = decoded;
+        }
+      } catch (_) {}
+    }
 
     final code = (json['status_code'] as String?) ??
         (json['statusCode'] as String?) ??
-        (rawMap?['statusCode'] as String?);
+        (rawMap?['statusCode'] as String?) ??
+        (rawMap?['status_code'] as String?);
 
     final detail = (json['status_detail'] as String?) ??
         (json['statusDetail'] as String?) ??
-        (rawMap?['statusDetail'] as String?);
+        (rawMap?['statusDetail'] as String?) ??
+        (rawMap?['status_detail'] as String?);
 
     final subStatus = (json['subscription_status'] as String?) ??
         (json['subscriptionStatus'] as String?) ??
-        (rawMap?['subscriptionStatus'] as String?);
+        (rawMap?['subscriptionStatus'] as String?) ??
+        (rawMap?['subscription_status'] as String?);
 
     final subId = (json['subscriber_id'] as String?) ??
         (json['subscriberId'] as String?) ??
-        (rawMap?['subscriberId'] as String?);
+        (rawMap?['subscriberId'] as String?) ??
+        (rawMap?['subscriber_id'] as String?);
 
     final explicitSuccess = _parseBool(json['success']);
+    final isAlreadyUnregistered = code == 'E1951' ||
+        (detail?.toLowerCase().contains('already unregister') ?? false) ||
+        (rawMap?['statusDetail']?.toString().toLowerCase().contains('already unregister') ?? false);
+
     final isSuccess = explicitSuccess == true ||
         code == 'S1000' ||
-        subStatus?.toUpperCase() == 'UNREGISTERED';
+        subStatus?.toUpperCase() == 'UNREGISTERED' ||
+        isAlreadyUnregistered;
 
     return UnsubscribeResponse(
       success: isSuccess,
@@ -90,7 +124,9 @@ class UnsubscribeResponse {
       statusDetail: detail,
       subscriptionStatus: subStatus ?? (isSuccess ? 'UNREGISTERED' : null),
       rawResponse: json['rawResponse'] as String?,
-      error: (json['error'] as String?) ?? (json['message'] as String?),
+      error: isAlreadyUnregistered
+          ? null
+          : ((json['error'] as String?) ?? (json['message'] as String?)),
     );
   }
 
