@@ -153,7 +153,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     icon: Icons.check_circle_outline_rounded,
                     iconColor: AppColors.success,
                     title: 'Immediate Stop of Charges',
-                    desc: 'Daily ৳2.99 carrier billing stops right away.',
+                    desc: 'Daily ৳2.78 carrier billing stops right away.',
                   ),
                   const SizedBox(height: 10),
                   _buildModalImpactRow(
@@ -1090,7 +1090,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Upgrade to MediTrack Premium for ৳2.99/day via Robi / Airtel carrier billing to unlock full AI and OCR powers.',
+            'Upgrade to MediTrack Premium for ৳2.78/day via Robi / Airtel carrier billing to unlock full AI and OCR powers.',
             textAlign: TextAlign.center,
             style: AppTypography.bodySmall.copyWith(
               fontSize: 12,

@@ -50,7 +50,7 @@ confirmation. The interface ships in English and Bangla.
 - Firebase Authentication: Google Sign-In, email/password, and guest mode.
 - A free tier with lifetime trial allowances: 1 prescription scan, 3 AI
   messages, and 3 price lookups.
-- Premium (৳2.99/day) billed directly through Robi/Airtel carrier billing via
+- Premium (৳2.78/day) billed directly through Robi/Airtel carrier billing via
   AppsPro, with OTP verification. Entitlements are cached and re-verified
   server-side by `EntitlementService`.
 
@@ -152,19 +152,19 @@ before they reach the API.
 
 ## Tech stack
 
-| Layer | Technology |
-| :--- | :--- |
-| Framework | Flutter 3.44+, Dart 3.12+ (sound null safety) |
-| State management | `provider` — `ChangeNotifier` + `MultiProvider` |
-| Backend | Firebase Auth, Cloud Firestore (offline persistence), Firebase Storage, App Check |
-| Prescription OCR | `firebase_ai` — `gemini-3.6-flash` with a JSON response schema |
-| AI assistant | `openrouter` package — `openrouter/free` router |
-| On-device OCR | `google_mlkit_text_recognition` |
-| Local catalog | `sqflite` — bundled SQLite database of Bangladesh medicines |
-| Reminders | `flutter_local_notifications` + `timezone` + `flutter_timezone` |
-| Voice input | `speech_to_text` (on-device) |
-| Carrier billing | `dio` → AppsPro.dev REST API (OTP + subscription endpoints) |
-| Design | Material 3, `google_fonts` (Poppins headings, Inter body) |
+| Layer            | Technology                                                                        |
+| :--------------- | :-------------------------------------------------------------------------------- |
+| Framework        | Flutter 3.44+, Dart 3.12+ (sound null safety)                                     |
+| State management | `provider` — `ChangeNotifier` + `MultiProvider`                                   |
+| Backend          | Firebase Auth, Cloud Firestore (offline persistence), Firebase Storage, App Check |
+| Prescription OCR | `firebase_ai` — `gemini-3.6-flash` with a JSON response schema                    |
+| AI assistant     | `openrouter` package — `openrouter/free` router                                   |
+| On-device OCR    | `google_mlkit_text_recognition`                                                   |
+| Local catalog    | `sqflite` — bundled SQLite database of Bangladesh medicines                       |
+| Reminders        | `flutter_local_notifications` + `timezone` + `flutter_timezone`                   |
+| Voice input      | `speech_to_text` (on-device)                                                      |
+| Carrier billing  | `dio` → AppsPro.dev REST API (OTP + subscription endpoints)                       |
+| Design           | Material 3, `google_fonts` (Poppins headings, Inter body)                         |
 
 ## Getting started
 

@@ -632,7 +632,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             Text(
                               isPro
                                   ? 'Full AI, OCR & Family SMS alerts active'
-                                  : 'Upgrade for ৳2.99/day via Robi / Airtel',
+                                  : 'Upgrade for ৳2.78/day via Robi / Airtel',
                               style: AppTypography.caption.copyWith(
                                 fontSize: 11,
                                 color: isPro

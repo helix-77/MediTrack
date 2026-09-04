@@ -752,7 +752,7 @@ Gemini structured-action support that already exists (Section 5.8's AI Assistant
 
 The BD Apps subscription rail connects carrier billing (Robi / Airtel) to premium feature entitlements.
 MediTrack operates a hybrid model: core tracking is free forever, while external API cost centers
-are gated behind an active ৳2.99/day (+VAT+SD+SC) micro-subscription.
+are gated behind an active ৳2.78/day (+VAT+SD+SC) micro-subscription.
 
 **Implemented Gatekeeping (Option A - Active):**
 
@@ -761,7 +761,7 @@ are gated behind an active ৳2.99/day (+VAT+SD+SC) micro-subscription.
   - On-device box/strip OCR (ML Kit text recognition).
   - Digital Prescription Vault (photo storage & retrieval).
   - Low-stock Buy List.
-- **Premium Tier (৳2.99/day via Robi 018 / Airtel 016 carrier billing):**
+- **Premium Tier (৳2.78/day via Robi 018 / Airtel 016 carrier billing):**
   1. **Prescription AI OCR:** Multi-page structured Gemini 3.6 Flash dosage extraction.
   2. **AI Health Assistant:** Multimodal Gemini conversation & prescription analysis.
   3. **Medicine Price & Generic Lookup:** Bangladesh reference database search & cheap alternatives.

@@ -1027,7 +1027,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'I agree to subscribe to MediTrack Premium at ৳2.99/day ${SubscriptionOfferConfig.taxSuffix} and accept the terms below.',
+                          'I agree to subscribe to MediTrack Premium at ৳2.78/day ${SubscriptionOfferConfig.taxSuffix} and accept the terms below.',
                           style: AppTypography.caption.copyWith(
                             height: 1.35,
                             fontSize: 11.5,
@@ -1272,7 +1272,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
   //     {
   //       'q': 'How does carrier billing work?',
   //       'a':
-  //           'The daily fee of ৳2.99 (+VAT/taxes) is automatically charged directly from your Robi or Airtel mobile account balance. No credit card or bank account is required.',
+  //           'The daily fee of ৳2.78 (+VAT/taxes) is automatically charged directly from your Robi or Airtel mobile account balance. No credit card or bank account is required.',
   //     },
   //     {
   //       'q': 'Can I cancel my subscription at any time?',

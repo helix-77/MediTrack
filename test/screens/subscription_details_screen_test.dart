@@ -48,7 +48,7 @@ void main() {
     // Active status card
     expect(find.text('MediTrack Premium'), findsOneWidget);
     expect(find.text('ACTIVE'), findsOneWidget);
-    expect(find.text('৳2.99 / day'), findsOneWidget);
+    expect(find.text('৳2.78 / day'), findsOneWidget);
     expect(find.textContaining('018'), findsWidgets);
 
     // Daily Quota section

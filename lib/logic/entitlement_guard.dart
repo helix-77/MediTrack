@@ -100,7 +100,7 @@ class EntitlementGuard {
           remaining: 0,
           isSoftCapReached: false,
           statusMessage:
-              'Free prescription scan used. Upgrade to MediTrack Premium (৳2.99/day) for unlimited scans.',
+              'Free prescription scan used. Upgrade to MediTrack Premium (৳2.78/day) for unlimited scans.',
         );
 
       case EntitlementFeature.aiAssistant:
@@ -119,7 +119,7 @@ class EntitlementGuard {
           remaining: 0,
           isSoftCapReached: false,
           statusMessage:
-              'Free trial limit reached (3/3 messages). Upgrade to MediTrack Premium (৳2.99/day) for unlimited AI assistance.',
+              'Free trial limit reached (3/3 messages). Upgrade to MediTrack Premium (৳2.78/day) for unlimited AI assistance.',
         );
 
       case EntitlementFeature.priceLookup:
@@ -138,7 +138,7 @@ class EntitlementGuard {
           remaining: 0,
           isSoftCapReached: false,
           statusMessage:
-              'Free price lookups used (3/3). Upgrade to MediTrack Premium (৳2.99/day) for unlimited price lookups.',
+              'Free price lookups used (3/3). Upgrade to MediTrack Premium (৳2.78/day) for unlimited price lookups.',
         );
 
       case EntitlementFeature.nearbyPharmacy:
@@ -147,7 +147,7 @@ class EntitlementGuard {
           remaining: 0,
           isSoftCapReached: false,
           statusMessage:
-              'Nearby Pharmacy Search requires MediTrack Premium (৳2.99/day via Robi/Airtel).',
+              'Nearby Pharmacy Search requires MediTrack Premium (৳2.78/day via Robi/Airtel).',
         );
     }
   }
