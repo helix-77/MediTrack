@@ -1,434 +1,279 @@
 /**
- * MEDITRACK LANDING PAGE — INTERACTIVE CHOREOGRAPHY
- * IntersectionObserver-driven reveals (no scroll listeners), mobile overlay
- * menu with staggered mask reveal, live phone mockup, generic comparator,
- * AI assistant demo, streak counter, tweened savings calculator, FAQ accordion.
+ * MediTrack landing page interactions.
+ * - Floating pill nav
+ * - Theme switcher (Light mode default, persistent in localStorage)
+ * - Interactive phone demo (dose logging, progress animation, tab switcher)
+ * - FAQ accordion
+ * - Scroll reveals via IntersectionObserver
  */
 
 function init() {
-  const prefersReducedMotion = window.matchMedia(
-    "(prefers-reduced-motion: reduce)",
-  ).matches;
+  /* 1. Theme Switcher (Light mode is default) */
+  const savedTheme = localStorage.getItem("meditrack_theme");
+  // If savedTheme is valid ("dark" or "light"), use it; otherwise default to "light"
+  const initialTheme = savedTheme === "dark" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", initialTheme);
 
-  /* 1. Nav state via sentinel IntersectionObserver (never a scroll listener) */
+  const updateThemeAria = (theme) => {
+    const isDark = theme === "dark";
+    const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+    const toggleBtns = [
+      document.getElementById("themeToggle"),
+      document.getElementById("mobileThemeToggle"),
+    ];
+    toggleBtns.forEach((btn) => {
+      if (btn) btn.setAttribute("aria-label", label);
+    });
+  };
+
+  updateThemeAria(initialTheme);
+
+  const handleThemeToggle = () => {
+    const current =
+      document.documentElement.getAttribute("data-theme") || "light";
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("meditrack_theme", next);
+    updateThemeAria(next);
+  };
+
+  const themeBtn = document.getElementById("themeToggle");
+  if (themeBtn) {
+    themeBtn.addEventListener("click", handleThemeToggle);
+  }
+
+  const mobileThemeBtn = document.getElementById("mobileThemeToggle");
+  if (mobileThemeBtn) {
+    mobileThemeBtn.addEventListener("click", handleThemeToggle);
+  }
+
+  /* 2. Nav scroll sentinel */
   const navbar = document.getElementById("navbar");
   const sentinel = document.getElementById("navSentinel");
   if (navbar && sentinel) {
     new IntersectionObserver(
-      ([entry]) => navbar.classList.toggle("scrolled", !entry.isIntersecting),
-      { rootMargin: "-60px 0px 0px 0px", threshold: 0 },
+      ([entry]) => {
+        navbar.classList.toggle("is-scrolled", !entry.isIntersecting);
+      },
+      { rootMargin: "-40px 0px 0px 0px", threshold: 0 },
     ).observe(sentinel);
   }
 
-  /* 2. Mobile overlay menu — morph burger to X, staggered mask reveal */
+  /* 3. Mobile menu */
   const burger = document.getElementById("navBurger");
-  const overlay = document.getElementById("mobileOverlay");
-
-  function closeOverlay() {
-    if (!overlay || !burger) return;
-    overlay.classList.remove("open");
-    burger.classList.remove("open");
-    document.body.classList.remove("no-scroll");
-    overlay.setAttribute("aria-hidden", "true");
-    burger.setAttribute("aria-expanded", "false");
+  const menu = document.getElementById("mobileMenu");
+  if (burger && menu) {
+    const setOpen = (open) => {
+      burger.setAttribute("aria-expanded", String(open));
+      burger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      menu.hidden = !open;
+      document.body.style.overflow = open ? "hidden" : "";
+    };
+    burger.addEventListener("click", () => {
+      setOpen(burger.getAttribute("aria-expanded") !== "true");
+    });
+    menu.addEventListener("click", (event) => {
+      if (event.target.closest("a")) setOpen(false);
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") setOpen(false);
+    });
   }
 
-  burger?.addEventListener("click", () => {
-    const willOpen = !overlay?.classList.contains("open");
-    overlay?.classList.toggle("open", willOpen);
-    burger.classList.toggle("open", willOpen);
-    document.body.classList.toggle("no-scroll", willOpen);
-    overlay?.setAttribute("aria-hidden", String(!willOpen));
-    burger.setAttribute("aria-expanded", String(willOpen));
-  });
-
-  overlay
-    ?.querySelectorAll("a")
-    .forEach((link) => link.addEventListener("click", closeOverlay));
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeOverlay();
-  });
-
-  /* 3. Scroll-entry reveals: translateY + blur + opacity, staggered per group */
-  const revealEls = document.querySelectorAll("[data-reveal]");
-  document.querySelectorAll("[data-reveal-group]").forEach((group) => {
-    Array.from(group.querySelectorAll(":scope > [data-reveal]")).forEach(
-      (el, i) => {
-        el.style.setProperty("--rd", `${Math.min(i * 90, 450)}ms`);
-      },
-    );
-  });
-
-  if (prefersReducedMotion || !("IntersectionObserver" in window)) {
-    revealEls.forEach((el) => el.classList.add("is-visible"));
-  } else {
+  /* 4. Scroll reveals */
+  const revealables = document.querySelectorAll("[data-reveal]");
+  if (revealables.length > 0) {
     const revealObserver = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
+        for (const entry of entries) {
           if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
+            entry.target.classList.add("is-revealed");
             revealObserver.unobserve(entry.target);
           }
-        });
+        }
       },
-      { threshold: 0.05, rootMargin: "0px 0px -20px 0px" },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" },
     );
-    revealEls.forEach((el) => revealObserver.observe(el));
+    revealables.forEach((el) => revealObserver.observe(el));
   }
 
-  /* 4. Interactive phone mockup — tab switcher */
-  const phoneTabBtns = document.querySelectorAll(".phone-tab-btn");
-  const appPanels = document.querySelectorAll(".app-panel");
-  phoneTabBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const target = btn.getAttribute("data-tab");
-      phoneTabBtns.forEach((b) => b.classList.remove("active"));
+  /* 5. Phone demo: Tab switching (Routine, Rx Scan, Generics, AI Chat) */
+  const tabBtns = document.querySelectorAll(".phone-tab-btn");
+  const panels = {
+    routine: document.getElementById("view-routine"),
+    scanner: document.getElementById("view-scanner"),
+    generics: document.getElementById("view-generics"),
+    ai: document.getElementById("view-ai"),
+  };
+
+  tabBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const targetTab = btn.getAttribute("data-tab");
+      tabBtns.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      appPanels.forEach((panel) => {
-        panel.classList.toggle("active", panel.id === `view-${target}`);
+
+      Object.values(panels).forEach((panel) => {
+        if (panel) panel.classList.remove("active");
       });
-    });
-  });
 
-  /* 5. Tappable dose card */
-  const dose1 = document.getElementById("demoDose1");
-  const dosePill1 = document.getElementById("dosePill1");
-  let dose1Taken = false;
-  dose1?.addEventListener("click", () => {
-    dose1Taken = !dose1Taken;
-    dose1.classList.toggle("taken", dose1Taken);
-    if (dosePill1) {
-      dosePill1.textContent = dose1Taken ? "Taken ✓" : "Take now";
-      dosePill1.className = dose1Taken
-        ? "med-action-pill med-action-taken"
-        : "med-action-pill med-action-pink";
-    }
-  });
-
-  /* 6. Generic medicine price comparator */
-  const genericDatabase = {
-    napa: {
-      brand: "Napa 500mg Tablet",
-      manufacturer: "Beximco Pharmaceuticals Ltd.",
-      price: "MRP: ৳1.20 / tab",
-      generic: "Paracetamol 500mg",
-      alternatives: [
-        {
-          name: "Ace 500mg",
-          mfg: "Square Pharmaceuticals",
-          price: "৳0.80",
-          saving: "Save 33%",
-        },
-        {
-          name: "Renova 500mg",
-          mfg: "Opso Saline Ltd.",
-          price: "৳0.80",
-          saving: "Save 33%",
-        },
-        {
-          name: "Fast 500mg",
-          mfg: "Acme Laboratories Ltd.",
-          price: "৳0.80",
-          saving: "Save 33%",
-        },
-        {
-          name: "Pyrex 500mg",
-          mfg: "Incepta Pharmaceuticals",
-          price: "৳0.85",
-          saving: "Save 29%",
-        },
-      ],
-    },
-    seclo: {
-      brand: "Seclo 20mg Capsule",
-      manufacturer: "Square Pharmaceuticals PLC",
-      price: "MRP: ৳7.00 / cap",
-      generic: "Omeprazole 20mg",
-      alternatives: [
-        {
-          name: "Proceptin 20mg",
-          mfg: "Beximco Pharmaceuticals",
-          price: "৳5.00",
-          saving: "Save 28%",
-        },
-        {
-          name: "Omecon 20mg",
-          mfg: "Popular Pharmaceuticals",
-          price: "৳5.00",
-          saving: "Save 28%",
-        },
-        {
-          name: "Esofag 20mg",
-          mfg: "Incepta Pharmaceuticals",
-          price: "৳5.00",
-          saving: "Save 28%",
-        },
-        {
-          name: "Lokit 20mg",
-          mfg: "Acme Laboratories Ltd.",
-          price: "৳5.50",
-          saving: "Save 21%",
-        },
-      ],
-    },
-    montene: {
-      brand: "Montene 10mg Tablet",
-      manufacturer: "Incepta Pharmaceuticals Ltd.",
-      price: "MRP: ৳16.00 / tab",
-      generic: "Montelukast 10mg",
-      alternatives: [
-        {
-          name: "Romilast 10mg",
-          mfg: "Popular Pharmaceuticals",
-          price: "৳12.99",
-          saving: "Save 25%",
-        },
-        {
-          name: "Monas 10mg",
-          mfg: "Acme Laboratories Ltd.",
-          price: "৳14.00",
-          saving: "Save 12%",
-        },
-        {
-          name: "Odmon 10mg",
-          mfg: "Square Pharmaceuticals",
-          price: "৳14.00",
-          saving: "Save 12%",
-        },
-        {
-          name: "Mona 10mg",
-          mfg: "Renata Limited",
-          price: "৳14.00",
-          saving: "Save 12%",
-        },
-      ],
-    },
-    sergel: {
-      brand: "Sergel 20mg Capsule",
-      manufacturer: "Healthcare Pharmaceuticals Ltd.",
-      price: "MRP: ৳10.00 / cap",
-      generic: "Esomeprazole 20mg",
-      alternatives: [
-        {
-          name: "Opton 20mg",
-          mfg: "Incepta Pharmaceuticals",
-          price: "৳7.00",
-          saving: "Save 30%",
-        },
-        {
-          name: "Nexum 20mg",
-          mfg: "Square Pharmaceuticals",
-          price: "৳8.00",
-          saving: "Save 20%",
-        },
-        {
-          name: "Maxima 20mg",
-          mfg: "Beximco Pharmaceuticals",
-          price: "৳8.00",
-          saving: "Save 20%",
-        },
-        {
-          name: "Esonix 20mg",
-          mfg: "Renata Limited",
-          price: "৳8.00",
-          saving: "Save 20%",
-        },
-      ],
-    },
-  };
-
-  const genericCompareBox = document.getElementById("genericCompareBox");
-
-  function renderGenericComparison(medKey) {
-    const data = genericDatabase[medKey];
-    if (!data || !genericCompareBox) return;
-
-    genericCompareBox.classList.add("fading");
-    setTimeout(
-      () => {
-        const altHtml = data.alternatives
-          .map(
-            (alt) => `
-        <div class="alt-result-row">
-          <div><strong>${alt.name}</strong> • ${alt.mfg}</div>
-          <div class="alt-price-tag">${alt.price} <span class="badge-saving">${alt.saving}</span></div>
-        </div>`,
-          )
-          .join("");
-
-        genericCompareBox.innerHTML = `
-        <div class="current-brand-row">
-          <div>
-            <span class="table-brand-name">${data.brand}</span>
-            <span class="table-brand-mfg">${data.manufacturer}</span>
-          </div>
-          <div class="table-brand-price">${data.price}</div>
-        </div>
-        <div class="alt-list-title">Cheaper brands with the same generic (${data.generic}):</div>
-        <div class="alt-items-list">${altHtml}</div>`;
-        genericCompareBox.classList.remove("fading");
-      },
-      prefersReducedMotion ? 0 : 220,
-    );
-  }
-
-  document.querySelectorAll(".med-search-chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      document
-        .querySelectorAll(".med-search-chip")
-        .forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      const medKey = chip.getAttribute("data-med");
-      if (medKey) renderGenericComparison(medKey);
-    });
-  });
-
-  /* 7. AI assistant query demo */
-  const aiKnowledgeBase = {
-    timing: `<strong>AI Guidance:</strong> Take <strong>Omeprazole (e.g. Seclo)</strong> 30–60 minutes before breakfast on an empty stomach for optimal gastric acid reduction.<div class="ai-action-demo-pill">⚡ Action: Set dose reminder for 7:30 AM</div>`,
-    food: `<strong>AI Guidance:</strong> <strong>Montelukast (Montene)</strong> can be taken with or without meals. It is recommended to take it in the evening before sleep.<div class="ai-action-demo-pill">⚡ Action: Scheduled bedtime reminder at 9:30 PM</div>`,
-    action: `<strong>AI Guidance:</strong> Extracted: <strong>Paracetamol 500mg Tablet</strong> (1+0+1, after food for 3 days).<div class="ai-action-demo-pill">✓ Action: Added 2 daily reminders (8:00 AM &amp; 8:00 PM)</div>`,
-  };
-
-  const aiResponseBox = document.getElementById("aiDemoResponse");
-  document.querySelectorAll(".query-chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      document
-        .querySelectorAll(".query-chip")
-        .forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      const queryKey = chip.getAttribute("data-query");
-      if (aiResponseBox && queryKey && aiKnowledgeBase[queryKey]) {
-        aiResponseBox.classList.add("fading");
-        setTimeout(
-          () => {
-            aiResponseBox.innerHTML = aiKnowledgeBase[queryKey];
-            aiResponseBox.classList.remove("fading");
-          },
-          prefersReducedMotion ? 0 : 220,
-        );
+      if (panels[targetTab]) {
+        panels[targetTab].classList.add("active");
       }
     });
   });
 
-  /* 8. Streak counter */
-  const logDoseBtn = document.getElementById("logDoseBtn");
-  const streakCountDisplay = document.getElementById("streakCount");
-  let currentStreak = 7;
-  let loggedToday = false;
-  logDoseBtn?.addEventListener("click", () => {
-    loggedToday = !loggedToday;
-    currentStreak += loggedToday ? 1 : -1;
-    if (streakCountDisplay)
-      streakCountDisplay.textContent = `${currentStreak} Day Streak 🔥`;
-    logDoseBtn.classList.toggle("logged", loggedToday);
-    logDoseBtn.querySelector("span").textContent = loggedToday
-      ? "✓ Dose Logged for Today"
-      : "+ Log Afternoon Dose";
-  });
+  /* 6. Phone demo: Interactive dose logging animation */
+  const doseItem = document.getElementById("demoDose1");
+  const dosePill = document.getElementById("dosePill1");
+  const progressBar = document.getElementById("progressBarFill");
+  const progressBadge = document.getElementById("progressBadge");
+  const progressSub = document.getElementById("progressSub");
 
-  /* 9. Clinical summary copy */
-  const copySummaryBtn = document.getElementById("copySummaryBtn");
-  copySummaryBtn?.addEventListener("click", () => {
-    const textToCopy = `=== MEDITRACK CLINICAL SUMMARY ===\nPatient: Rahi | Adherence: 94.2% (Last 30 Days)\nActive Meds: Napa Extra (500mg, 1+0+1), Seclo (20mg, 1+0+0)\nRefill Status: All active stocks sufficient for 14+ days\nVerified on: 25 August 2026 via MediTrack`;
-    navigator.clipboard?.writeText(textToCopy);
-    const label = copySummaryBtn.querySelector("span");
-    if (label) {
-      label.textContent = "✓ Copied to Clipboard!";
-      setTimeout(() => {
-        label.textContent = "📋 Copy Summary to Clipboard";
-      }, 2500);
-    }
-  });
+  if (doseItem && dosePill) {
+    doseItem.addEventListener("click", () => {
+      const isTaken = doseItem.classList.toggle("is-taken");
+      dosePill.classList.toggle("taken", isTaken);
+      dosePill.textContent = isTaken ? "Taken ✓" : "Take now";
 
-  /* 10. Savings calculator with tweened count-up */
-  const medsSlider = document.getElementById("medsSlider");
-  const spendSlider = document.getElementById("spendSlider");
-  const medsValueBadge = document.getElementById("medsValueBadge");
-  const spendValueBadge = document.getElementById("spendValueBadge");
-  const annualDosesVal = document.getElementById("annualDosesVal");
-  const missedPreventedVal = document.getElementById("missedPreventedVal");
-  const genericSavingsVal = document.getElementById("genericSavingsVal");
-  const adherenceScoreVal = document.getElementById("adherenceScoreVal");
-
-  const activeTweens = new Map();
-
-  function tweenText(el, target, format) {
-    if (!el) return;
-    const from = parseFloat(el.dataset.v || "0") || 0;
-    if (prefersReducedMotion) {
-      el.dataset.v = String(target);
-      el.textContent = format(target);
-      return;
-    }
-    if (activeTweens.has(el)) cancelAnimationFrame(activeTweens.get(el));
-    const t0 = performance.now();
-    const duration = 550;
-    function step(t) {
-      const p = Math.min(1, (t - t0) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      const value = from + (target - from) * eased;
-      el.textContent = format(value);
-      if (p < 1) {
-        activeTweens.set(el, requestAnimationFrame(step));
-      } else {
-        el.dataset.v = String(target);
-        activeTweens.delete(el);
+      if (progressBar) {
+        progressBar.style.width = isTaken ? "80%" : "60%";
       }
-    }
-    activeTweens.set(el, requestAnimationFrame(step));
-  }
-
-  function updateCalculator() {
-    const dailyMeds = parseInt(medsSlider ? medsSlider.value : "3", 10);
-    const monthlySpend = parseInt(spendSlider ? spendSlider.value : "2000", 10);
-
-    if (medsValueBadge)
-      medsValueBadge.textContent = `${dailyMeds} ${dailyMeds === 1 ? "medication" : "medications"}`;
-    if (spendValueBadge)
-      spendValueBadge.textContent = `৳${monthlySpend.toLocaleString("en-IN")} / month`;
-
-    // Fill the slider track up to the thumb position
-    [medsSlider, spendSlider].forEach((slider) => {
-      if (!slider) return;
-      const min = parseFloat(slider.min);
-      const max = parseFloat(slider.max);
-      const pct = ((parseFloat(slider.value) - min) / (max - min)) * 100;
-      slider.style.setProperty("--fill", `${pct}%`);
+      if (progressBadge) {
+        progressBadge.textContent = isTaken ? "80%" : "60%";
+      }
+      if (progressSub) {
+        progressSub.textContent = isTaken
+          ? "4 of 5 doses completed"
+          : "3 of 5 doses completed";
+      }
     });
-
-    const annualDoses = dailyMeds * 365;
-    const missedPrevented = Math.round(annualDoses * 0.22);
-    const annualSavings = Math.round(monthlySpend * 12 * 0.3);
-    const adherenceRate = Math.min(99.2, 94 + dailyMeds * 0.5);
-
-    tweenText(annualDosesVal, annualDoses, (v) =>
-      Math.round(v).toLocaleString("en-IN"),
-    );
-    tweenText(
-      missedPreventedVal,
-      missedPrevented,
-      (v) => `${Math.round(v).toLocaleString("en-IN")} doses`,
-    );
-    tweenText(
-      genericSavingsVal,
-      annualSavings,
-      (v) => `৳${Math.round(v).toLocaleString("en-IN")} / year`,
-    );
-    tweenText(adherenceScoreVal, adherenceRate, (v) => `${v.toFixed(1)}%`);
   }
 
-  medsSlider?.addEventListener("input", updateCalculator);
-  spendSlider?.addEventListener("input", updateCalculator);
-  updateCalculator();
-
-  /* 11. FAQ accordion */
+  /* 7. FAQ accordion (one open at a time) */
   const faqItems = document.querySelectorAll(".faq-item");
   faqItems.forEach((item) => {
-    item.querySelector(".faq-question")?.addEventListener("click", () => {
-      const isOpen = item.classList.contains("active");
-      faqItems.forEach((other) => other.classList.remove("active"));
-      if (!isOpen) item.classList.add("active");
+    const question = item.querySelector(".faq-q");
+    if (!question) return;
+    question.addEventListener("click", () => {
+      const isOpen = item.classList.contains("is-open");
+      faqItems.forEach((other) => {
+        other.classList.remove("is-open");
+        const q = other.querySelector(".faq-q");
+        if (q) q.setAttribute("aria-expanded", "false");
+      });
+      if (!isOpen) {
+        item.classList.add("is-open");
+        question.setAttribute("aria-expanded", "true");
+      }
+    });
+  });
+
+  /* 8. Clinical AI Showcase: Interactive Prompt Chips */
+  const promptData = {
+    seclo: {
+      text: "<strong>AI Guidance:</strong> Take Omeprazole (e.g. Seclo) 30–60 minutes before breakfast on an empty stomach for optimal gastric acid reduction.",
+      action: '<i class="ph ph-lightning-fill" aria-hidden="true"></i><span>Action: Set dose reminder for 7:30 AM</span>',
+    },
+    montene: {
+      text: "<strong>AI Guidance:</strong> Take Montelukast (e.g. Montene) once daily in the evening with or without food for consistent airway management.",
+      action: '<i class="ph ph-lightning-fill" aria-hidden="true"></i><span>Action: Set dose reminder for 9:30 PM</span>',
+    },
+    rx: {
+      text: "<strong>AI Guidance:</strong> Verified 2 active medicines from Rx image: Napa Extra 500mg (1+0+1, 7 days) and Seclo 20mg (1+0+0, 14 days).",
+      action: '<i class="ph ph-lightning-fill" aria-hidden="true"></i><span>Action: Add both courses to Daily Routine</span>',
+    },
+  };
+
+  const scChips = document.querySelectorAll(".sc-chip");
+  const guidanceText = document.getElementById("guidanceText");
+  const guidanceAction = document.getElementById("guidanceAction");
+
+  scChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      scChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+
+      const promptKey = chip.getAttribute("data-prompt");
+      if (promptData[promptKey] && guidanceText && guidanceAction) {
+        guidanceText.style.opacity = "0";
+        guidanceAction.style.opacity = "0";
+        setTimeout(() => {
+          guidanceText.innerHTML = promptData[promptKey].text;
+          guidanceAction.innerHTML = promptData[promptKey].action;
+          guidanceText.style.opacity = "1";
+          guidanceAction.style.opacity = "1";
+        }, 120);
+      }
+    });
+  });
+
+  /* 9. Clinical Export: Copy Summary to Clipboard */
+  const copyBtn = document.getElementById("copySummaryBtn");
+  const copyIcon = document.getElementById("copySummaryIcon");
+  const copyLabel = document.getElementById("copySummaryLabel");
+  const summaryPre = document.getElementById("clinicalSummaryText");
+
+  if (copyBtn && summaryPre && copyLabel) {
+    copyBtn.addEventListener("click", async () => {
+      try {
+        const textToCopy = summaryPre.innerText || summaryPre.textContent;
+        await navigator.clipboard.writeText(textToCopy);
+        copyBtn.classList.add("is-copied");
+        copyLabel.textContent = "✓ Copied to Clipboard!";
+        if (copyIcon) {
+          copyIcon.className = "ph ph-check-bold";
+        }
+        setTimeout(() => {
+          copyBtn.classList.remove("is-copied");
+          copyLabel.textContent = "Copy Summary to Clipboard";
+          if (copyIcon) {
+            copyIcon.className = "ph ph-clipboard-text";
+          }
+        }, 2200);
+      } catch {
+        copyLabel.textContent = "Copied!";
+        setTimeout(() => {
+          copyLabel.textContent = "Copy Summary to Clipboard";
+        }, 1500);
+      }
+    });
+  }
+
+  /* 10. Nearby Pharmacy Finder: City Quick Filter & Deep Links */
+  const cityChips = document.querySelectorAll(".city-chip");
+  const catEmergency = document.getElementById("catEmergency");
+  const catModel = document.getElementById("catModel");
+  const catChemist = document.getElementById("catChemist");
+  const mainMapsCta = document.getElementById("mainMapsCta");
+  const mapsStatusLabel = document.getElementById("mapsStatusLabel");
+
+  cityChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      cityChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+
+      const city = chip.getAttribute("data-city");
+      const isGPS = city === "near me";
+      const querySuffix = isGPS ? "near me" : city;
+
+      if (catEmergency) {
+        catEmergency.href = `https://www.google.com/maps/search/?api=1&query=24+hours+pharmacy+emergency+medicine+${encodeURIComponent(querySuffix)}`;
+      }
+      if (catModel) {
+        catModel.href = `https://www.google.com/maps/search/?api=1&query=model+pharmacy+hospital+${encodeURIComponent(querySuffix)}`;
+      }
+      if (catChemist) {
+        catChemist.href = `https://www.google.com/maps/search/?api=1&query=medicine+store+chemist+${encodeURIComponent(querySuffix)}`;
+      }
+      if (mainMapsCta) {
+        mainMapsCta.href = `https://www.google.com/maps/search/?api=1&query=pharmacy+${encodeURIComponent(querySuffix)}`;
+      }
+      if (mapsStatusLabel) {
+        mapsStatusLabel.textContent = isGPS
+          ? "Google Maps Deep Link Active (GPS)"
+          : `Google Maps Deep Link Active (${city})`;
+      }
     });
   });
 }
@@ -438,4 +283,3 @@ if (document.readyState === "loading") {
 } else {
   init();
 }
-
