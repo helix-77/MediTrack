@@ -32,8 +32,15 @@ class DioClient {
     );
 
     if (kDebugMode) {
+      // Requests can carry Firebase ID tokens, OTPs, and mobile numbers. Keep
+      // endpoint/timing diagnostics without leaking credentials into logcat.
       dio.interceptors.add(
-        LogInterceptor(requestBody: true, responseBody: true),
+        LogInterceptor(
+          requestHeader: false,
+          requestBody: false,
+          responseHeader: false,
+          responseBody: false,
+        ),
       );
     }
 

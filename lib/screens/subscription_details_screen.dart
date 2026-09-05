@@ -24,10 +24,7 @@ import 'subscription_offer_screen.dart';
 class SubscriptionDetailsScreen extends StatefulWidget {
   final UserProfile? profile;
 
-  const SubscriptionDetailsScreen({
-    super.key,
-    this.profile,
-  });
+  const SubscriptionDetailsScreen({super.key, this.profile});
 
   @override
   State<SubscriptionDetailsScreen> createState() =>
@@ -63,8 +60,9 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                 ? '✅ Carrier subscription verified active.'
                 : 'ℹ️ Subscription status: ${bdService.subscriptionStatus ?? "Inactive"}',
           ),
-          backgroundColor:
-              isSubscribed ? AppColors.success : AppColors.textSecondary,
+          backgroundColor: isSubscribed
+              ? AppColors.success
+              : AppColors.textSecondary,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -161,7 +159,8 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     icon: Icons.lock_outline_rounded,
                     iconColor: AppColors.danger,
                     title: 'Locked Premium Features',
-                    desc: 'AI Prescription OCR and Health Assistant will be locked.',
+                    desc:
+                        'AI Prescription OCR and Health Assistant will be locked.',
                   ),
                   const SizedBox(height: 10),
                   _buildModalImpactRow(
@@ -169,7 +168,8 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     icon: Icons.health_and_safety_outlined,
                     iconColor: AppColors.primaryBlue,
                     title: 'Free Core Features Stay Safe',
-                    desc: 'Pill alarms, schedules, and prescription vault remain free forever.',
+                    desc:
+                        'Pill alarms, schedules, and prescription vault remain free forever.',
                   ),
                 ],
               ),
@@ -232,7 +232,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     if (mounted) {
       setState(() => _isCancelling = false);
       if (success) {
-        await entitlement.recordUnsubscribed(userId: widget.profile?.uid);
+        await entitlement.refreshEntitlement(forceCarrierCheck: true);
 
         messenger.showSnackBar(
           const SnackBar(
@@ -251,8 +251,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
 
   Future<void> _showCarrierCancellationSheet(String? reason) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final entitlement = context.read<EntitlementService>();
-    final messenger = ScaffoldMessenger.of(context);
 
     await showAppModalBottomSheet<void>(
       context: context,
@@ -293,7 +291,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Carrier Direct Confirmation Needed',
+                        'Carrier Cancellation Not Confirmed',
                         style: AppTypography.headingMedium.copyWith(
                           fontSize: 16,
                           color: isDark
@@ -303,7 +301,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Robi / Airtel carrier privacy protection',
+                        'Your subscription is still active in MediTrack',
                         style: AppTypography.caption.copyWith(
                           fontSize: 12,
                           color: isDark
@@ -331,7 +329,8 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                 ),
               ),
               child: Text(
-                'Due to carrier user privacy rules on your SIM, automated 3rd-party unsubscription is restricted by BDApps. To guarantee that daily billing stops immediately, please cancel directly through your carrier using SMS or USSD:',
+                reason ??
+                    'AppsPro did not confirm cancellation with the carrier. MediTrack has kept your Premium access unchanged. Complete the secure AppsPro cancellation flow, then try again.',
                 style: AppTypography.bodySmall.copyWith(
                   height: 1.45,
                   color: isDark
@@ -341,7 +340,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
               ),
             ),
             const SizedBox(height: 18),
-            // Carrier Action 1: SMS
+            // AppsPro's documented end-user cancellation flow.
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
@@ -357,12 +356,15 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
               ),
               onPressed: () {
                 Navigator.pop(sheetContext);
-                _launchSms();
+                _launchAppsProUnsubscribe();
               },
-              icon: const Icon(Icons.sms_rounded,
-                  size: 20, color: AppColors.primaryBlue),
+              icon: const Icon(
+                Icons.open_in_new_rounded,
+                size: 20,
+                color: AppColors.primaryBlue,
+              ),
               label: Text(
-                'Send SMS "STOP meditrack" to 21213',
+                'Open secure AppsPro cancellation',
                 style: AppTypography.buttonText.copyWith(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -399,7 +401,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
             const SizedBox(height: 16),
             const Divider(height: 1),
             const SizedBox(height: 16),
-            // Carrier Action 3: Sync In-App
+            // The app must not change entitlement without a carrier-confirmed result.
             TextButton.icon(
               style: TextButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
@@ -409,21 +411,15 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
               ),
               onPressed: () async {
                 Navigator.pop(sheetContext);
-                await entitlement.recordUnsubscribed(userId: widget.profile?.uid);
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      '✅ In-app status synced to Free Tier. Carrier charges will stop once processed.',
-                    ),
-                    backgroundColor: AppColors.success,
-                    duration: Duration(seconds: 4),
-                  ),
-                );
+                await _launchAppsProUnsubscribe();
               },
-              icon: const Icon(Icons.sync_rounded,
-                  size: 18, color: AppColors.textSecondary),
+              icon: const Icon(
+                Icons.verified_user_outlined,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
               label: Text(
-                'I Already Cancelled with Carrier (Sync In-App)',
+                'Finish cancellation, then recheck status',
                 style: AppTypography.caption.copyWith(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
@@ -439,36 +435,22 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     );
   }
 
-  Future<void> _launchSms() async {
-    final uri = Uri.parse('sms:21213?body=STOP%20meditrack');
+  Future<void> _launchAppsProUnsubscribe() async {
+    final uri = Uri.parse('https://appspro.dev/unsubscribe');
     try {
       if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        await Clipboard.setData(const ClipboardData(text: 'STOP meditrack'));
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Copied "STOP meditrack" to clipboard. Send it to 21213 in your SMS app.',
-              ),
-              backgroundColor: AppColors.info,
-            ),
-          );
-        }
-      }
-    } catch (_) {
-      await Clipboard.setData(const ClipboardData(text: 'STOP meditrack'));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Copied "STOP meditrack" to clipboard. Send it to 21213 in your SMS app.',
-            ),
-            backgroundColor: AppColors.info,
-          ),
+        _copyToClipboard(
+          uri.toString(),
+          'Copied the secure AppsPro cancellation link to clipboard.',
         );
       }
+    } catch (_) {
+      _copyToClipboard(
+        uri.toString(),
+        'Copied the secure AppsPro cancellation link to clipboard.',
+      );
     }
   }
 
@@ -491,8 +473,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     }
   }
 
-
-
   void _copyToClipboard(String text, String message) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -512,12 +492,16 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
 
     final isSubscribed = entitlement.isSubscribed || bdService.isRegistered;
     final phone = widget.profile?.bdMobile ?? bdService.bdMobile;
-    final operator = phone != null ? BdMobileValidator.getOperator(phone) : null;
-    final verifiedDate = entitlement.lastVerifiedAt ??
+    final operator = phone != null
+        ? BdMobileValidator.getOperator(phone)
+        : null;
+    final verifiedDate =
+        entitlement.lastVerifiedAt ??
         widget.profile?.subscriptionVerifiedAt ??
         DateTime.now();
-    final formattedVerified =
-        DateFormat('MMM d, yyyy • h:mm a').format(verifiedDate);
+    final formattedVerified = DateFormat(
+      'MMM d, yyyy • h:mm a',
+    ).format(verifiedDate);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
@@ -641,18 +625,18 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
       borderRadius: AppRadii.cardRadius,
       color: isSubscribed
           ? (isDark
-              ? const Color(0xFF064E3B).withValues(alpha: 0.35)
-              : AppColors.successLight)
+                ? const Color(0xFF064E3B).withValues(alpha: 0.35)
+                : AppColors.successLight)
           : (isDark
-              ? const Color(0xFF450A0A).withValues(alpha: 0.35)
-              : AppColors.dangerLight),
+                ? const Color(0xFF450A0A).withValues(alpha: 0.35)
+                : AppColors.dangerLight),
       borderColor: isSubscribed
           ? (isDark
-              ? const Color(0xFF059669).withValues(alpha: 0.5)
-              : const Color(0xFFA7F3D0))
+                ? const Color(0xFF059669).withValues(alpha: 0.5)
+                : const Color(0xFFA7F3D0))
           : (isDark
-              ? const Color(0xFFDC2626).withValues(alpha: 0.4)
-              : const Color(0xFFFECACA)),
+                ? const Color(0xFFDC2626).withValues(alpha: 0.4)
+                : const Color(0xFFFECACA)),
       borderWidth: 1.2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -667,19 +651,20 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     decoration: BoxDecoration(
                       color: isSubscribed
                           ? (isDark
-                              ? const Color(0xFF059669).withValues(alpha: 0.4)
-                              : AppColors.success.withValues(alpha: 0.2))
+                                ? const Color(0xFF059669).withValues(alpha: 0.4)
+                                : AppColors.success.withValues(alpha: 0.2))
                           : (isDark
-                              ? const Color(0xFFDC2626).withValues(alpha: 0.3)
-                              : AppColors.danger.withValues(alpha: 0.15)),
+                                ? const Color(0xFFDC2626).withValues(alpha: 0.3)
+                                : AppColors.danger.withValues(alpha: 0.15)),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isSubscribed
                           ? Icons.verified_rounded
                           : Icons.cancel_rounded,
-                      color:
-                          isSubscribed ? AppColors.success : AppColors.danger,
+                      color: isSubscribed
+                          ? AppColors.success
+                          : AppColors.danger,
                       size: 20,
                     ),
                   ),
@@ -690,11 +675,11 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                       fontSize: 16,
                       color: isSubscribed
                           ? (isDark
-                              ? const Color(0xFF6EE7B7)
-                              : const Color(0xFF065F46))
+                                ? const Color(0xFF6EE7B7)
+                                : const Color(0xFF065F46))
                           : (isDark
-                              ? const Color(0xFFFCA5A5)
-                              : const Color(0xFF991B1B)),
+                                ? const Color(0xFFFCA5A5)
+                                : const Color(0xFF991B1B)),
                     ),
                   ),
                 ],
@@ -811,10 +796,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     );
   }
 
-  Widget _buildDailyUsageSection(
-    bool isDark,
-    EntitlementService entitlement,
-  ) {
+  Widget _buildDailyUsageSection(bool isDark, EntitlementService entitlement) {
     final aiUsed = entitlement.aiMessagesToday;
     final aiMax = 50;
     final aiProgress = (aiUsed / aiMax).clamp(0.0, 1.0);
@@ -880,8 +862,8 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                   color: aiProgress > 0.8
                       ? AppColors.warning
                       : (isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.textPrimary),
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary),
                 ),
               ),
             ],
@@ -933,8 +915,8 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                   color: scanProgress > 0.8
                       ? AppColors.warning
                       : (isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.textPrimary),
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary),
                 ),
               ),
             ],
@@ -1122,7 +1104,9 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.danger),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.danger,
+                      ),
                     ),
                   )
                 : const Icon(
@@ -1145,9 +1129,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
   }
 
   Widget _buildSmsCancelCard(bool isDark) {
-    const smsKeyword = 'STOP meditrack';
-    const smsShortCode = '21213';
-
     return SoftSurface(
       padding: const EdgeInsets.all(16),
       borderRadius: AppRadii.cardRadius,
@@ -1157,14 +1138,14 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
           Row(
             children: [
               const Icon(
-                Icons.sms_rounded,
+                Icons.verified_user_outlined,
                 color: AppColors.primaryBlue,
                 size: 20,
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Method 2: Cancel via SMS',
+                  'Method 2: Secure AppsPro Cancellation',
                   style: AppTypography.headingSmall.copyWith(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -1197,7 +1178,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'TYPE IN SMS:',
+                      'CARRIER-CONFIRMED FLOW:',
                       style: AppTypography.caption.copyWith(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
@@ -1206,7 +1187,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '$smsKeyword to $smsShortCode',
+                      'AppsPro OTP cancellation',
                       style: AppTypography.headingSmall.copyWith(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
@@ -1234,9 +1215,9 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  onPressed: _launchSms,
+                  onPressed: _launchAppsProUnsubscribe,
                   icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                  label: const Text('Open SMS App'),
+                  label: const Text('Open AppsPro'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1254,11 +1235,11 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     ),
                   ),
                   onPressed: () => _copyToClipboard(
-                    smsKeyword,
-                    'Copied "$smsKeyword" to clipboard',
+                    'https://appspro.dev/unsubscribe',
+                    'Copied the secure AppsPro cancellation link to clipboard.',
                   ),
                   icon: const Icon(Icons.content_copy_rounded, size: 16),
-                  label: const Text('Copy Text'),
+                  label: const Text('Copy Link'),
                 ),
               ),
             ],
@@ -1427,8 +1408,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     );
   }
 
-
-
   Widget _buildModalImpactRow({
     required bool isDark,
     required IconData icon,
@@ -1450,7 +1429,9 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                 style: AppTypography.bodyMedium.copyWith(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 1),
@@ -1458,7 +1439,9 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                 desc,
                 style: AppTypography.caption.copyWith(
                   fontSize: 11,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
                 ),
               ),
             ],

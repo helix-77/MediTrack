@@ -35,32 +35,25 @@ class ApiConfig {
   /// Firebase AI Logic Gemini Model for Prescription OCR extraction.
   static const String geminiModel = 'gemini-3.6-flash';
 
-  /// AppsPro API Base URL (default: https://api.appspro.dev/api/v1)
-  static String get appsProBaseUrl {
+  /// URL of the authenticated AppsPro Firebase HTTPS proxy.
+  ///
+  /// This is intentionally the only AppsPro endpoint the Flutter app calls.
+  static String get appsProProxyUrl {
     try {
-      final url = dotenv.env['Base_URI'];
+      final url = dotenv.env['APPSPRO_PROXY_URL'];
       if (url != null && url.isNotEmpty) {
         return url;
-      }
-    } catch (_) {}
-    return 'https://api.appspro.dev/api/v1';
-  }
-
-  /// AppsPro Server Secret Key (Bearer token for /api/v1/sdk/* endpoints)
-  static String get appsProSecretKey {
-    try {
-      final key = dotenv.env['APPS_PRO_SECRET_KEY'];
-      if (key != null && key.isNotEmpty) {
-        return key;
       }
     } catch (_) {}
     return '';
   }
 
-  /// AppsPro Publishable Key (for client-side / webSDK / public endpoints)
+  /// AppsPro publishable key. This key is safe to include in a client build.
   static String get appsProPublishableKey {
     try {
-      final key = dotenv.env['Publishable_Key'];
+      final key =
+          dotenv.env['APPSPRO_PUBLISHABLE_KEY'] ??
+          dotenv.env['Publishable_Key'];
       if (key != null && key.isNotEmpty) {
         return key;
       }
@@ -89,7 +82,4 @@ class ApiConfig {
     } catch (_) {}
     return '';
   }
-
-  /// Legacy BD Apps backend base URL alias pointing to AppsPro base URL.
-  static String get bdappsBaseUrl => appsProBaseUrl;
 }

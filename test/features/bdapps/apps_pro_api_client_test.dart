@@ -10,11 +10,13 @@ void main() {
     late AppsProApiClient client;
     Map<String, dynamic>? mockResponseBody;
     int mockStatusCode = 200;
+    RequestOptions? lastRequest;
 
     setUp(() {
       dio = Dio(BaseOptions(baseUrl: 'https://api.appspro.dev/api/v1'));
       dio.httpClientAdapter = _MockHttpClientAdapter(
         handler: (options) {
+          lastRequest = options;
           final data = jsonEncode(mockResponseBody ?? {});
           return ResponseBody(
             Stream.value(Uint8List.fromList(utf8.encode(data))),
@@ -25,26 +27,31 @@ void main() {
           );
         },
       );
-      client = AppsProApiClient(dio);
+      client = AppsProApiClient(
+        dio,
+        idTokenProvider: () async => 'firebase-token',
+      );
     });
 
-    test('checkSubscription calls /sdk/status and parses response', () async {
-      mockResponseBody = {
-        'subscription_status': 'REGISTERED',
-        'status_code': 'S1000',
-        'status_detail': 'Subscriber is active',
-        'raw': {
-          'statusCode': 'S1000',
-          'subscriptionStatus': 'REGISTERED',
-        },
-      };
-      mockStatusCode = 200;
+    test(
+      'checkSubscription calls the proxy with a Firebase token and parses response',
+      () async {
+        mockResponseBody = {
+          'subscription_status': 'REGISTERED',
+          'status_code': 'S1000',
+          'status_detail': 'Subscriber is active',
+          'raw': {'statusCode': 'S1000', 'subscriptionStatus': 'REGISTERED'},
+        };
+        mockStatusCode = 200;
 
-      final res = await client.checkSubscription(userMobile: '01812345678');
-      expect(res.isAlreadyActive, isTrue);
-      expect(res.isSubscribed, isTrue);
-      expect(res.statusCode, 'S1000');
-    });
+        final res = await client.checkSubscription(userMobile: '01812345678');
+        expect(res.isAlreadyActive, isTrue);
+        expect(res.isSubscribed, isTrue);
+        expect(res.statusCode, 'S1000');
+        expect(lastRequest?.data, {'action': 'status', 'phone': '01812345678'});
+        expect(lastRequest?.headers['Authorization'], 'Bearer firebase-token');
+      },
+    );
 
     test('sendOtp calls /sdk/otp/request and parses reference_no', () async {
       mockResponseBody = {
@@ -90,18 +97,22 @@ void main() {
       expect(res.statusCode, 'S1000');
     });
 
-    test('unsubscribe calls /sdk/unsubscribe and parses result', () async {
-      mockResponseBody = {
-        'status_code': 'S1000',
-        'status_detail': 'Unsubscribed',
-        'subscription_status': 'UNREGISTERED',
-      };
-      mockStatusCode = 200;
+    test(
+      'unsubscribe never sends the phone to the proxy and parses result',
+      () async {
+        mockResponseBody = {
+          'status_code': 'S1000',
+          'status_detail': 'Unsubscribed',
+          'subscription_status': 'UNREGISTERED',
+        };
+        mockStatusCode = 200;
 
-      final res = await client.unsubscribe(userMobile: '01812345678');
-      expect(res.isSuccess, isTrue);
-      expect(res.isUnregistered, isTrue);
-    });
+        final res = await client.unsubscribe(userMobile: '01812345678');
+        expect(res.isSuccess, isTrue);
+        expect(res.isUnregistered, isTrue);
+        expect(lastRequest?.data, {'action': 'unsubscribe'});
+      },
+    );
 
     test('verifySubscriber calls /sdk/verify/{id} and parses valid', () async {
       mockResponseBody = {

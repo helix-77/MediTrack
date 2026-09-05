@@ -14,7 +14,6 @@ import 'config/api_config.dart';
 import 'core/network/dio_client.dart';
 import 'features/bdapps/bd_apps_service.dart';
 import 'features/bdapps/data/bd_apps_api_client.dart';
-import 'features/bdapps/data/sms_api_client.dart';
 import 'logic/auth_guard.dart';
 import 'theme/app_theme.dart';
 import 'theme/colors.dart';
@@ -104,7 +103,8 @@ class MediTrackApp extends StatefulWidget {
   State<MediTrackApp> createState() => _MediTrackAppState();
 }
 
-class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver {
+class _MediTrackAppState extends State<MediTrackApp>
+    with WidgetsBindingObserver {
   late final AuthService _authService;
   late final EntitlementService _entitlementService;
   late final BdAppsService _bdAppsService;
@@ -115,19 +115,15 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    final dio = DioClient.create(
-      baseUrl: ApiConfig.appsProBaseUrl,
-      bearerToken: ApiConfig.appsProSecretKey,
+    final dio = DioClient.create(baseUrl: ApiConfig.appsProProxyUrl);
+    final bdAppsApiClient = BdAppsApiClient(
+      dio,
+      idTokenProvider: () => FirebaseAuth.instance.currentUser?.getIdToken(),
     );
-    final bdAppsApiClient = BdAppsApiClient(dio);
-    final smsApiClient = SmsApiClient(dio);
 
     _authService = AuthService();
     _entitlementService = EntitlementService(bdAppsApiClient: bdAppsApiClient);
-    _bdAppsService = BdAppsService(
-      apiClient: bdAppsApiClient,
-      smsApiClient: smsApiClient,
-    );
+    _bdAppsService = BdAppsService(apiClient: bdAppsApiClient);
 
     _entitlementService.refreshEntitlement();
 
@@ -160,15 +156,9 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
     return MultiProvider(
       providers: [
         Provider<AuthService>.value(value: _authService),
-        ChangeNotifierProvider<ThemeNotifier>(
-          create: (_) => ThemeNotifier(),
-        ),
-        ChangeNotifierProvider<LocaleNotifier>(
-          create: (_) => LocaleNotifier(),
-        ),
-        ChangeNotifierProvider<AvatarNotifier>(
-          create: (_) => AvatarNotifier(),
-        ),
+        ChangeNotifierProvider<ThemeNotifier>(create: (_) => ThemeNotifier()),
+        ChangeNotifierProvider<LocaleNotifier>(create: (_) => LocaleNotifier()),
+        ChangeNotifierProvider<AvatarNotifier>(create: (_) => AvatarNotifier()),
         ChangeNotifierProvider<RoutineScheduleNotifier>(
           create: (_) => RoutineScheduleNotifier(),
         ),
@@ -178,9 +168,7 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
         ChangeNotifierProvider<EntitlementService>.value(
           value: _entitlementService,
         ),
-        ChangeNotifierProvider<BdAppsService>.value(
-          value: _bdAppsService,
-        ),
+        ChangeNotifierProvider<BdAppsService>.value(value: _bdAppsService),
       ],
       child: Builder(
         builder: (context) {
@@ -195,10 +183,7 @@ class _MediTrackAppState extends State<MediTrackApp> with WidgetsBindingObserver
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            supportedLocales: const [
-              Locale('en', 'US'),
-              Locale('bn', 'BD'),
-            ],
+            supportedLocales: const [Locale('en', 'US'), Locale('bn', 'BD')],
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

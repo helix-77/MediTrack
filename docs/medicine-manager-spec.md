@@ -88,10 +88,10 @@ flag it instead of silently switching):
 - Local notifications: `flutter_local_notifications` + `timezone` + `flutter_timezone`
   for scheduling dose/expiry/refill reminders.
 - Maps (Phase 3, nearby pharmacy): `google_maps_flutter`, location via `geolocator`.
-- HTTP: `dio` — used for the BD Apps SMS/subscription backend (`lib/features/bdapps/`, a
-  PHP service under `backend/`) and for any future Cloud Function invoked over plain
-  HTTPS instead of an SDK. Never used to call a third-party paid API directly with an
-  embedded key.
+- HTTP: `dio` — used for the authenticated AppsPro Firebase HTTPS proxy
+  (`functions/appsProProxy`) and any future Cloud Function invoked over plain HTTPS
+  instead of an SDK. Never used to call a third-party paid API directly with an embedded
+  key.
 - Fonts/design: `google_fonts` (Poppins for headings, Inter for body — Section 4).
 - Config/secrets: `flutter_dotenv` (`.env`, gitignored) for non-Firebase config only (BD
   Apps base URL, etc.). Firebase project config lives in `firebase_options.dart` /
@@ -769,9 +769,18 @@ are gated behind an active ৳2.78/day (+VAT+SD+SC) micro-subscription.
 
 **Architecture & Implementation:**
 
-- `EntitlementGuard` & `EntitlementService`: Check cached entitlement state (`subscriptionStatus` on `users/{uid}/profile/main`), enforce a 5-minute cache freshness window, query BD Apps carrier servers on stale/foreground resume, and guard against non-registered accounts.
+- `EntitlementGuard` & `EntitlementService`: Check cached entitlement state (`subscriptionStatus` on `users/{uid}/profile/main`), enforce a 5-minute cache freshness window, query the AppsPro proxy on stale/foreground resume, and guard against non-registered accounts.
 - `SubscriptionOfferScreen`: Commercial subscription UI showing carrier badges, clear pricing disclosure, legal consent checkboxes, terms / privacy dialogs, auto-renewal rules, and polling activation state machine.
-- `AppsProApiClient` (`/api/v1/sdk/*`): Client executing direct carrier billing subscription, OTP request/verification, and live subscriber status verification via AppsPro.dev.
+- `AppsProApiClient`: Client for the authenticated `appsProProxy` Firebase HTTPS
+  function. The function holds `APPSPRO_SECRET_KEY` in Cloud Secret Manager and calls
+  AppsPro's `/api/v1/sdk/*` endpoints; Flutter never receives or logs the bearer secret.
+  Cancellation reads the authenticated user's linked profile number and writes
+  `UNREGISTERED` only after AppsPro returns `S1000` or explicit
+  `UNREGISTERED` carrier status. Ambiguous carrier failures (including `E1951`) leave
+  entitlement unchanged.
+- `appsProWebhook`: public Firebase HTTPS endpoint that verifies AppsPro's HMAC-signed
+  `subscriber.created`, `subscriber.cancelled`, and `subscriber.reactivated` events
+  before synchronizing the matching user profile.
 - Gated entry points: `AiAssistantScreen`, `ScanPrescriptionScreen`, `MedicineSearchScreen`, and `NearbyPharmaciesScreen` invoke `requirePremium()` before executing billable operations.
 - SMS reminder channels (paid SMS generation/delivery) remain planned future work.
 
