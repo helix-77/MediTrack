@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/readme/hero.svg" width="100%" alt="MediTrack — Intelligent Medicine &amp; Dosage Companion for Bangladesh" />
+  <img src="docs/screenshots/readme_header.png" width="100%" alt="MediTrack — Intelligent Medicine &amp; Dosage Companion for Bangladesh" />
 </p>
 
 <p align="center">
@@ -21,40 +21,19 @@ confirmation. The interface ships in English and Bangla.
   <img src="assets/readme/section-showcase.svg" width="100%" alt="App Experience &amp; Showcase" />
 </p>
 
-### 💊 Routine &amp; Adherence Tracking
-<p align="center">
-  <img src="docs/screenshots/3_dashboard.png" width="31%" alt="Dashboard Routine" />
-  <img src="docs/screenshots/4_daily_dosage.png" width="31%" alt="Daily Dosage Details" />
-  <img src="docs/screenshots/5_calender_view.png" width="31%" alt="Adherence Calendar" />
-</p>
+|                               Onboarding &amp; Landing                               |                                    Account Setup                                     |                                      Routine Dashboard                                       |                                         Daily Dosage                                          |
+| :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------: |
+| <img src="docs/screenshots/1_landing_screen.png" width="220" alt="Landing Screen" /> | <img src="docs/screenshots/2_create_account.png" width="220" alt="Create Account" /> |      <img src="docs/screenshots/3_dashboard.png" width="220" alt="Routine Dashboard" />      |   <img src="docs/screenshots/4_daily_dosage.png" width="220" alt="Daily Dosage Details" />    |
+|                                **Calendar Adherence**                                |                               **AI Health Assistant**                                |                                  **Medicine Price Lookup**                                   |                                **Generic Deals &amp; Savings**                                |
+|  <img src="docs/screenshots/5_calender_view.png" width="220" alt="Calendar View" />  |        <img src="docs/screenshots/6_Ai.png" width="220" alt="AI Assistant" />        |  <img src="docs/screenshots/7_price_lookup.png" width="220" alt="Medicine Price Lookup" />   |  <img src="docs/screenshots/8_cheaper_deals.png" width="220" alt="Cheaper Generic Deals" />   |
+|                                 **Family Profiles**                                  |                                   **App Settings**                                   |                                   **Dark Theme Dashboard**                                   |                                    **Dark Theme Calendar**                                    |
+| <img src="docs/screenshots/9_profile.png" width="220" alt="Profile &amp; Family" />  |       <img src="docs/screenshots/10_setting.png" width="220" alt="Settings" />       | <img src="docs/screenshots/12_dark_theme_home.png" width="220" alt="Dark Theme Dashboard" /> | <img src="docs/screenshots/13_dark_calender_view.png" width="220" alt="Dark Calendar View" /> |
 
-### 🤖 AI Assistant &amp; Bangladesh Price Discovery
-<p align="center">
-  <img src="docs/screenshots/6_Ai.png" width="31%" alt="Context-Aware AI Assistant" />
-  <img src="docs/screenshots/7_price_lookup.png" width="31%" alt="Medicine Catalog &amp; Price" />
-  <img src="docs/screenshots/8_cheaper_deals.png" width="31%" alt="Cheaper Generic Alternatives" />
-</p>
-
-### 📱 Onboarding &amp; Family Profiles
-<p align="center">
-  <img src="docs/screenshots/1_landing_screen.png" width="31%" alt="Landing Screen" />
-  <img src="docs/screenshots/2_create_account.png" width="31%" alt="Create Account" />
-  <img src="docs/screenshots/9_profile.png" width="31%" alt="Profile &amp; Family" />
-</p>
-
-### 🌙 Dark Theme &amp; App Preferences
-<p align="center">
-  <img src="docs/screenshots/12_dark_theme_home.png" width="23%" alt="Dark Theme Dashboard" />
-  <img src="docs/screenshots/13_dark_calender_view.png" width="23%" alt="Dark Calendar View" />
-  <img src="docs/screenshots/10_setting.png" width="23%" alt="Settings" />
-  <img src="docs/screenshots/11_more_features.png" width="23%" alt="More Features &amp; Vault" />
-</p>
+## Features
 
 <p align="center">
   <img src="assets/readme/section-features.svg" width="100%" alt="Key Features &amp; Daily Routine" />
 </p>
-
-## Features
 
 **Medication management**
 
@@ -95,11 +74,11 @@ confirmation. The interface ships in English and Bangla.
   AppsPro, with OTP verification. Entitlements are cached and re-verified
   server-side by `EntitlementService`.
 
+## Architecture
+
 <p align="center">
   <img src="assets/readme/section-architecture.svg" width="100%" alt="Architecture &amp; AI Vision Flow" />
 </p>
-
-## Architecture
 
 MediTrack is a Flutter client organized as presentation → services → backends.
 All Firestore access lives in service classes, pure business logic lives in
@@ -211,11 +190,11 @@ before they reach the API.
 | Carrier billing  | `dio` → AppsPro.dev REST API (OTP + subscription endpoints)                       |
 | Design           | Material 3, `google_fonts` (Poppins headings, Inter body)                         |
 
+## Getting started
+
 <p align="center">
   <img src="assets/readme/section-quickstart.svg" width="100%" alt="Getting Started &amp; Installation" />
 </p>
-
-## Getting started
 
 ### Prerequisites
 
