@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="130" viewBox="0 0 1200 130" role="img" aria-labelledby="sec-quickstart-title sec-quickstart-desc">
+  <title id="sec-quickstart-title">Getting Started &amp; Installation</title>
+  <desc id="sec-quickstart-desc">Step-by-step setup guide for cloning, configuring environment variables, Firebase setup, and building the app.</desc>
+
+  <defs>
+    <linearGradient id="quickstart-banner-bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0c1322"/>
+      <stop offset="60%" stop-color="#141f35"/>
+      <stop offset="100%" stop-color="#0c1322"/>
+    </linearGradient>
+    <radialGradient id="quickstart-glow" cx="80%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFB45F" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#FFB45F" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="130" rx="18" fill="url(#quickstart-banner-bg)"/>
+  <rect width="1200" height="130" rx="18" fill="url(#quickstart-glow)"/>
+  <rect width="1200" height="130" rx="18" fill="none" stroke="#22334d" stroke-width="1.2"/>
+
+  <!-- Left Accent Bar & Title -->
+  <g transform="translate(48, 28)">
+    <rect width="4" height="74" rx="2" fill="#FFB45F"/>
+    
+    <g transform="translate(24, 6)">
+      <!-- Eyebrow -->
+      <g transform="translate(0, 0)">
+        <circle cx="5" cy="5" r="4" fill="#FFB45F"/>
+        <text x="16" y="9" fill="#FCD34D" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" letter-spacing="1">SETUP &amp; RUNNING LOCALLY</text>
+      </g>
+      <!-- Title -->
+      <text x="0" y="44" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="800" letter-spacing="-0.5">Getting Started &amp; Installation</text>
+    </g>
+  </g>
+
+  <!-- Right Side Tag / Pill -->
+  <g transform="translate(760, 44)">
+    <rect width="392" height="42" rx="21" fill="#18253d" stroke="#2d4268" stroke-width="1"/>
+    <circle cx="24" cy="21" r="5" fill="#FFB45F"/>
+    <text x="38" y="26" fill="#E2E8F0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600">Flutter 3.44+ · JDK 17 · Firebase Config · .env</text>
+  </g>
+</svg>

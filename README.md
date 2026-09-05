@@ -1,10 +1,14 @@
-# MediTrack
+<p align="center">
+  <img src="assets/readme/hero.svg" width="100%" alt="MediTrack — Intelligent Medicine &amp; Dosage Companion for Bangladesh" />
+</p>
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.44+-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.12+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
-[![Firebase](https://img.shields.io/badge/Backend-Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
-[![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
-[![License](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue)](LICENSE)
+<p align="center">
+  <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.44+-02569B?logo=flutter&amp;logoColor=white" alt="Flutter" /></a>
+  <a href="https://dart.dev"><img src="https://img.shields.io/badge/Dart-3.12+-0175C2?logo=dart&amp;logoColor=white" alt="Dart" /></a>
+  <a href="https://firebase.google.com"><img src="https://img.shields.io/badge/Backend-Firebase-FFCA28?logo=firebase&amp;logoColor=black" alt="Firebase" /></a>
+  <a href="https://developer.android.com"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&amp;logoColor=white" alt="Android" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue" alt="License" /></a>
+</p>
 
 MediTrack is an Android medicine manager built for Bangladesh. Photograph a
 prescription or a medicine box, confirm the extracted details, and the app takes
@@ -12,6 +16,43 @@ over from there: dose schedules with local alarms, stock and refill tracking, a
 restock list, and a lookup for cheaper generic alternatives — with a context-aware
 AI assistant that can answer questions about your routine and make changes on your
 confirmation. The interface ships in English and Bangla.
+
+<p align="center">
+  <img src="assets/readme/section-showcase.svg" width="100%" alt="App Experience &amp; Showcase" />
+</p>
+
+### 💊 Routine &amp; Adherence Tracking
+<p align="center">
+  <img src="docs/screenshots/3_dashboard.png" width="31%" alt="Dashboard Routine" />
+  <img src="docs/screenshots/4_daily_dosage.png" width="31%" alt="Daily Dosage Details" />
+  <img src="docs/screenshots/5_calender_view.png" width="31%" alt="Adherence Calendar" />
+</p>
+
+### 🤖 AI Assistant &amp; Bangladesh Price Discovery
+<p align="center">
+  <img src="docs/screenshots/6_Ai.png" width="31%" alt="Context-Aware AI Assistant" />
+  <img src="docs/screenshots/7_price_lookup.png" width="31%" alt="Medicine Catalog &amp; Price" />
+  <img src="docs/screenshots/8_cheaper_deals.png" width="31%" alt="Cheaper Generic Alternatives" />
+</p>
+
+### 📱 Onboarding &amp; Family Profiles
+<p align="center">
+  <img src="docs/screenshots/1_landing_screen.png" width="31%" alt="Landing Screen" />
+  <img src="docs/screenshots/2_create_account.png" width="31%" alt="Create Account" />
+  <img src="docs/screenshots/9_profile.png" width="31%" alt="Profile &amp; Family" />
+</p>
+
+### 🌙 Dark Theme &amp; App Preferences
+<p align="center">
+  <img src="docs/screenshots/12_dark_theme_home.png" width="23%" alt="Dark Theme Dashboard" />
+  <img src="docs/screenshots/13_dark_calender_view.png" width="23%" alt="Dark Calendar View" />
+  <img src="docs/screenshots/10_setting.png" width="23%" alt="Settings" />
+  <img src="docs/screenshots/11_more_features.png" width="23%" alt="More Features &amp; Vault" />
+</p>
+
+<p align="center">
+  <img src="assets/readme/section-features.svg" width="100%" alt="Key Features &amp; Daily Routine" />
+</p>
 
 ## Features
 
@@ -53,6 +94,10 @@ confirmation. The interface ships in English and Bangla.
 - Premium (৳2.78/day) billed directly through Robi/Airtel carrier billing via
   AppsPro, with OTP verification. Entitlements are cached and re-verified
   server-side by `EntitlementService`.
+
+<p align="center">
+  <img src="assets/readme/section-architecture.svg" width="100%" alt="Architecture &amp; AI Vision Flow" />
+</p>
 
 ## Architecture
 
@@ -165,6 +210,10 @@ before they reach the API.
 | Voice input      | `speech_to_text` (on-device)                                                      |
 | Carrier billing  | `dio` → AppsPro.dev REST API (OTP + subscription endpoints)                       |
 | Design           | Material 3, `google_fonts` (Poppins headings, Inter body)                         |
+
+<p align="center">
+  <img src="assets/readme/section-quickstart.svg" width="100%" alt="Getting Started &amp; Installation" />
+</p>
 
 ## Getting started
 
