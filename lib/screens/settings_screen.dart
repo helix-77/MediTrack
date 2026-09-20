@@ -483,7 +483,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
       {
         'q': 'What is the BD Apps subscription?',
-        'a': 'Robi and Airtel subscribers can activate automated daily SMS dose reminders to their mobile for ৳2/day via carrier billing.'
+        'a': 'Robi and Cirkle subscribers can activate automated daily SMS dose reminders to their mobile for ৳2/day via carrier billing.'
       },
     ];
 
@@ -576,7 +576,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text(
               '1. Medical Disclaimer:\nMediTrack provides medication tracking and informational tools only. The app and its AI assistant do not offer clinical diagnosis or medical prescriptions. Always follow your registered physician\'s direct instructions.\n\n'
               '2. Data Ownership:\nYour health records, prescription archives, and dose logs belong to you and are strictly protected.\n\n'
-              '3. Carrier Billing (BD Apps):\nSMS alerts via Robi/Airtel BD Apps are billed at ৳2 + VAT/SD per day upon user consent.',
+              '3. Carrier Billing (BD Apps):\nSMS alerts via Robi/Cirkle BD Apps are billed at ৳2 + VAT/SD per day upon user consent.',
               style: AppTypography.bodySmall.copyWith(
                 height: 1.5,
                 color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,

@@ -12,28 +12,54 @@ void main() {
       expect(BdMobileValidator.normalize('12345'), '12345');
     });
 
-    test('validates Robi (018) and Airtel (016) numbers', () {
-      expect(BdMobileValidator.isValidRobiAirtel('01812345678'), isTrue);
-      expect(BdMobileValidator.isValidRobiAirtel('01612345678'), isTrue);
-      expect(BdMobileValidator.isValidRobiAirtel('+8801812345678'), isTrue);
-      expect(BdMobileValidator.isValidRobiAirtel('8801612345678'), isTrue);
+    test('validates Robi (018) and Cirkle (016) numbers', () {
+      expect(BdMobileValidator.isValidRobiCirkle('01812345678'), isTrue);
+      expect(BdMobileValidator.isValidRobiCirkle('01612345678'), isTrue);
+      expect(BdMobileValidator.isValidRobiCirkle('+8801812345678'), isTrue);
+      expect(BdMobileValidator.isValidRobiCirkle('8801612345678'), isTrue);
 
-      // Other operators should fail Robi/Airtel check
-      expect(BdMobileValidator.isValidRobiAirtel('01712345678'), isFalse); // GP
-      expect(BdMobileValidator.isValidRobiAirtel('01912345678'), isFalse); // Banglalink
-      expect(BdMobileValidator.isValidRobiAirtel('01512345678'), isFalse); // Teletalk
-      expect(BdMobileValidator.isValidRobiAirtel('01312345678'), isFalse); // Skitto
-      expect(BdMobileValidator.isValidRobiAirtel('01412345678'), isFalse);
-      expect(BdMobileValidator.isValidRobiAirtel('01212345678'), isFalse);
+      // Other operators should fail Robi/Cirkle check
+      expect(BdMobileValidator.isValidRobiCirkle('01712345678'), isFalse); // GP
+      expect(
+        BdMobileValidator.isValidRobiCirkle('01912345678'),
+        isFalse,
+      ); // Banglalink
+      expect(
+        BdMobileValidator.isValidRobiCirkle('01512345678'),
+        isFalse,
+      ); // Teletalk
+      expect(
+        BdMobileValidator.isValidRobiCirkle('01312345678'),
+        isFalse,
+      ); // Skitto
+      expect(BdMobileValidator.isValidRobiCirkle('01412345678'), isFalse);
+      expect(BdMobileValidator.isValidRobiCirkle('01212345678'), isFalse);
     });
 
     test('validates operator name', () {
       expect(BdMobileValidator.getOperator('01812345678'), 'Robi');
-      expect(BdMobileValidator.getOperator('01612345678'), 'Airtel');
+      expect(BdMobileValidator.getOperator('01612345678'), 'Cirkle');
       expect(BdMobileValidator.getOperator('01712345678'), 'Grameenphone');
       expect(BdMobileValidator.getOperator('01912345678'), 'Banglalink');
       expect(BdMobileValidator.getOperator('01512345678'), 'Teletalk');
       expect(BdMobileValidator.getOperator('invalid'), isNull);
+    });
+
+    test('converts normalized numbers to international MSISDN', () {
+      expect(BdMobileValidator.toInternational('01812345678'), '8801812345678');
+      expect(
+        BdMobileValidator.toInternational('+8801612345678'),
+        '8801612345678',
+      );
+      expect(
+        BdMobileValidator.toInternational('8801812345678'),
+        '8801812345678',
+      );
+      expect(
+        BdMobileValidator.toInternational('018-123 45678'),
+        '8801812345678',
+      );
+      expect(BdMobileValidator.toInternational('12345'), '12345');
     });
 
     test('masks mobile numbers for privacy', () {
@@ -43,15 +69,15 @@ void main() {
     });
 
     test('returns user-friendly error messages', () {
-      expect(BdMobileValidator.validateRobiAirtel(null), isNotNull);
-      expect(BdMobileValidator.validateRobiAirtel(''), isNotNull);
-      expect(BdMobileValidator.validateRobiAirtel('123'), isNotNull);
+      expect(BdMobileValidator.validateRobiCirkle(null), isNotNull);
+      expect(BdMobileValidator.validateRobiCirkle(''), isNotNull);
+      expect(BdMobileValidator.validateRobiCirkle('123'), isNotNull);
       expect(
-        BdMobileValidator.validateRobiAirtel('01712345678'),
-        contains('Robi (018) and Airtel (016)'),
+        BdMobileValidator.validateRobiCirkle('01712345678'),
+        contains('Robi (018) and Cirkle (016)'),
       );
-      expect(BdMobileValidator.validateRobiAirtel('01812345678'), isNull);
-      expect(BdMobileValidator.validateRobiAirtel('01612345678'), isNull);
+      expect(BdMobileValidator.validateRobiCirkle('01812345678'), isNull);
+      expect(BdMobileValidator.validateRobiCirkle('01612345678'), isNull);
     });
   });
 }

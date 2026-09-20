@@ -25,7 +25,7 @@ enum BdNumberCheckResult {
   /// the caller should proceed with the normal [BdAppsService.sendOtp] flow.
   notRegistered,
 
-  /// The number failed local validation (not a valid Robi/Airtel number).
+  /// The number failed local validation (not a valid Robi/Cirkle number).
   /// [BdAppsService.errorMessage] holds the user-facing reason.
   invalidNumber,
 }
@@ -109,14 +109,14 @@ class BdAppsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Requests direct carrier subscription for Robi/Airtel numbers, followed by
+  /// Requests direct carrier subscription for Robi/Cirkle numbers, followed by
   /// a 5-second polling loop up to 60 seconds.
   Future<bool> requestSubscription({
     required String mobileNumber,
     Duration pollInterval = const Duration(seconds: 5),
     Duration maxPollDuration = const Duration(seconds: 60),
   }) async {
-    final validationError = BdMobileValidator.validateRobiAirtel(mobileNumber);
+    final validationError = BdMobileValidator.validateRobiCirkle(mobileNumber);
     if (validationError != null) {
       errorMessage = validationError;
       subscriptionState = SubscriptionState.failed;
@@ -132,7 +132,9 @@ class BdAppsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.subscribe(userMobile: normalized);
+      final response = await _apiClient.subscribe(
+        userMobile: BdMobileValidator.toInternational(normalized),
+      );
       lastSubscribeResponse = response;
 
       if (response.isRegistered || response.isAlreadyRegistered) {
@@ -225,7 +227,7 @@ class BdAppsService extends ChangeNotifier {
   Future<BdNumberCheckResult> checkNumberBeforeOtp({
     required String mobileNumber,
   }) async {
-    final validationError = BdMobileValidator.validateRobiAirtel(mobileNumber);
+    final validationError = BdMobileValidator.validateRobiCirkle(mobileNumber);
     if (validationError != null) {
       errorMessage = validationError;
       notifyListeners();
@@ -239,7 +241,7 @@ class BdAppsService extends ChangeNotifier {
 
     try {
       final response = await _apiClient.checkSubscription(
-        userMobile: normalized,
+        userMobile: BdMobileValidator.toInternational(normalized),
       );
       lastCheckSubscriptionResponse = response;
 
@@ -270,7 +272,9 @@ class BdAppsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.sendOtp(userMobile: mobileNumber);
+      final response = await _apiClient.sendOtp(
+        userMobile: BdMobileValidator.toInternational(mobileNumber),
+      );
       lastSendOtpResponse = response;
       if (response.isAlreadyRegistered) {
         _bdMobile = mobileNumber;
@@ -283,10 +287,15 @@ class BdAppsService extends ChangeNotifier {
         _bdMobile = mobileNumber;
         return true;
       }
+      final combined = '${response.statusDetail ?? ''} ${response.error ?? ''}'
+          .toLowerCase();
       if (response.statusCode == 'E1342' ||
-          (response.statusDetail ?? '').toLowerCase().contains('blacklisted')) {
+          combined.contains('blacklisted') ||
+          combined.contains('non-whitelisted') ||
+          combined.contains('non whitelisted') ||
+          combined.contains('not whitelisted')) {
         errorMessage =
-            'This number is not whitelisted in BD Apps. Please add it to "Test Numbers" in developer.bdapps.com.';
+            'BD Apps rejected this number as non-whitelisted. If it is already whitelisted, make sure the "Test Numbers" entry on developer.bdapps.com uses the full international format (8801XXXXXXXXX) and belongs to this app, then try again.';
         return false;
       }
       errorMessage =
@@ -353,7 +362,8 @@ class BdAppsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final subId = lastVerifyOtpResponse?.subscriberId ??
+      final subId =
+          lastVerifyOtpResponse?.subscriberId ??
           lastCheckSubscriptionResponse?.subscriberId ??
           lastSendOtpResponse?.subscriberId;
 
@@ -361,7 +371,9 @@ class BdAppsService extends ChangeNotifier {
       if (subId != null && subId.isNotEmpty) {
         response = await _apiClient.verifySubscriber(subscriberId: subId);
       } else {
-        response = await _apiClient.checkSubscription(userMobile: mobile);
+        response = await _apiClient.checkSubscription(
+          userMobile: BdMobileValidator.toInternational(mobile),
+        );
       }
       lastCheckSubscriptionResponse = response;
 
@@ -398,7 +410,7 @@ class BdAppsService extends ChangeNotifier {
 
     try {
       final response = await _apiClient.unsubscribe(
-        userMobile: mobile,
+        userMobile: BdMobileValidator.toInternational(mobile),
         subscriberId:
             lastSendOtpResponse?.subscriberId ??
             lastCheckSubscriptionResponse?.subscriberId,
@@ -440,7 +452,9 @@ class BdAppsService extends ChangeNotifier {
       if (_smsApiClient == null) {
         // In AppsPro integration, outbound SMS notifications are handled by the
         // carrier platform. Verify connectivity against AppsPro status instead.
-        final response = await _apiClient.checkSubscription(userMobile: mobile);
+        final response = await _apiClient.checkSubscription(
+          userMobile: BdMobileValidator.toInternational(mobile),
+        );
         lastCheckSubscriptionResponse = response;
         lastSendSmsResponse = SendSmsResponse(
           success: true,

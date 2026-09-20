@@ -72,7 +72,7 @@ command line or in .env. The previously exposed key must be rotated in AppsPro.
 4. Set APPSPRO_SECRET_KEY in Secret Manager and deploy the two functions.
 5. Set APPSPRO_PROXY_URL and APPSPRO_PUBLISHABLE_KEY in the Flutter .env.
 6. Configure the AppsPro signed webhook URL.
-7. Test subscription, cancellation, E1951, and webhook flows on a Robi/Airtel
+7. Test subscription, cancellation, E1951, and webhook flows on a Robi/Cirkle
    test SIM.
 
 ---

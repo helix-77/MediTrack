@@ -12,9 +12,6 @@ source of truth for what to build next and how:
 - [`docs/medicine-manager-spec.md`](docs/medicine-manager-spec.md) — full product
   spec, data model, feature specs, and build phasing (Section 6 = phasing,
   Section 5 = feature specs). Read it before doing any non-trivial feature work.
-- [`docs/project-completion-roadmap.md`](docs/project-completion-roadmap.md) —
-  dependency-ordered milestone plan with exit criteria and the list of tasks that
-  require human action (credentials, accounts, product decisions).
 - [`docs/task.md`](docs/task.md) — the short working list of done/pending items.
 
 ## Stack (do not substitute without a strong reason — flag it instead of silently switching)
@@ -40,7 +37,7 @@ source of truth for what to build next and how:
   - Monetization: the AppsPro / BD Apps carrier-billing subscription is
     implemented — `EntitlementService` + `EntitlementGuard` (freemium lifetime
     trial: 1 prescription scan, 3 AI messages, 3 price lookups for free users;
-    premium ৳2.99/day via Robi/Airtel), `SubscriptionOfferScreen`, and the
+    premium ৳2.99/day via Robi/Cirkle), `SubscriptionOfferScreen`, and the
     `lib/features/bdapps/` REST clients (spec Section 5.10).
 - AI / vision: Hybrid setup:
   - **Prescription OCR** (`PrescriptionExtractionService`): Firebase AI Logic (`firebase_ai` calling `gemini-3.6-flash`).

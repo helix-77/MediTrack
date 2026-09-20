@@ -303,7 +303,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Robi / Airtel carrier privacy protection',
+                        'Robi / Cirkle carrier privacy protection',
                         style: AppTypography.caption.copyWith(
                           fontSize: 12,
                           color: isDark
@@ -774,7 +774,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     Text(
                       operator != null
                           ? '$operator (BDApps)'
-                          : 'Robi / Airtel Carrier',
+                          : 'Robi / Cirkle Carrier',
                       style: AppTypography.caption.copyWith(fontSize: 10.5),
                     ),
                   ],
@@ -1327,7 +1327,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '$ussdCode (Robi / Airtel)',
+                      '$ussdCode (Robi / Cirkle)',
                       style: AppTypography.headingSmall.copyWith(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
@@ -1400,7 +1400,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Upgrade to MediTrack Premium for ৳2.78/day via Robi / Airtel carrier billing to unlock full AI and OCR powers.',
+            'Upgrade to MediTrack Premium for ৳2.78/day via Robi / Cirkle carrier billing to unlock full AI and OCR powers.',
             textAlign: TextAlign.center,
             style: AppTypography.bodySmall.copyWith(
               fontSize: 12,

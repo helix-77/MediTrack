@@ -7,7 +7,7 @@ The repo has drifted from its docs. The rewrite will be grounded in what actuall
 - Dart SDK is `^3.12.2` (docs say 3.6+ — stale), Flutter 3.44, Android-only, version 1.0.0+1
 - `storage.rules` **exists** and is wired into `firebase.json` (both AGENTS.md and the spec still claim it's missing)
 - Localization is a **custom enum-based `AppStrings` system** in `lib/l10n/` (English + Bangla) — `easy_localization` is not used
-- Freemium entitlements are **implemented**: lifetime trial of 1 prescription OCR scan, 3 AI messages, 3 price lookups for free users; premium is ৳2.99/day via AppsPro carrier billing (Robi/Airtel) — `EntitlementService` + `EntitlementGuard` + `SubscriptionOfferScreen`
+- Freemium entitlements are **implemented**: lifetime trial of 1 prescription OCR scan, 3 AI messages, 3 price lookups for free users; premium is ৳2.99/day via AppsPro carrier billing (Robi/Cirkle) — `EntitlementService` + `EntitlementGuard` + `SubscriptionOfferScreen`
 - Nearby pharmacies uses `geolocator` + `url_launcher` deep links into Google Maps — **no** `google_maps_flutter`, no Places API, no `functions/` directory
 - Voice input is wired (`speech_to_text` via `lib/utils/voice_input_helper.dart`)
 - `.env` variables actually read by `ApiConfig`: `OPENROUTER_API_KEY`, `Base_URI`, `APPS_PRO_SECRET_KEY`, `Publishable_Key`, `App_ID`, `Share_URL` — the README currently documents wrong names

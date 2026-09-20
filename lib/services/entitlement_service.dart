@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/bdapps/data/bd_apps_api_client.dart';
+import '../logic/bd_mobile_validator.dart';
 import '../logic/entitlement_guard.dart';
 import '../screens/account_upgrade_screen.dart';
 import '../screens/subscription_offer_screen.dart';
@@ -16,7 +17,8 @@ class EntitlementService extends ChangeNotifier {
   final FirebaseAuth? _customAuth;
   final BdAppsApiClient? _apiClient;
 
-  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
+  FirebaseFirestore get _firestore =>
+      _customFirestore ?? FirebaseFirestore.instance;
   FirebaseAuth get _auth => _customAuth ?? FirebaseAuth.instance;
 
   bool _isSubscribed = false;
@@ -44,9 +46,9 @@ class EntitlementService extends ChangeNotifier {
     FirebaseAuth? auth,
     BdAppsApiClient? apiClient,
     BdAppsApiClient? bdAppsApiClient,
-  })  : _customFirestore = firestore,
-        _customAuth = auth,
-        _apiClient = apiClient ?? bdAppsApiClient {
+  }) : _customFirestore = firestore,
+       _customAuth = auth,
+       _apiClient = apiClient ?? bdAppsApiClient {
     _loadLocalUsage();
     try {
       _authSubscription = _auth.authStateChanges().listen((user) {
@@ -88,14 +90,17 @@ class EntitlementService extends ChangeNotifier {
   int get prescriptionScansTotal => _prescriptionScansTotal;
   int get priceLookupsTotal => _priceLookupsTotal;
 
-  int get freePrescriptionScansRemaining =>
-      math.max(0, EntitlementGuard.freePrescriptionScansTotal - _prescriptionScansTotal);
+  int get freePrescriptionScansRemaining => math.max(
+    0,
+    EntitlementGuard.freePrescriptionScansTotal - _prescriptionScansTotal,
+  );
   int get freeAiMessagesRemaining =>
       math.max(0, EntitlementGuard.freeAiMessagesTotal - _aiMessagesTotal);
   int get freePriceLookupsRemaining =>
       math.max(0, EntitlementGuard.freePriceLookupsTotal - _priceLookupsTotal);
 
-  bool get canDoPrescriptionScan => _isSubscribed || freePrescriptionScansRemaining > 0;
+  bool get canDoPrescriptionScan =>
+      _isSubscribed || freePrescriptionScansRemaining > 0;
   bool get canDoAiMessage => _isSubscribed || freeAiMessagesRemaining > 0;
   bool get canDoPriceLookup => _isSubscribed || freePriceLookupsRemaining > 0;
 
@@ -150,7 +155,8 @@ class EntitlementService extends ChangeNotifier {
           _isSubscribed = false;
           _lastVerifiedAt = verifiedDate;
         } else {
-          final isFresh = !forceCarrierCheck &&
+          final isFresh =
+              !forceCarrierCheck &&
               verifiedDate != null &&
               DateTime.now().difference(verifiedDate) < freshnessWindow;
 
@@ -160,8 +166,9 @@ class EntitlementService extends ChangeNotifier {
           } else if (client != null) {
             // Stale or forced check => query BD Apps
             try {
-              final response =
-                  await client.checkSubscription(userMobile: bdMobile);
+              final response = await client.checkSubscription(
+                userMobile: BdMobileValidator.toInternational(bdMobile),
+              );
               final newStatus = response.subscriptionStatus ?? 'UNREGISTERED';
               if (newStatus.toUpperCase() == 'UNKNOWN' ||
                   (!response.isSuccess && response.statusCode != 'S1000')) {
@@ -179,10 +186,11 @@ class EntitlementService extends ChangeNotifier {
                     .collection('profile')
                     .doc('main')
                     .set({
-                  'subscriptionStatus':
-                      _isSubscribed ? 'REGISTERED' : 'UNREGISTERED',
-                  'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
-                }, SetOptions(merge: true));
+                      'subscriptionStatus': _isSubscribed
+                          ? 'REGISTERED'
+                          : 'UNREGISTERED',
+                      'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+                    }, SetOptions(merge: true));
               }
             } catch (e) {
               debugPrint('Carrier verification error: $e');
@@ -233,8 +241,10 @@ class EntitlementService extends ChangeNotifier {
               (sData['priceLookupsTotal'] as num?)?.toInt() ?? 0;
 
           _aiMessagesTotal = math.max(_aiMessagesTotal, firestoreAi);
-          _prescriptionScansTotal =
-              math.max(_prescriptionScansTotal, firestoreScans);
+          _prescriptionScansTotal = math.max(
+            _prescriptionScansTotal,
+            firestoreScans,
+          );
           _priceLookupsTotal = math.max(_priceLookupsTotal, firestoreLookups);
 
           final prefs = await SharedPreferences.getInstance();
@@ -318,9 +328,7 @@ class EntitlementService extends ChangeNotifier {
     // Show commercial offer screen
     final subscribed = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const SubscriptionOfferScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const SubscriptionOfferScreen()),
     );
 
     if (subscribed == true) {
@@ -345,8 +353,7 @@ class EntitlementService extends ChangeNotifier {
     );
   }
 
-  QuotaEvaluation checkAiQuota() =>
-      checkQuota(EntitlementFeature.aiAssistant);
+  QuotaEvaluation checkAiQuota() => checkQuota(EntitlementFeature.aiAssistant);
 
   QuotaEvaluation checkPrescriptionQuota() =>
       checkQuota(EntitlementFeature.prescriptionOcr);
@@ -461,9 +468,9 @@ class EntitlementService extends ChangeNotifier {
             .collection('usage')
             .doc('summary')
             .set({
-          'priceLookupsTotal': FieldValue.increment(1),
-          'lastUpdated': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+              'priceLookupsTotal': FieldValue.increment(1),
+              'lastUpdated': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
       } catch (e) {
         debugPrint('Price lookup tracking error: $e');
       }
@@ -495,9 +502,9 @@ class EntitlementService extends ChangeNotifier {
             .collection('profile')
             .doc('main')
             .set({
-          'subscriptionStatus': 'UNREGISTERED',
-          'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+              'subscriptionStatus': 'UNREGISTERED',
+              'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
       } catch (e) {
         debugPrint('Entitlement cancel notice: $e');
       }

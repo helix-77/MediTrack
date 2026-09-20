@@ -70,7 +70,7 @@ confirmation. The interface ships in English and Bangla.
 - Firebase Authentication: Google Sign-In, email/password, and guest mode.
 - A free tier with lifetime trial allowances: 1 prescription scan, 3 AI
   messages, and 3 price lookups.
-- Premium (৳2.78/day) billed directly through Robi/Airtel carrier billing via
+- Premium (৳2.78/day) billed directly through Robi/Cirkle carrier billing via
   AppsPro, with OTP verification. Entitlements are cached and re-verified
   server-side by `EntitlementService`.
 

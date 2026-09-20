@@ -265,10 +265,11 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
           .collection('profile')
           .doc('main')
           .set({
-        'bdMobile': mobile,
-        'subscriptionConsentVersion': SubscriptionOfferConfig.consentVersion,
-        'subscriptionConsentAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+            'bdMobile': mobile,
+            'subscriptionConsentVersion':
+                SubscriptionOfferConfig.consentVersion,
+            'subscriptionConsentAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
     } catch (e) {
       debugPrint('Consent recording notice: $e');
     }
@@ -284,10 +285,10 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
           .collection('profile')
           .doc('main')
           .set({
-        'bdMobile': mobile,
-        'subscriptionStatus': 'REGISTERED',
-        'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+            'bdMobile': mobile,
+            'subscriptionStatus': 'REGISTERED',
+            'subscriptionVerifiedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
     } catch (e) {
       debugPrint('Subscription profile save error: $e');
     }
@@ -295,7 +296,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
 
   void _sendOtp(BdAppsService bdService, EntitlementService entitlement) async {
     final phone = _phoneController.text.trim();
-    final validationError = BdMobileValidator.validateRobiAirtel(phone);
+    final validationError = BdMobileValidator.validateRobiCirkle(phone);
     if (validationError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -486,8 +487,14 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
         bdService.isCheckingSubscription;
 
     final phoneText = _phoneController.text.trim();
-    final isRobi = phoneText.startsWith('018') || phoneText.startsWith('+88018') || phoneText.startsWith('88018');
-    final isAirtel = phoneText.startsWith('016') || phoneText.startsWith('+88016') || phoneText.startsWith('88016');
+    final isRobi =
+        phoneText.startsWith('018') ||
+        phoneText.startsWith('+88018') ||
+        phoneText.startsWith('88018');
+    final isCirkle =
+        phoneText.startsWith('016') ||
+        phoneText.startsWith('+88016') ||
+        phoneText.startsWith('88016');
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkCanvas : AppColors.canvas,
@@ -516,18 +523,14 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
             const SizedBox(height: 20),
 
             // ==================== SUPPORTED CARRIERS ====================
-            _buildCarrierBar(isDark, isRobi, isAirtel),
+            _buildCarrierBar(isDark, isRobi, isCirkle),
             const SizedBox(height: 24),
 
             // ==================== INCLUDED FEATURES ====================
-            const SectionHeader(
-              title: 'Included Premium Features',
-            ),
+            const SectionHeader(title: 'Included Premium Features'),
             const SizedBox(height: 4),
             _buildFeaturesList(isDark),
             const SizedBox(height: 20),
-
-        
 
             // ==================== SUBSCRIPTION INPUT CARD ====================
             _buildSubscriptionCard(isDark, isBusy, bdService, entitlement),
@@ -536,7 +539,6 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
             // // ==================== FAQ ACCORDION ====================
             // _buildFaqSection(isDark),
             // const SizedBox(height: 20),
-
           ],
         ),
       ),
@@ -559,8 +561,9 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4F6BFF)
-                .withValues(alpha: isDark ? 0.35 : 0.30),
+            color: const Color(
+              0xFF4F6BFF,
+            ).withValues(alpha: isDark ? 0.35 : 0.30),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -737,10 +740,14 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.25),
                             borderRadius: AppRadii.pillRadius,
                             border: Border.all(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.6),
+                              color: const Color(
+                                0xFF10B981,
+                              ).withValues(alpha: 0.6),
                             ),
                           ),
                           child: Row(
@@ -774,7 +781,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
     );
   }
 
-  Widget _buildCarrierBar(bool isDark, bool isRobi, bool isAirtel) {
+  Widget _buildCarrierBar(bool isDark, bool isRobi, bool isCirkle) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -794,7 +801,9 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
               Icon(
                 Icons.sim_card_rounded,
                 size: 20,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.primaryBlue,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.primaryBlue,
               ),
               const SizedBox(width: 10),
               Text(
@@ -802,7 +811,9 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                 style: AppTypography.caption.copyWith(
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
                 ),
               ),
             ],
@@ -818,8 +829,8 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
               ),
               const SizedBox(width: 8),
               _buildCarrierChip(
-                label: 'Airtel (016)',
-                isActive: isAirtel,
+                label: 'Cirkle (016)',
+                isActive: isCirkle,
                 activeColor: const Color(0xFFE11D48),
                 isDark: isDark,
               ),
@@ -865,8 +876,8 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
               color: isActive
                   ? activeColor
                   : (isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.textSecondary),
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary),
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -903,13 +914,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                       width: 1,
                     ),
                   ),
-                  child: Center(
-                    child: Icon(
-                      iconData,
-                      color: accent,
-                      size: 22,
-                    ),
-                  ),
+                  child: Center(child: Icon(iconData, color: accent, size: 22)),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -1113,7 +1118,7 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
       children: [
         SoftTextField(
           controller: _phoneController,
-          labelText: 'Robi / Airtel Phone Number',
+          labelText: 'Robi / Cirkle Phone Number',
           hintText: '018XXXXXXXX or 016XXXXXXXX',
           keyboardType: TextInputType.phone,
           enabled: !_otpSent,
@@ -1130,7 +1135,8 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
               Icon(
                 Icons.check_circle_rounded,
                 size: 14,
-                color: _detectedOperator == 'Robi' || _detectedOperator == 'Airtel'
+                color:
+                    _detectedOperator == 'Robi' || _detectedOperator == 'Cirkle'
                     ? AppColors.success
                     : AppColors.warning,
               ),
@@ -1139,7 +1145,9 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
                 'Detected Operator: $_detectedOperator',
                 style: AppTypography.caption.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: _detectedOperator == 'Robi' || _detectedOperator == 'Airtel'
+                  color:
+                      _detectedOperator == 'Robi' ||
+                          _detectedOperator == 'Cirkle'
                       ? AppColors.success
                       : AppColors.warning,
                 ),
@@ -1174,7 +1182,9 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurfaceElevated : AppColors.primaryBlueLight,
+            color: isDark
+                ? AppColors.darkSurfaceElevated
+                : AppColors.primaryBlueLight,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -1272,12 +1282,12 @@ class _SubscriptionOfferScreenState extends State<SubscriptionOfferScreen> {
   //     {
   //       'q': 'How does carrier billing work?',
   //       'a':
-  //           'The daily fee of ৳2.78 (+VAT/taxes) is automatically charged directly from your Robi or Airtel mobile account balance. No credit card or bank account is required.',
+  //           'The daily fee of ৳2.78 (+VAT/taxes) is automatically charged directly from your Robi or Cirkle mobile account balance. No credit card or bank account is required.',
   //     },
   //     {
   //       'q': 'Can I cancel my subscription at any time?',
   //       'a':
-  //           'Yes, absolutely. You can cancel instantly with zero penalty at any time from your Profile tab or by dialing *213# on your Robi/Airtel phone.',
+  //           'Yes, absolutely. You can cancel instantly with zero penalty at any time from your Profile tab or by dialing *213# on your Robi/Cirkle phone.',
   //     },
   //     {
   //       'q': 'What happens if my SIM balance is low?',
@@ -1399,4 +1409,3 @@ class _FaqCardState extends State<_FaqCard> {
     );
   }
 }
-

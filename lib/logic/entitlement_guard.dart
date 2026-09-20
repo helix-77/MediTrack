@@ -147,7 +147,7 @@ class EntitlementGuard {
           remaining: 0,
           isSoftCapReached: false,
           statusMessage:
-              'Nearby Pharmacy Search requires MediTrack Premium (৳2.78/day via Robi/Airtel).',
+              'Nearby Pharmacy Search requires MediTrack Premium (৳2.78/day via Robi/Cirkle).',
         );
     }
   }

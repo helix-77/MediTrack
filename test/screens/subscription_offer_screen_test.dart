@@ -39,7 +39,7 @@ void main() {
 
     // Carrier Badges
     expect(find.text('Robi (018)'), findsOneWidget);
-    expect(find.text('Airtel (016)'), findsOneWidget);
+    expect(find.text('Cirkle (016)'), findsOneWidget);
 
     // 4 Features
     for (final feature in SubscriptionOfferConfig.features) {

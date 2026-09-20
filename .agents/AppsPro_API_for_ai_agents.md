@@ -317,7 +317,7 @@ POST /api/v1/sdk/unsubscribe // Bearer sk\_...
 
 ## Notes
 
-- Phone numbers: 01XXXXXXXXX, 8801XXXXXXXXX, or +8801XXXXXXXXX (Robi/Airtel for BDApps).
+- Phone numbers: 01XXXXXXXXX, 8801XXXXXXXXX, or +8801XXXXXXXXX (Robi/Cirkle for BDApps).
 - /api/v1/sdk/verify accepts the BDApps subscriber_id from /sdk/subscribers (e.g. tel:8801...).
 - secret_key is shown only once when regenerating — store it immediately.
 - For browser-side subscription UI, prefer the WebSDK (appspro.js) over

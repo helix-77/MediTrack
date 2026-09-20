@@ -1,6 +1,6 @@
 /// Parsed response from `POST subscribe.php`.
 ///
-/// Encapsulates the carrier subscription confirmation trigger for Robi / Airtel
+/// Encapsulates the carrier subscription confirmation trigger for Robi / Cirkle
 /// subscribers via BD Apps.
 class SubscribeResponse {
   const SubscribeResponse({
