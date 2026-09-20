@@ -82,7 +82,7 @@ MediTrack Premium Subscription Terms & Conditions (BD Apps):
 1. Eligibility: Subscription is available exclusively for active Robi and Cirkle prepaid and postpaid mobile subscribers in Bangladesh.
 2. Pricing & Billing: The service costs ৳2.78 per day (+VAT, SD, and SC). The charge is deducted automatically from your mobile account balance every 24 hours.
 3. Auto-Renewal: Your subscription will renew automatically every day until you explicitly cancel or unsubscribe.
-4. Cancellation: You can unsubscribe at any time at zero additional cost directly through the Profile tab in MediTrack or by dialing the standard Robi/Cirkle BD Apps USSD menu (*213#).
+4. Cancellation: You can unsubscribe at any time at zero additional cost directly through the Profile tab in MediTrack or by dialing the standard Robi/Cirkle BD Apps USSD menu.
 5. Data Privacy & AI Usage: MediTrack AI features are powered by OpenRouter. No personal health records are shared with third parties without your consent.
 6. Medical Disclaimer: MediTrack AI suggestions and prescription extractions are for informational assistance only and do not replace certified medical consultation or emergency diagnosis.
 ''';

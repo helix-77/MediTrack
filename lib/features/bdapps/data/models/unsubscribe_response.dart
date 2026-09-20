@@ -110,7 +110,7 @@ class UnsubscribeResponse {
         !isCarrierAddressRejected;
 
     final errorMessage = isCarrierAddressRejected
-        ? 'Carrier direct unregistration rejected by BDApps (E1951: Masked privacy address). Please cancel via SMS (STOP meditrack to 21213) or USSD (*213#).'
+        ? 'Carrier direct unregistration rejected by BDApps (E1951: Masked privacy address). Please cancel via SMS (STOP meditrack to 21213).'
         : ((json['error'] as String?) ??
             (json['message'] as String?) ??
             (isSuccess ? null : detail));
