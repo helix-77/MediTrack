@@ -839,7 +839,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       const AppLogo(size: 38, showShadow: false),
                       const SizedBox(height: 8),
                       Text(
-                        'MediTrack v0.0.3b (Build 3)',
+                        'MediTrack v1.0.1',
                         style: AppTypography.caption.copyWith(
                           fontWeight: FontWeight.w700,
                           color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,

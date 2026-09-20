@@ -331,7 +331,7 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                 ),
               ),
               child: Text(
-                'Due to carrier user privacy rules on your SIM, automated 3rd-party unsubscription is restricted by BDApps. To guarantee that daily billing stops immediately, please cancel directly through your carrier using SMS or USSD:',
+                'Due to carrier user privacy rules on your SIM, automated 3rd-party unsubscription is restricted by BDApps. To guarantee that daily billing stops immediately, please cancel directly through your carrier using SMS:',
                 style: AppTypography.bodySmall.copyWith(
                   height: 1.45,
                   color: isDark
@@ -370,32 +370,32 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            // Carrier Action 2: USSD
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                side: BorderSide(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {
-                Navigator.pop(sheetContext);
-                _launchUssd();
-              },
-              icon: const Icon(Icons.dialpad_rounded, size: 20),
-              label: Text(
-                'Dial *213# on your phone',
-                style: AppTypography.buttonText.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            // const SizedBox(height: 10),
+            // // Carrier Action 2: USSD
+            // OutlinedButton.icon(
+            //   style: OutlinedButton.styleFrom(
+            //     minimumSize: const Size.fromHeight(48),
+            //     padding: const EdgeInsets.symmetric(horizontal: 16),
+            //     side: BorderSide(
+            //       color: isDark ? AppColors.darkBorder : AppColors.border,
+            //     ),
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(12),
+            //     ),
+            //   ),
+            //   onPressed: () {
+            //     Navigator.pop(sheetContext);
+            //     _launchUssd();
+            //   },
+            //   icon: const Icon(Icons.dialpad_rounded, size: 20),
+            //   label: Text(
+            //     'Dial *213# on your phone',
+            //     style: AppTypography.buttonText.copyWith(
+            //       fontSize: 13,
+            //       fontWeight: FontWeight.w600,
+            //     ),
+            //   ),
+            // ),
             const SizedBox(height: 16),
             const Divider(height: 1),
             const SizedBox(height: 16),
@@ -472,24 +472,24 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     }
   }
 
-  Future<void> _launchUssd() async {
-    final uri = Uri.parse('tel:*213%23');
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        _copyToClipboard(
-          '*213#',
-          'Copied "*213#" to clipboard. Dial it on your phone.',
-        );
-      }
-    } catch (_) {
-      _copyToClipboard(
-        '*213#',
-        'Copied "*213#" to clipboard. Dial it on your phone.',
-      );
-    }
-  }
+  // Future<void> _launchUssd() async {
+  //   final uri = Uri.parse('tel:*213%23');
+  //   try {
+  //     if (await canLaunchUrl(uri)) {
+  //       await launchUrl(uri);
+  //     } else {
+  //       _copyToClipboard(
+  //         '*213#',
+  //         'Copied "*213#" to clipboard. Dial it on your phone.',
+  //       );
+  //     }
+  //   } catch (_) {
+  //     _copyToClipboard(
+  //       '*213#',
+  //       'Copied "*213#" to clipboard. Dial it on your phone.',
+  //     );
+  //   }
+  // }
 
 
 
@@ -616,8 +616,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
               _buildInAppCancelCard(isDark),
               const SizedBox(height: 14),
               _buildSmsCancelCard(isDark),
-              const SizedBox(height: 14),
-              _buildUssdCancelCard(isDark),
               const SizedBox(height: 24),
             ] else ...[
               _buildInactiveBanner(isDark),
@@ -1268,116 +1266,6 @@ class _SubscriptionDetailsScreenState extends State<SubscriptionDetailsScreen> {
     );
   }
 
-  Widget _buildUssdCancelCard(bool isDark) {
-    const ussdCode = '*213#';
-
-    return SoftSurface(
-      padding: const EdgeInsets.all(16),
-      borderRadius: AppRadii.cardRadius,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.dialpad_rounded,
-                color: AppColors.accentOrange,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Method 3: Cancel via USSD (*213#)',
-                  style: AppTypography.headingSmall.copyWith(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.darkBackground
-                  : AppColors.accentOrangeLight.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.border,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'DIAL USSD CODE:',
-                      style: AppTypography.caption.copyWith(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$ussdCode (Robi / Cirkle)',
-                      style: AppTypography.headingSmall.copyWith(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.accentOrange,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 11),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onPressed: _launchUssd,
-                  icon: const Icon(Icons.call_rounded, size: 16),
-                  label: const Text('Dial *213#'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 11),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onPressed: () => _copyToClipboard(
-                    ussdCode,
-                    'Copied "$ussdCode" to clipboard',
-                  ),
-                  icon: const Icon(Icons.content_copy_rounded, size: 16),
-                  label: const Text('Copy Code'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildInactiveBanner(bool isDark) {
     return SoftSurface(
